@@ -10,7 +10,7 @@ data
 bin/
 dataset/
 result/
-model/
+models/
 logs/
 .dfc/
 

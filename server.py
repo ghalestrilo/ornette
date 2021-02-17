@@ -59,11 +59,13 @@ class Clock(Thread):
       Thread(target=self.generate).start()
 
     def get_next(self):
-      if (np.any(state['history']) and np.any(state['history'][0])):
+      if ((np.any(state['history']) and np.any(state['history'][0]))
+          if np.isreal(state['history'][0])
+          else (state['history'] and state['history'][0])):
         if (self.playhead >= len(state['history'][0])):
           self.wait_for_more = True
           return None
-        return state['model'].decode(state['history'][0][self.playhead])
+        return state['model'].decode(state['history'][0][self.playhead]) 
       return None
 
     def play_next(self):
@@ -182,7 +184,7 @@ def load_folder(name):
   sys.path.append(os.path.join(sys.path[0], name))
 
 def load_model():
-  if state['model_name'] == 'music-transformer':
+  if state['model_name'] == 'MusicTransformer-tensorflow2.0':
     load_folder('models/MusicTransformer-tensorflow2.0')
     from model import MusicTransformerDecoder
     import params as par
@@ -194,6 +196,10 @@ def load_model():
         # loader_path="checkpoints/unconditional_model_16",
         # loader_path="models/MusicTransformer-tensorflow2.0/checkpoints/unconditional_model_16_tf2",
         debug=False)
+  if state['model_name'] == 'remi':
+    load_folder('models/remi')
+    from model import PopMusicTransformer
+    return PopMusicTransformer(checkpoint='models/remi/REMI-tempo-checkpoint', is_training=False)
   print("Unkown model: " + str(state['model_name'] + ". Aborting load..."))
   exit(-1)
 
@@ -214,7 +220,7 @@ if __name__ == "__main__":
     parser.add_argument("--ip", default="127.0.0.1", help="The ip to listen on")
     parser.add_argument("--port", type=int, default=5005, help="The port to listen on")
 
-    parser.add_argument("--model_name", type=str,  default="music-transformer", help="The model to use (music-transformer, remi)")
+    parser.add_argument("--model_name", type=str,  default="MusicTransformer-tensorflow2.0", help="The model to use (music-transformer, remi)")
     parser.add_argument("--playback",   type=bool, default=True, help="Use supercollider for sound playback")
     parser.add_argument("--sc-ip",      type=str,  default="127.0.0.1", help="The supercollider server ip")
     parser.add_argument("--sc-port",    type=int,  default=57120, help="The supercollider server ip")

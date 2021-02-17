@@ -4,3 +4,6 @@
 [submodule "models/remi"]
 	path = models/remi
 	url = https://github.com/ghalestrilo/remi
+[submodule "models/melody_rnn"]
+	path = models/melody_rnn
+	url = https://github.com/ghalestrilo/magenta-piano-duet-api

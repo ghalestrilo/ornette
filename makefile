@@ -1,13 +1,13 @@
 server-transformer:
 	pyenv local 3.7.4; \
-	source envs/MusicTransformer-tensorflow2.0/bin/activate ;\
-	python server.py ;\
+	bash -c "source envs/MusicTransformer-tensorflow2.0/bin/activate" ;\
+	python server.py --model_name=MusicTransformer-tensorflow2.0;\
 	deactivate
 
 server-remi:
 	pyenv local 3.6.12; \
-	source envs/remi/bin/activate ;\
-	python server.py ;\
+	bash -c "source envs/remi/bin/activate" ;\
+	python server.py --model_name=remi;\
 	deactivate
 
 client:
