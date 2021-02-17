@@ -1,0 +1,6 @@
+[submodule "models/MusicTransformer-tensorflow2.0"]
+	path = models/MusicTransformer-tensorflow2.0
+	url = https://github.com/ghalestrilo/MusicTransformer-tensorflow2.0
+[submodule "models/remi"]
+	path = models/remi
+	url = https://github.com/ghalestrilo/remi
