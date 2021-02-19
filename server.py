@@ -18,6 +18,8 @@ from pythonosc import dispatcher, osc_server, udp_client
 # tf.compat.v1.disable_eager_execution()
 # tf.compat.v1.disable_eager_execution()
 
+CODE_REBOOT=2222
+
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 # TODO: Move to engine.py
@@ -30,11 +32,13 @@ state = {
     'buffer_length': 16,
     'trigger_generate': 0.5,
     'playback': True,
+    'playhead': 0,
     'model_name': None,
     'model': None,
     'scclient': None,
-    'debug_output': False,
+    'debug_output': True,
     'sync_mode': False,
+    'return': 0
 }
 NOTE_OFFSET=60
 
@@ -43,43 +47,48 @@ class Clock(Thread):
     def __init__(self, event):
       Thread.__init__(self)
       self.stopped = event
-      self.playhead = 0
+      state['playhead'] = 0
       self.wait_for_more = False
 
     
     def generate(self):
-      # state['is_generating'] = True
       seq = state['model'].tick()[-128:]
-      self.playhead = self.playhead - state['buffer_length'] + (len(seq) - len(state['history'][0]))
+      state['playhead'] = state['playhead'] - state['buffer_length'] + (len(seq) - len(state['history'][0]))
+      state['playhead'] = max(state['playhead'], 0)
       state['history'][0] = seq
-      # state['is_generating'] = False
       self.wait_for_more = False
 
     def generate_in_background(self):
       Thread(target=self.generate).start()
 
-    def get_next(self):
-      if ((np.any(state['history']) and np.any(state['history'][0]))
-          if np.isreal(state['history'][0])
-          else (state['history'] and state['history'][0])):
-        if (self.playhead >= len(state['history'][0])):
-          self.wait_for_more = True
-          return None
-        return state['model'].decode(state['history'][0][self.playhead]) 
-      return None
+    def has_history(self):
+      hist = state['history']
+      return np.any(hist) and np.any(hist[0])
 
-    def play_next(self):
-      e = self.get_next()
+    def get_next_token(self):
+      hist = state['history']
+
+      if (self.has_history() == False):
+        return None
+
+      if (state['playhead'] >= len(hist[0])):
+        self.wait_for_more = True
+        return None
+
+      return state['model'].decode(state['history'][0][state['playhead']]) 
+
+    def play_next_token(self):
+      e = self.get_next_token()
+
       if (e == None):
         print("No event / history is empty")
         return
-      if (e.type == 'note_on'):
-        play(int(e.value))
-        # print('playing {}'.format(e.value))
-      if (e.type == 'time_shift'):
-        state['until_next_event'] = e.value / 100
-        # print('waiting {}'.format(e.value / 1000))
-      self.playhead = self.playhead + 1
+
+      (event_name, event_value) = e
+      if (event_name == 'note_on' or event_name == 'Note On'):    play(int(event_value))
+      if (event_name == 'time_shift'): state['until_next_event'] = event_value / 100
+
+      state['playhead'] = state['playhead'] + 1
 
 
     def run(self):
@@ -87,14 +96,12 @@ class Clock(Thread):
 
       self.generate_in_background()
       while not self.stopped.wait(state['until_next_event']):
-        if (state['is_running'] == True and self.wait_for_more == False):  
-        # if (state['is_running'] == True):  
-          
-          self.play_next()
+        if (state['is_running'] == True and self.wait_for_more == False):
+          self.play_next_token()
 
-          if (self.playhead / len(state['history'][0]) > state['trigger_generate']):  
+          if (state['playhead'] / len(state['history'][0]) > state['trigger_generate']):  
             if (state['debug_output']):
-              print("Generating more tokens ({} /{} > {})".format(self.playhead, len(state['history'][0]), state['trigger_generate']))            
+              print("Generating more tokens ({} /{} > {})".format(state['playhead'], len(state['history'][0]), state['trigger_generate']))            
             self.generate_in_background()
 
             if (state['debug_output']):
@@ -156,15 +163,22 @@ def play(note):
 
 def shutdown(unused_addr):
     stop_timer()
-    #state['server'].server_close()
     state['server'].shutdown()
-    unused_addr
+
+def server_reset(unused_addr):
+    state['history'].clear()
+    state['playhead'] = 0
+
+def server_reboot(unused_addr):
+    shutdown(None)
+    state['return'] = CODE_REBOOT
 
 def bind_dispatcher(dispatcher, model):
     state['model'] = model
     dispatcher.map("/start", engine_set, 'is_running', True)
     dispatcher.map("/pause", engine_set, 'is_running', False)
-    dispatcher.map("/reset", lambda _: state['history'].clear())
+    dispatcher.map("/reset", server_reset)
+    dispatcher.map("/reboot", server_reboot)  # event2word
     dispatcher.map("/end", shutdown)
     dispatcher.map("/quit", shutdown)
     dispatcher.map("/exit", shutdown)
@@ -184,8 +198,10 @@ def load_folder(name):
   sys.path.append(os.path.join(sys.path[0], name))
 
 def load_model():
+  model_name = state['model_name']
+  model_path = os.path.join('models', model_name)
+  load_folder(model_path)
   if state['model_name'] == 'MusicTransformer-tensorflow2.0':
-    load_folder('models/MusicTransformer-tensorflow2.0')
     from model import MusicTransformerDecoder
     import params as par
     return MusicTransformerDecoder(
@@ -196,17 +212,13 @@ def load_model():
         # loader_path="checkpoints/unconditional_model_16",
         # loader_path="models/MusicTransformer-tensorflow2.0/checkpoints/unconditional_model_16_tf2",
         debug=False)
-  if state['model_name'] == 'remi':
-    load_folder('models/remi')
-    from model import PopMusicTransformer
-    return PopMusicTransformer(checkpoint='models/remi/REMI-tempo-checkpoint', is_training=False)
+  if model_name == 'remi':
+    from ornette import OrnetteModule
+    return OrnetteModule(state, checkpoint=os.path.join(model_path,'REMI-tempo-checkpoint'))
   print("Unkown model: " + str(state['model_name'] + ". Aborting load..."))
   exit(-1)
 
 # /TODO: Move to engine.py
-
-def save_graph():
-  tf.compat.v1.get_default_graph()
 
 # Main
 if __name__ == "__main__":
@@ -251,3 +263,6 @@ if __name__ == "__main__":
     state['server'].serve_forever()
     stop_timer()
     model.close()
+    if (state['return']==CODE_REBOOT):
+      print("Should Reboot")
+    state['return']
