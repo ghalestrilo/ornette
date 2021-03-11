@@ -38,7 +38,8 @@ state = {
     'scclient': None,
     'debug_output': True,
     'sync_mode': False,
-    'return': 0
+    'return': 0,
+    'time_shift_denominator': 100,
 }
 NOTE_OFFSET=60
 
@@ -86,7 +87,7 @@ class Clock(Thread):
 
       (event_name, event_value) = e
       if (event_name == 'note_on' or event_name == 'Note On'):    play(int(event_value))
-      if (event_name == 'time_shift'): state['until_next_event'] = event_value / 100
+      if (event_name == 'time_shift'): state['until_next_event'] = event_value / state['time_shift_denominator']
 
       state['playhead'] = state['playhead'] + 1
 
