@@ -173,6 +173,10 @@ def server_reboot(unused_addr):
     shutdown(None)
     state['return'] = CODE_REBOOT
 
+def debug_tensorflow(unused_addr):
+  tf.config.list_physical_devices("GPU")
+  print('tf.test.is_gpu_available() = {}'.format(tf.test.is_gpu_available()))
+
 def bind_dispatcher(dispatcher, model):
     state['model'] = model
     dispatcher.map("/start", engine_set, 'is_running', True)
@@ -183,6 +187,7 @@ def bind_dispatcher(dispatcher, model):
     dispatcher.map("/quit", shutdown)
     dispatcher.map("/exit", shutdown)
     dispatcher.map("/debug", engine_print)
+    dispatcher.map("/tfdebug", debug_tensorflow)
     dispatcher.map("/event", push_event)  # event2word
 
     dispatcher.map("/set", lambda addr, k, v: engine_set(addr, [k, v]))
@@ -201,20 +206,8 @@ def load_model():
   model_name = state['model_name']
   model_path = os.path.join('models', model_name)
   load_folder(model_path)
-  if state['model_name'] == 'MusicTransformer-tensorflow2.0':
-    from model import MusicTransformerDecoder
-    import params as par
-    return MusicTransformerDecoder(
-        embedding_dim=256, vocab_size=par.vocab_size,
-        num_layer=6,
-        max_seq=state['max_seq'],
-        dropout=0.1,
-        # loader_path="checkpoints/unconditional_model_16",
-        # loader_path="models/MusicTransformer-tensorflow2.0/checkpoints/unconditional_model_16_tf2",
-        debug=False)
-  if model_name == 'remi':
-    from ornette import OrnetteModule
-    return OrnetteModule(state, checkpoint=os.path.join(model_path,'REMI-tempo-checkpoint'))
+  from ornette import OrnetteModule
+  return OrnetteModule(state, checkpoint=os.path.join(model_path,'REMI-tempo-checkpoint'))
   print("Unkown model: " + str(state['model_name'] + ". Aborting load..."))
   exit(-1)
 
