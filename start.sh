@@ -10,9 +10,10 @@ imagename="ornette-$modelname"
 
 # TODO: add docker as requirement
 
+docker image inspect ornette-remi > /dev/null;
 
 # Assert that model container image exists
-if ! test -z "docker image inspect $imagename"; then
+if [ ! $? = 0 ]; then
   [ ! -e "${modeldir}/Dockerfile" ] && echo "Image $imagename not found and $modelname has no Dockerfile" && exit
   docker build -t $imagename $modeldir
 fi
@@ -22,6 +23,9 @@ fi
 ornette_start_command="bash"
 
 docker run -it \
+  --device /dev/nvidia0:/dev/nvidia0  \
+  --device /dev/nvidiactl:/dev/nvidiactl \
+  --device /dev/nvidia-uvm:/dev/nvidia-uvm \
   -p $server_port:$server_port \
   -v $(pwd):/ornette \
   $imagename bash -c \
