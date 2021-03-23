@@ -3,8 +3,8 @@ import sys
 
 import tensorflow as tf
 import numpy as np
-import miditoolkit
-#import modules
+# import miditoolkit
+# import modules
 import pickle
 import time
 import argparse
@@ -36,7 +36,7 @@ state = {
     'model_name': None,
     'model': None,
     'scclient': None,
-    'debug_output': True,
+    'debug_output': False,
     'sync_mode': False,
     'return': 0,
     'time_shift_denominator': 100,
@@ -100,12 +100,16 @@ class Clock(Thread):
         if (state['is_running'] == True and self.wait_for_more == False):
           self.play_next_token()
 
-          if (state['playhead'] / len(state['history'][0]) > state['trigger_generate']):  
-            if (state['debug_output']):
+          if(len(state['history'][0]) == 0):
+            self.generate_in_background()
+            return
+
+          if (state['playhead'] / len(state['history'][0]) > state['trigger_generate']):
+            if (state['debug_output'] == True):
               print("Generating more tokens ({} /{} > {})".format(state['playhead'], len(state['history'][0]), state['trigger_generate']))            
             self.generate_in_background()
 
-            if (state['debug_output']):
+            if (state['debug_output'] == True):
               print('history: {}'.format([model.decode(h) for h in state['history'][0]]))
 
 
@@ -167,7 +171,7 @@ def shutdown(unused_addr):
     state['server'].shutdown()
 
 def server_reset(unused_addr):
-    state['history'].clear()
+    [voice.clear() for voice in state['history']]
     state['playhead'] = 0
 
 def server_reboot(unused_addr):
@@ -220,7 +224,9 @@ if __name__ == "__main__":
     # Parse CLI Args
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--max_seq', default=256, help='최대 길이', type=int)
+    # TODO: These can all be constructed from a dictionary inside the 
+    # If any of the args are present, then pass them to the server, or just pass all default values
+    parser.add_argument('--max_seq', default=256, help='maximum buffer length', type=int)
 
     parser.add_argument('--state', default="0", help='the initial state of the improv', type=str)
     parser.add_argument("--ip", default="127.0.0.1", help="The ip to listen on")
@@ -256,6 +262,8 @@ if __name__ == "__main__":
     start_timer()
     state['server'].serve_forever()
     stop_timer()
+
+    #Cleanup
     model.close()
     if (state['return']==CODE_REBOOT):
       print("Should Reboot")
