@@ -2,7 +2,7 @@
 
 server_port="5005"
 modelname="$1"
-modeldir="models/$modelname"
+modeldir="modules/$modelname"
 dockerfile="${modeldir}/Dockerfile"
 imagename="ornette-$modelname"
 
@@ -18,7 +18,7 @@ if [ ! $? = 0 ]; then
   docker build -t $imagename $modeldir
 fi
 
-# FIXME: See if it isn't enough to just load a volume "models/$modelname:/model"
+# FIXME: See if it isn't enough to just load a volume "modules/$modelname:/model"
 # ornette_start_command="cd /ornette && python server.py --model_name=$modelname;"
 ornette_start_command="bash"
 
@@ -27,6 +27,7 @@ docker run -it \
   --device /dev/nvidiactl:/dev/nvidiactl \
   --device /dev/nvidia-uvm:/dev/nvidia-uvm \
   -p $server_port:$server_port \
+  -p 8080:8080 \
   -v $(pwd):/ornette \
   $imagename bash -c \
   $ornette_start_command
