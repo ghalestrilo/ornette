@@ -8,7 +8,7 @@ import numpy as np
 import pickle
 import time
 import argparse
-import asyncio
+#import asyncio
 import math
 import pprint
 
@@ -39,6 +39,7 @@ state = {
     'debug_output': False,
     'sync_mode': False,
     'return': 0,
+    'tempo': 120,
     'time_shift_denominator': 100,
 }
 NOTE_OFFSET=60
@@ -209,7 +210,7 @@ def load_folder(name):
 
 def load_model():
   model_name = state['model_name']
-  model_path = os.path.join('models', model_name)
+  model_path = os.path.join('modules', model_name)
   load_folder(model_path)
   from ornette import OrnetteModule
   return OrnetteModule(state, checkpoint=os.path.join(model_path,'REMI-tempo-checkpoint'))

@@ -4,18 +4,25 @@ server_port="5005"
 modelname="$1"
 modeldir="modules/$modelname"
 dockerfile="${modeldir}/Dockerfile"
-imagename="ornette-$modelname"
+imagename="ornette_$modelname"
 
+# Validations
+# TODO: add docker as requirement
+# TODO: check that ~/.ornette exists
 [ ! $modelname ] && echo "No model provided" && exit
 
-# TODO: add docker as requirement
 
-docker image inspect ornette-remi > /dev/null;
+
+function build_image(){
+  docker image remove "$imagename" --force
+  [ ! -e "${modeldir}/Dockerfile" ] && echo "Image $imagename not found and $modelname has no Dockerfile" && exit
+  docker build -t "$imagename" "$modeldir"
+}
 
 # Assert that model container image exists
-if [ ! $? = 0 ]; then
-  [ ! -e "${modeldir}/Dockerfile" ] && echo "Image $imagename not found and $modelname has no Dockerfile" && exit
-  docker build -t $imagename $modeldir
+docker image inspect $imagename > /dev/null;
+if [ $? = 1 ]; then build_image
+elif [ $REBUILD ]; then build_image
 fi
 
 # FIXME: See if it isn't enough to just load a volume "modules/$modelname:/model"
