@@ -10,7 +10,9 @@ data
 bin/
 dataset/
 result/
-models/
+# models/
+
+unimplemented_models/
 logs/
 .dfc/
 
