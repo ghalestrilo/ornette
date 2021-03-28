@@ -31,17 +31,18 @@ fi
 # FIXME: See if it isn't enough to just load a volume "modules/$modelname:/model"
 ornette_start_command="bash"
 
-[ $checkpoint_name ] && ornette_start_command="cd /ornette && python server.py --model_name=$modelname --checkpoint=$checkpoint_name;"
+# [ $checkpoint_name ] && ornette_start_command="python server.py --model_name=$modelname --checkpoint=$checkpoint_name;"
+
+ornette_start_command="python server.py --model_name=$modelname --checkpoint=$checkpoint_name"
 
 
 docker run -it \
   --device /dev/nvidia0:/dev/nvidia0  \
   --device /dev/nvidiactl:/dev/nvidiactl \
   --device /dev/nvidia-uvm:/dev/nvidia-uvm \
-  -p $server_port:$server_port \
-  -p 8080:8080 \
+  -p 5005:5005 \
   -v "$(pwd)":/ornette \
   -v "$(pwd)/$modeldir":/model \
   -v "$HOME/.ornette/checkpoints/$modelname":/ckpt \
   $imagename bash -c \
-  $ornette_start_command
+  "$ornette_start_command"

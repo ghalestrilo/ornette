@@ -86,7 +86,7 @@ class OrnetteModule():
     self.realtime_ready = True
     # self.temperature=1.2
     self.server_state = state
-    self.server_state['history'] = [NoteSequence()] # FIXME: How to properly do this?
+    self.server_state['history'] = [[]] # FIXME: How to properly do this?
 
   def generate(self, primer_sequence):
       qpm = self.server_state['tempo']/2
