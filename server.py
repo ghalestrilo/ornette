@@ -9,6 +9,7 @@ import pickle
 import time
 import argparse
 #import asyncio
+import yaml
 import math
 import pprint
 
@@ -159,11 +160,6 @@ def sample_model(unused_addr, args):
     event = model.predict()
     print(event)
 
-def prepare_model(unused_addr, args):
-    model = args[0]
-    event = model.realtime_setup(state)
-    print(event)
-
 def play(note):
     state['scclient'].send_message('/play2', ['s', 'superpiano', 'note', note - NOTE_OFFSET])
 
@@ -200,7 +196,6 @@ def bind_dispatcher(dispatcher, model):
 
     if (model):
         dispatcher.map("/sample", sample_model, model)
-        dispatcher.map("/prep",   prepare_model, model)
     
     if (state['playback'] == True):
       dispatcher.map("/play", lambda _,note: play(note))
@@ -208,16 +203,39 @@ def bind_dispatcher(dispatcher, model):
 def load_folder(name):
   sys.path.append(os.path.join(sys.path[0], name))
 
-def load_model():
+def load_model(checkpoint=None):
+  if checkpoint is None:
+    print("Please provide a checkpoint for the model to load")
+    exit(-1)
+
   model_name = state['model_name']
   model_path = os.path.join('modules', model_name)
   load_folder(model_path)
   from ornette import OrnetteModule
-  return OrnetteModule(state, checkpoint=os.path.join(model_path,'REMI-tempo-checkpoint'))
+  return OrnetteModule(state, checkpoint=os.path.join(model_path,checkpoint))
   print("Unkown model: " + str(state['model_name'] + ". Aborting load..."))
   exit(-1)
 
 # /TODO: Move to engine.py
+
+
+
+# TODO: Move to init.py
+
+def prep_module():
+  with open('/model/.ornette.yml') as file:
+    moduleconfig = yaml.load_all(file, Loader=yaml.FullLoader)
+
+    for pair in moduleconfig:
+      for k, v in pair.items():
+        if k is "checkpoints":
+          for checkpoint_name, checkpoint_url in v.items():
+            print("downloading", checkpoint_url)
+        print(k, ' -> ', v)
+
+# /TODO
+
+
 
 # Main
 if __name__ == "__main__":
@@ -234,11 +252,14 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=5005, help="The port to listen on")
 
     parser.add_argument("--model_name", type=str,  default="MusicTransformer-tensorflow2.0", help="The model to use (music-transformer, remi)")
+    parser.add_argument("--checkpoint", type=str,  default=None, help="The checkpoint you wish to load")
     parser.add_argument("--playback",   type=bool, default=True, help="Use supercollider for sound playback")
     parser.add_argument("--sc-ip",      type=str,  default="127.0.0.1", help="The supercollider server ip")
     parser.add_argument("--sc-port",    type=int,  default=57120, help="The supercollider server ip")
 
     args = parser.parse_args()
+
+    prep_module()
 
     state['model_name'] = args.model_name
     state['playback'] = args.playback
@@ -248,8 +269,7 @@ if __name__ == "__main__":
 
 
     # Prep Model
-    model = load_model()
-    prepare_model(None, [model])  # for real time use
+    model = load_model(args.checkpoint)
 
     # Prep Server
     dispatcher = dispatcher.Dispatcher()

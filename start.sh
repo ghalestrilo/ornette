@@ -2,7 +2,8 @@
 
 server_port="5005"
 modelname="$1"
-modeldir="modules/$modelname"
+modulesdir="modules"
+modeldir="$modulesdir/$modelname"
 dockerfile="${modeldir}/Dockerfile"
 imagename="ornette_$modelname"
 
@@ -27,6 +28,7 @@ fi
 
 # FIXME: See if it isn't enough to just load a volume "modules/$modelname:/model"
 # ornette_start_command="cd /ornette && python server.py --model_name=$modelname;"
+# ornette_start_command="cd /ornette && bash"
 ornette_start_command="bash"
 
 docker run -it \
@@ -35,6 +37,7 @@ docker run -it \
   --device /dev/nvidia-uvm:/dev/nvidia-uvm \
   -p $server_port:$server_port \
   -p 8080:8080 \
-  -v $(pwd):/ornette \
+  -v "$(pwd)":/ornette \
+  -v "$(pwd)/$modeldir":/model \
   $imagename bash -c \
   $ornette_start_command

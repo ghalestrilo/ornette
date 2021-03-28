@@ -73,11 +73,11 @@ def make_notes_sequence(pitches, start_times, durations, qpm):
 
 
 
-
-
-
-class OrnetteModule():
-  def constructor(self, state={}, checkpoint='attention_rnn'):
+class OrnetteModule:
+  def __init__(self, state={}, checkpoint='attention_rnn'):
+    config = magenta.models.melody_rnn.melody_rnn_model.default_configs[checkpoint]
+    bundle_file = sequence_generator_bundle.read_bundle_file(os.path.abspath('model/' + BUNDLE_NAME+'.mag'))
+    steps_per_quarter = 4
     self.model = MelodyRnnSequenceGenerator(
       model=melody_rnn_model.MelodyRnnModel(config),
       details=config.details,
@@ -86,10 +86,7 @@ class OrnetteModule():
     self.realtime_ready = True
     # self.temperature=1.2
     self.server_state = state
-    self.server_state['history'] = [new NoteSequence()]
-    pass
-
-  def realtime_setup(self, state):
+    self.server_state['history'] = [NoteSequence()]
     pass
 
   def generate(self, primer_sequence):

@@ -1,0 +1,5 @@
+checkpoints:
+  basic_rnn: http://download.magenta.tensorflow.org/models/basic_rnn.mag
+  mono_rnn: http://download.magenta.tensorflow.org/models/mono_rnn.mag
+  lookback_rnn: http://download.magenta.tensorflow.org/models/lookback_rnn.mag
+  attention_rnn: http://download.magenta.tensorflow.org/models/attention_rnn.mag
