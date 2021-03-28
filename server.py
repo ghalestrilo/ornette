@@ -9,7 +9,6 @@ import pickle
 import time
 import argparse
 #import asyncio
-import yaml
 import math
 import pprint
 
@@ -208,11 +207,12 @@ def load_model(checkpoint=None):
     print("Please provide a checkpoint for the model to load")
     exit(-1)
 
-  model_name = state['model_name']
-  model_path = os.path.join('modules', model_name)
+  # model_name = state['model_name']
+  # model_path = os.path.join('modules', model_name)
+  model_path = '/model'
   load_folder(model_path)
   from ornette import OrnetteModule
-  return OrnetteModule(state, checkpoint=os.path.join(model_path,checkpoint))
+  return OrnetteModule(state, checkpoint=checkpoint)
   print("Unkown model: " + str(state['model_name'] + ". Aborting load..."))
   exit(-1)
 
@@ -221,16 +221,30 @@ def load_model(checkpoint=None):
 
 
 # TODO: Move to init.py
+import yaml
+import urllib.request as req
+import os
+def download_checkpoint(name, url, force=False):
+  checkpoint_dir = '/ckpt'
+  ckptpath = os.path.normpath(f'{checkpoint_dir}/{name}')
+  if os.path.exists(ckptpath) and not force:
+    return
+  response = req.urlopen(url, timeout = 5)
+  content = response.read()
+  with open(ckptpath, 'wb' ) as f:
+    f.write( content )
+    f.close()
 
 def prep_module():
-  with open('/model/.ornette.yml') as file:
+  with open(os.path.normpath('/model/.ornette.yml')) as file:
     moduleconfig = yaml.load_all(file, Loader=yaml.FullLoader)
-
+    #
     for pair in moduleconfig:
       for k, v in pair.items():
-        if k is "checkpoints":
+        if k == "checkpoints":
           for checkpoint_name, checkpoint_url in v.items():
-            print("downloading", checkpoint_url)
+            print(f'downloading  {checkpoint_name}, "{checkpoint_url}"')
+            download_checkpoint(checkpoint_name, checkpoint_url, False)
         print(k, ' -> ', v)
 
 # /TODO

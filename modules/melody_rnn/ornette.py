@@ -69,25 +69,24 @@ def make_notes_sequence(pitches, start_times, durations, qpm):
 
 
 
+import os
 
 
 
-
-class OrnetteModule:
+class OrnetteModule():
   def __init__(self, state={}, checkpoint='attention_rnn'):
-    config = magenta.models.melody_rnn.melody_rnn_model.default_configs[checkpoint]
-    bundle_file = sequence_generator_bundle.read_bundle_file(os.path.abspath('model/' + BUNDLE_NAME+'.mag'))
+    config      = magenta.models.melody_rnn.melody_rnn_model.default_configs[checkpoint]
+    checkpoint_file = os.path.normpath(f'/ckpt/{checkpoint}')
+    bundle_file = sequence_generator_bundle.read_bundle_file(checkpoint_file)
     steps_per_quarter = 4
-    self.model = MelodyRnnSequenceGenerator(
-      model=melody_rnn_model.MelodyRnnModel(config),
+    self.model = MelodyRnnSequenceGenerator(model=melody_rnn_model.MelodyRnnModel(config),
       details=config.details,
       steps_per_quarter=steps_per_quarter,
       bundle=bundle_file)
     self.realtime_ready = True
     # self.temperature=1.2
     self.server_state = state
-    self.server_state['history'] = [NoteSequence()]
-    pass
+    self.server_state['history'] = [NoteSequence()] # FIXME: How to properly do this?
 
   def generate(self, primer_sequence):
       qpm = self.server_state['tempo']/2
@@ -115,7 +114,7 @@ class OrnetteModule:
       return generated_sequence
 
   def tick(self, topk=1):
-    pass
+    return self.server_state['history']
   
   def decode(self, token):
 

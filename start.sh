@@ -2,6 +2,8 @@
 
 server_port="5005"
 modelname="$1"
+checkpoint_name="$2"
+checkpoint_dir="$HOME/.ornette/checkpoints/$modelname"
 modulesdir="modules"
 modeldir="$modulesdir/$modelname"
 dockerfile="${modeldir}/Dockerfile"
@@ -12,7 +14,7 @@ imagename="ornette_$modelname"
 # TODO: check that ~/.ornette exists
 [ ! $modelname ] && echo "No model provided" && exit
 
-
+[ ! -d "$checkpoint_dir" ] && mkdir -p $checkpoint_dir
 
 function build_image(){
   docker image remove "$imagename" --force
@@ -27,9 +29,10 @@ elif [ $REBUILD ]; then build_image
 fi
 
 # FIXME: See if it isn't enough to just load a volume "modules/$modelname:/model"
-# ornette_start_command="cd /ornette && python server.py --model_name=$modelname;"
-# ornette_start_command="cd /ornette && bash"
 ornette_start_command="bash"
+
+[ $checkpoint_name ] && ornette_start_command="cd /ornette && python server.py --model_name=$modelname --checkpoint=$checkpoint_name;"
+
 
 docker run -it \
   --device /dev/nvidia0:/dev/nvidia0  \
@@ -39,5 +42,6 @@ docker run -it \
   -p 8080:8080 \
   -v "$(pwd)":/ornette \
   -v "$(pwd)/$modeldir":/model \
+  -v "$HOME/.ornette/checkpoints/$modelname":/ckpt \
   $imagename bash -c \
   $ornette_start_command
