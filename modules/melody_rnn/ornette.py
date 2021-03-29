@@ -98,18 +98,41 @@ class OrnetteModule():
       
       #primer_sequence = make_notes_sequence(pitches, start_times, durations, qpm)
 
-      generator_options = generator_pb2.GeneratorOptions()
+      
       # Set the start time to begin on the next step after the last note ends.
       last_end_time = 0
+      
       if (len(self.server_state['history'][0]) > 0 and primer_sequence != None):
           last_end_time = max(n.end_time for n in primer_sequence.notes) if primer_sequence.notes else 0
 
+      # TODO: Move to constructor
+      generator_options = generator_pb2.GeneratorOptions()
       generator_options.generate_sections.add(
           start_time=last_end_time + _steps_to_seconds(1, qpm),
           end_time=length)
 
+      # TEMP: Constructing noteseq dict to feed into the model
+      # TODO: bind 'notes' value to self.history
+      noteseq = {
+          'notes': primer_sequence,
+          'quantizationInfo': {
+            'stepsPerQuarter': 4
+            },
+          'tempos': [ { 'time': 0, 'qpm': 120}],
+          'totalQuantizedSteps': 11,
+      }
+
+      noteseq = NoteSequence(
+        notes=primer_sequence,
+        quantization_info={
+            'steps_per_quarter': 4
+            },
+        tempos=[ { 'time': 0, 'qpm': 120}],
+        total_quantized_steps=11,
+      )
+
       # generate the output sequence
-      generated_sequence = self.model.generate(primer_sequence, generator_options)
+      generated_sequence = self.model.generate(noteseq, generator_options)
 
       # predicted_pitches = [note.pitch for note in generated_sequence.notes]
       # predicted_start_times = [note.start_time for note in generated_sequence.notes]
@@ -118,7 +141,7 @@ class OrnetteModule():
       return generated_sequence
 
   def tick(self, topk=1):
-    return self.generate(self.server_state['history'])
+    return self.generate(self.server_state['history'][0]).notes
   
   def decode(self, token):
     pass
