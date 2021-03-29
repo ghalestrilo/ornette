@@ -96,7 +96,8 @@ class OrnetteModule():
     self.server_state['history'] = [[]]
 
   def generate(self, primer_sequence=None):
-      qpm = self.server_state['tempo']/2
+      # qpm = self.server_state['tempo']
+      qpm = 120
 
       # length = self.server_state['max_buffer'];
       length = 16
@@ -108,12 +109,16 @@ class OrnetteModule():
       if (primer_sequence != None and any(primer_sequence)):
           last_end_time = max(n.end_time for n in primer_sequence)
 
+
+      # print("\nhistory:")
+      # print(primer_sequence)
+
       # TODO: Move to constructor
       generator_options = generator_pb2.GeneratorOptions()
       generator_options.generate_sections.add(
           #start_time=last_end_time + _steps_to_seconds(1, qpm),
-          start_time=last_end_time+length_seconds,
-          end_time=length_seconds)
+          start_time=length_seconds + last_end_time,
+          end_time=length_seconds + last_end_time + length)
 
       # TEMP: Constructing noteseq dict to feed into the model
       # TODO: bind 'notes' value to self.history
@@ -122,9 +127,13 @@ class OrnetteModule():
         quantization_info={
             'steps_per_quarter': 4
             },
-        tempos=[ { 'time': 0, 'qpm': 120 } ],
+        tempos=[ { 'time': 0, 'qpm': qpm } ],
         total_quantized_steps=11,
       )
+
+      # print(noteseq)
+      # print(f'last_end_time: {last_end_time}')
+      # print(f'generating: {length_seconds} -> {length_seconds + last_end_time}')
 
       # generate the output sequence
       generated_sequence = self.model.generate(noteseq, generator_options)
@@ -139,7 +148,7 @@ class OrnetteModule():
     return self.generate(self.server_state['history'][0]).notes
   
   def decode(self, token):
-    return (token.pitch, token.start_time - token.end_time)
+    return (token.pitch, token.end_time - token.start_time)
 
   def get_action(self,token):
     'play'
