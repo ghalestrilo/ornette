@@ -1,16 +1,23 @@
 import os
 import sys
 
+# Move to utils.py?
+def load_folder(name):
+  sys.path.append(os.path.join(sys.path[0], name))
+
+load_folder('src')
+
 import tensorflow as tf
 import numpy as np
 # import miditoolkit
 # import modules
 import pickle
 import time
-import argparse
 #import asyncio
 import math
 import pprint
+
+from args import get_args
 
 from threading import Thread, Event
 from pythonosc import dispatcher, osc_server, udp_client
@@ -226,9 +233,6 @@ def bind_dispatcher(dispatcher, model):
     if (state['playback'] == True):
       dispatcher.map("/play", lambda _,note: play(note))
 
-def load_folder(name):
-  sys.path.append(os.path.join(sys.path[0], name))
-
 def load_model(checkpoint=None):
   if checkpoint is None:
     print("Please provide a checkpoint for the model to load")
@@ -242,6 +246,13 @@ def load_model(checkpoint=None):
   return OrnetteModule(state, checkpoint=checkpoint)
   print("Unkown model: " + str(state['model_name'] + ". Aborting load..."))
   exit(-1)
+
+def init_state(args):
+    state['model_name'] = args.model_name
+    state['playback'] = args.playback
+    state['scclient'] = udp_client.SimpleUDPClient(args.sc_ip, args.sc_port)
+    state['max_seq'] = args.max_seq
+    state['history'] = [[int(x) for x in str(args.state).split(',')]]
 
 # /TODO: Move to server.py
 
@@ -277,35 +288,15 @@ def prep_module():
 
 
 
+
+
+
+
 # Main
 if __name__ == "__main__":
-    
-    # Parse CLI Args
-    parser = argparse.ArgumentParser()
-
-    # TODO: These can all be constructed from a dictionary inside the 
-    # If any of the args are present, then pass them to the server, or just pass all default values
-    parser.add_argument('--max_seq', default=256, help='maximum buffer length', type=int)
-
-    parser.add_argument('--state', default="0", help='the initial state of the improv', type=str)
-    parser.add_argument("--ip", default="127.0.0.1", help="The ip to listen on")
-    parser.add_argument("--port", type=int, default=5005, help="The port to listen on")
-
-    parser.add_argument("--model_name", type=str,  default="MusicTransformer-tensorflow2.0", help="The model to use (music-transformer, remi)")
-    parser.add_argument("--checkpoint", type=str,  default=None, help="The checkpoint you wish to load")
-    parser.add_argument("--playback",   type=bool, default=True, help="Use supercollider for sound playback")
-    parser.add_argument("--sc-ip",      type=str,  default="127.0.0.1", help="The supercollider server ip")
-    parser.add_argument("--sc-port",    type=int,  default=57120, help="The supercollider server ip")
-
-    args = parser.parse_args()
+    args = get_args()
 
     prep_module()
-
-    state['model_name'] = args.model_name
-    state['playback'] = args.playback
-    state['scclient'] = udp_client.SimpleUDPClient(args.sc_ip, args.sc_port)
-    state['max_seq'] = args.max_seq
-    state['history'] = [[int(x) for x in str(args.state).split(',')]]
 
     # Parse Args (import from args.py)
     # args = args
@@ -317,8 +308,6 @@ if __name__ == "__main__":
     # server = server(model, args)
     dispatcher = dispatcher.Dispatcher()
     bind_dispatcher(dispatcher, model)
-
-    # print(tf.compat.v1.get_default_graph(model))
 
     # Start Server
     state['server'] = osc_server.ThreadingOSCUDPServer((args.ip, args.port), dispatcher)
