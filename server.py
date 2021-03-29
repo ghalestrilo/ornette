@@ -31,14 +31,12 @@ pretty_errors.configure(
 
 pretty_errors.replace_stderr()
 
-# tf.compat.v1.disable_eager_execution()
-# tf.compat.v1.disable_eager_execution()
-
 CODE_REBOOT=2222
+NOTE_OFFSET=60
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
-# TODO: Move to engine.py
+# TODO: Move to server.py
 state = {
     'is_running': False,
     'is_generating': False,
@@ -58,9 +56,8 @@ state = {
     'tempo': 120,
     'time_shift_denominator': 100,
 }
-NOTE_OFFSET=60
 
-# Clock implements the main loop
+# TODO: Move to playback.py
 class Clock(Thread):
     def __init__(self, event):
       Thread.__init__(self)
@@ -94,7 +91,7 @@ class Clock(Thread):
         self.wait_for_more = True
         return None
 
-      # return state['model'].decode(state['history'][0][state['playhead']]) 
+      # return state['model'].decode(state['history'][0][state['playhead']])
       return state['history'][0][state['playhead']]
 
     def process_next_token(self):
@@ -112,10 +109,6 @@ class Clock(Thread):
       for (name, value) in action:
         if (name == 'play'): play(int(value))
         if (name == 'wait'): state['until_next_event'] = value
-
-      # (event_name, event_value) = e
-      # if (event_name == 'note_on' or event_name == 'Note On'):    play(int(event_value))
-      # if (event_name == 'time_shift'): state['until_next_event'] = event_value / state['time_shift_denominator']
 
       state['playhead'] = state['playhead'] + 1
 
@@ -141,11 +134,15 @@ class Clock(Thread):
               print('history: {}'.format([model.decode(h) for h in state['history'][0]]))
 
 
+# Make this into a constructor
 def start_timer():
     stopFlag = Event()
     state['stopFlag'] = stopFlag
     state['clock'] = Clock(stopFlag)
     state['clock'].start()
+
+# TODO: Move to playback.py
+
 
 
 def stop_timer():
@@ -246,7 +243,7 @@ def load_model(checkpoint=None):
   print("Unkown model: " + str(state['model_name'] + ". Aborting load..."))
   exit(-1)
 
-# /TODO: Move to engine.py
+# /TODO: Move to server.py
 
 
 
@@ -276,7 +273,6 @@ def prep_module():
             print(f'downloading  {checkpoint_name}, "{checkpoint_url}"')
             download_checkpoint(checkpoint_name, checkpoint_url, False)
         print(k, ' -> ', v)
-
 # /TODO
 
 
@@ -311,11 +307,14 @@ if __name__ == "__main__":
     state['max_seq'] = args.max_seq
     state['history'] = [[int(x) for x in str(args.state).split(',')]]
 
+    # Parse Args (import from args.py)
+    # args = args
 
     # Prep Model
     model = load_model(args.checkpoint)
 
     # Prep Server
+    # server = server(model, args)
     dispatcher = dispatcher.Dispatcher()
     bind_dispatcher(dispatcher, model)
 
@@ -324,12 +323,26 @@ if __name__ == "__main__":
     # Start Server
     state['server'] = osc_server.ThreadingOSCUDPServer((args.ip, args.port), dispatcher)
     print("Serving {} on {}".format(state['model_name'], state['server'].server_address))
+    
+    # TODO: Change into 
+    # timer = Timer(server)
+    # timer.start()
     start_timer()
     state['server'].serve_forever()
     stop_timer()
 
-    #Cleanup
+    # Timer.close()
+
+    # Cleanup
     model.close()
     if (state['return']==CODE_REBOOT):
       print("Should Reboot")
     state['return']
+
+
+
+## Steps to refactor
+
+# 1. Refactor args (cause it's easy)
+# 2. Refactor server (cause it's large)
+# 3. Refactor clock (cause it's weird)
