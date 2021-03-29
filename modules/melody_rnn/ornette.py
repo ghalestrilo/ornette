@@ -6,78 +6,12 @@ from magenta.models.shared import sequence_generator_bundle
 from note_seq.protobuf import generator_pb2
 from note_seq import NoteSequence
 
-# TODO: not cross-platform
-MODEL_DIR='/model'
-CHECKPOINT_DIR='/model/checkpoint'
-
 # TODO: Use in server
 def _steps_to_seconds(steps, qpm):
     steps_per_quarter = 4
     return steps * 60.0 / qpm / steps_per_quarter
 
-
-
-
-
-#  last_end_time = 0
-#
-#  start_step = note_seq.quantize_to_step(
-#        generate_section.start_time, steps_per_second, quantize_cutoff=0)
-#    # Note that when quantizing end_step, we set quantize_cutoff to 1.0 so it
-#    # always rounds down. This avoids generating a sequence that ends at 5.0
-#    # seconds when the requested end time is 4.99.
-#    end_step = note_seq.quantize_to_step(
-#        generate_section.end_time, steps_per_second, quantize_cutoff=1.0)
-
-
-
-
-
-
-
-
-
-
-
-
-
-## FIXME: Deprecate!!
-def make_midi(pitches, start_times, durations, qpm, midi_path):
-    track    = 0
-    channel  = 0
-    time     = 0
-    volume   = 100
-    MyMIDI = MIDIFile(1)
-    MyMIDI.addTempo(track, time, qpm)
-
-    for pitch, start_time, duration in zip(pitches,start_times,durations):
-        MyMIDI.addNote(track, channel, pitch, start_time, duration, volume)
-        print(MyMIDI)
-
-    with open(midi_path, "wb") as output_file:
-        MyMIDI.writeFile(output_file)
-
-def make_notes_sequence(pitches, start_times, durations, qpm):
-    TEMP_MIDI = "temp.mid"
-    make_midi(pitches, start_times, durations, qpm, TEMP_MIDI)
-    return mm.midi_file_to_sequence_proto(TEMP_MIDI)
-## FIXME: Deprecate!!
-
-
-
-
-
-
-
-
-
-
-
-
-
 import os
-
-
 
 class OrnetteModule():
   def __init__(self, state={}, checkpoint='attention_rnn'):
