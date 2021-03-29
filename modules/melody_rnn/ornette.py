@@ -12,6 +12,7 @@ CHECKPOINT_DIR='/model/checkpoint'
 
 # TODO: Use in server
 def _steps_to_seconds(steps, qpm):
+    steps_per_quarter = 4
     return steps * 60.0 / qpm / steps_per_quarter
 
 
@@ -86,7 +87,8 @@ class OrnetteModule():
     self.realtime_ready = True
     # self.temperature=1.2
     self.server_state = state
-    self.server_state['history'] = [None] # FIXME: How to properly do this?
+    # self.server_state['history'] = [None] # FIXME: How to properly do this?
+    self.server_state['history'] = [[]]
 
   def generate(self, primer_sequence=None):
       qpm = self.server_state['tempo']/2
@@ -98,9 +100,9 @@ class OrnetteModule():
 
       generator_options = generator_pb2.GeneratorOptions()
       # Set the start time to begin on the next step after the last note ends.
-      last_end_time = 0 if primer_sequence else (
-        max(n.end_time for n in primer_sequence.notes) if primer_sequence.notes else 0
-        )
+      last_end_time = 0
+      if (len(self.server_state['history'][0]) > 0 and primer_sequence != None):
+          last_end_time = max(n.end_time for n in primer_sequence.notes) if primer_sequence.notes else 0
 
       generator_options.generate_sections.add(
           start_time=last_end_time + _steps_to_seconds(1, qpm),
