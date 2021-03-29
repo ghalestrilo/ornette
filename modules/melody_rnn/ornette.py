@@ -96,8 +96,8 @@ class OrnetteModule():
     self.server_state['history'] = [[]]
 
   def generate(self, primer_sequence=None):
-      # qpm = self.server_state['tempo']
-      qpm = 120
+      qpm = self.server_state['tempo']
+      # qpm = 120
 
       # length = self.server_state['max_buffer'];
       length = 16
@@ -108,10 +108,6 @@ class OrnetteModule():
       
       if (primer_sequence != None and any(primer_sequence)):
           last_end_time = max(n.end_time for n in primer_sequence)
-
-
-      # print("\nhistory:")
-      # print(primer_sequence)
 
       # TODO: Move to constructor
       generator_options = generator_pb2.GeneratorOptions()
@@ -131,18 +127,8 @@ class OrnetteModule():
         total_quantized_steps=11,
       )
 
-      # print(noteseq)
-      # print(f'last_end_time: {last_end_time}')
-      # print(f'generating: {length_seconds} -> {length_seconds + last_end_time}')
-
       # generate the output sequence
-      generated_sequence = self.model.generate(noteseq, generator_options)
-
-      # predicted_pitches = [note.pitch for note in generated_sequence.notes]
-      # predicted_start_times = [note.start_time for note in generated_sequence.notes]
-      # predicted_durations = [note.end_time - note.start_time for note in generated_sequence.notes]
-      # return {"pitches": predicted_pitches, "start_times": predicted_start_times, "durations": predicted_durations}
-      return generated_sequence
+      return self.model.generate(noteseq, generator_options)
 
   def tick(self, topk=1):
     return self.generate(self.server_state['history'][0]).notes
@@ -150,10 +136,12 @@ class OrnetteModule():
   def decode(self, token):
     return (token.pitch, token.end_time - token.start_time)
 
+  # TODO: move to server
+  def peek(self,offset=1):
+    return self.server_state['history'][0][self.server_state['playhead'] + offset]
+
   def get_action(self,token):
-    'play'
-    'wait'
-    pass
+    return [('play', token.pitch), ('wait', token.end_time - token.start_time)]
 
   def close(self):
     pass

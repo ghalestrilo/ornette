@@ -94,18 +94,28 @@ class Clock(Thread):
         self.wait_for_more = True
         return None
 
-      return state['model'].decode(state['history'][0][state['playhead']]) 
+      # return state['model'].decode(state['history'][0][state['playhead']]) 
+      return state['history'][0][state['playhead']]
 
-    def play_next_token(self):
+    def process_next_token(self):
       e = self.get_next_token()
 
       if (e == None):
         print("No event / history is empty")
         return
 
-      (event_name, event_value) = e
-      if (event_name == 'note_on' or event_name == 'Note On'):    play(int(event_value))
-      if (event_name == 'time_shift'): state['until_next_event'] = event_value / state['time_shift_denominator']
+      action = state['model'].get_action(e)
+      if (action is None):
+          print(f'No action returned for event {e}')
+          return
+
+      for (name, value) in action:
+        if (name == 'play'): play(int(value))
+        if (name == 'wait'): state['until_next_event'] = value
+
+      # (event_name, event_value) = e
+      # if (event_name == 'note_on' or event_name == 'Note On'):    play(int(event_value))
+      # if (event_name == 'time_shift'): state['until_next_event'] = event_value / state['time_shift_denominator']
 
       state['playhead'] = state['playhead'] + 1
 
@@ -116,7 +126,7 @@ class Clock(Thread):
       self.generate_in_background()
       while not self.stopped.wait(state['until_next_event']):
         if (state['is_running'] == True and self.wait_for_more == False):
-          self.play_next_token()
+          self.process_next_token()
 
           if(len(state['history'][0]) == 0):
             self.generate_in_background()

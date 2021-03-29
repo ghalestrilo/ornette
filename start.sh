@@ -39,6 +39,7 @@ ornette_start_command="python server.py --model_name=$modelname --checkpoint=$ch
 
 docker run -it \
   --hostname server \
+  --net=host \
   --device /dev/nvidia0:/dev/nvidia0  \
   --device /dev/nvidiactl:/dev/nvidiactl \
   --device /dev/nvidia-uvm:/dev/nvidia-uvm \
