@@ -8,7 +8,7 @@ RUN pip3 install python-osc
 
 RUN mkdir /ornette
 WORKDIR /ornette
-EXPOSE 5005
+EXPOSE 5005/udp
 
 # Magenta (Python 3)
 RUN apt-get update

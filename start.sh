@@ -4,7 +4,7 @@ server_port="5005"
 modelname="$1"
 checkpoint_name="$2"
 checkpoint_dir="$HOME/.ornette/checkpoints/$modelname"
-modulesdir="modules"
+modulesdir="$(pwd)/modules"
 modeldir="$modulesdir/$modelname"
 dockerfile="${modeldir}/Dockerfile"
 imagename="ornette_$modelname"
@@ -35,14 +35,15 @@ ornette_start_command="bash"
 
 ornette_start_command="python server.py --model_name=$modelname --checkpoint=$checkpoint_name"
 
+[ $DEV ] && ornette_start_command="alias start=\"$ornette_start_command\"; bash"
 
 docker run -it \
+  --hostname server \
   --device /dev/nvidia0:/dev/nvidia0  \
   --device /dev/nvidiactl:/dev/nvidiactl \
   --device /dev/nvidia-uvm:/dev/nvidia-uvm \
-  -p 5005:5005 \
   -v "$(pwd)":/ornette \
-  -v "$(pwd)/$modeldir":/model \
+  -v "$modeldir":/model \
   -v "$HOME/.ornette/checkpoints/$modelname":/ckpt \
   $imagename bash -c \
   "$ornette_start_command"

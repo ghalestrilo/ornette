@@ -86,26 +86,28 @@ class OrnetteModule():
     self.realtime_ready = True
     # self.temperature=1.2
     self.server_state = state
-    self.server_state['history'] = [[]] # FIXME: How to properly do this?
+    self.server_state['history'] = [None] # FIXME: How to properly do this?
 
-  def generate(self, primer_sequence):
+  def generate(self, primer_sequence=None):
       qpm = self.server_state['tempo']/2
 
-      length = self.server_state['max_buffer'];
+      # length = self.server_state['max_buffer'];
+      length = 16
       
       #primer_sequence = make_notes_sequence(pitches, start_times, durations, qpm)
 
       generator_options = generator_pb2.GeneratorOptions()
       # Set the start time to begin on the next step after the last note ends.
-      last_end_time = (max(n.end_time for n in primer_sequence.notes)
-            if primer_sequence.notes else 0)
+      last_end_time = 0 if primer_sequence else (
+        max(n.end_time for n in primer_sequence.notes) if primer_sequence.notes else 0
+        )
 
       generator_options.generate_sections.add(
           start_time=last_end_time + _steps_to_seconds(1, qpm),
           end_time=length)
 
       # generate the output sequence
-      generated_sequence = generator.generate(primer_sequence, generator_options)
+      generated_sequence = self.model.generate(primer_sequence, generator_options)
 
       # predicted_pitches = [note.pitch for note in generated_sequence.notes]
       # predicted_start_times = [note.start_time for note in generated_sequence.notes]
@@ -114,10 +116,12 @@ class OrnetteModule():
       return generated_sequence
 
   def tick(self, topk=1):
-    return self.server_state['history']
+    return self.generate(self.server_state['history'])
   
   def decode(self, token):
+    pass
 
+  def close(self):
     pass
   
   def update_feed_dict(self):
