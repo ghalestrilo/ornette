@@ -4,7 +4,7 @@ FROM python:3.8-slim-buster
 
 # Build Ornette Deps
 RUN pip3 install --upgrade pip
-RUN pip3 install python-osc
+RUN pip3 install python-osc pretty_errors
 
 RUN mkdir /ornette
 WORKDIR /ornette

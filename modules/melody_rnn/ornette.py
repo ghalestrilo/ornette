@@ -19,10 +19,15 @@ def _steps_to_seconds(steps, qpm):
 
 
 
-
-
-
-
+#  last_end_time = 0
+#
+#  start_step = note_seq.quantize_to_step(
+#        generate_section.start_time, steps_per_second, quantize_cutoff=0)
+#    # Note that when quantizing end_step, we set quantize_cutoff to 1.0 so it
+#    # always rounds down. This avoids generating a sequence that ends at 5.0
+#    # seconds when the requested end time is 4.99.
+#    end_step = note_seq.quantize_to_step(
+#        generate_section.end_time, steps_per_second, quantize_cutoff=1.0)
 
 
 
@@ -95,39 +100,29 @@ class OrnetteModule():
 
       # length = self.server_state['max_buffer'];
       length = 16
-      
-      #primer_sequence = make_notes_sequence(pitches, start_times, durations, qpm)
-
+      length_seconds = _steps_to_seconds(length, qpm)
       
       # Set the start time to begin on the next step after the last note ends.
       last_end_time = 0
       
-      if (len(self.server_state['history'][0]) > 0 and primer_sequence != None):
-          last_end_time = max(n.end_time for n in primer_sequence.notes) if primer_sequence.notes else 0
+      if (primer_sequence != None and any(primer_sequence)):
+          last_end_time = max(n.end_time for n in primer_sequence)
 
       # TODO: Move to constructor
       generator_options = generator_pb2.GeneratorOptions()
       generator_options.generate_sections.add(
-          start_time=last_end_time + _steps_to_seconds(1, qpm),
-          end_time=length)
+          #start_time=last_end_time + _steps_to_seconds(1, qpm),
+          start_time=last_end_time+length_seconds,
+          end_time=length_seconds)
 
       # TEMP: Constructing noteseq dict to feed into the model
       # TODO: bind 'notes' value to self.history
-      noteseq = {
-          'notes': primer_sequence,
-          'quantizationInfo': {
-            'stepsPerQuarter': 4
-            },
-          'tempos': [ { 'time': 0, 'qpm': 120}],
-          'totalQuantizedSteps': 11,
-      }
-
       noteseq = NoteSequence(
         notes=primer_sequence,
         quantization_info={
             'steps_per_quarter': 4
             },
-        tempos=[ { 'time': 0, 'qpm': 120}],
+        tempos=[ { 'time': 0, 'qpm': 120 } ],
         total_quantized_steps=11,
       )
 
@@ -144,6 +139,11 @@ class OrnetteModule():
     return self.generate(self.server_state['history'][0]).notes
   
   def decode(self, token):
+    return (token.pitch, token.start_time - token.end_time)
+
+  def get_action(self,token):
+    'play'
+    'wait'
     pass
 
   def close(self):

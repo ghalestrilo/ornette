@@ -14,6 +14,22 @@ import pprint
 
 from threading import Thread, Event
 from pythonosc import dispatcher, osc_server, udp_client
+import pretty_errors
+
+pretty_errors.configure(
+    separator_character = '*',
+    filename_display    = pretty_errors.FILENAME_EXTENDED,
+    line_number_first   = True,
+    display_link        = True,
+    lines_before        = 5,
+    lines_after         = 2,
+    line_color          = pretty_errors.RED + '> ' + pretty_errors.default_config.line_color,
+    code_color          = '  ' + pretty_errors.default_config.line_color,
+    truncate_code       = True,
+    display_locals      = True
+)
+
+pretty_errors.replace_stderr()
 
 # tf.compat.v1.disable_eager_execution()
 # tf.compat.v1.disable_eager_execution()
@@ -65,7 +81,8 @@ class Clock(Thread):
 
     def has_history(self):
       hist = state['history']
-      return np.any(hist) and np.any(hist[0])
+      # return np.any(hist) and np.any(hist[0])
+      return any(hist) and any(hist[0])
 
     def get_next_token(self):
       hist = state['history']
@@ -148,6 +165,9 @@ def engine_print(unused_addr, args=None):
     try:
         # data = [state['model'].word2event[word] for word in state[field][0]] if field == 'history' else state[field]
         data = state[field]
+        if (field == 'history'):
+          pprint.pprint([state['model'].decode(e) for e in data[0]])
+          return
         print("[{0}] ~ {1}".format(field, data))
     except KeyError:
         print("no such key ~ {0}".format(field))
