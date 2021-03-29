@@ -9,12 +9,27 @@ import pickle
 import time
 import argparse
 #import asyncio
-import yaml
 import math
 import pprint
 
 from threading import Thread, Event
 from pythonosc import dispatcher, osc_server, udp_client
+import pretty_errors
+
+pretty_errors.configure(
+    separator_character = '*',
+    filename_display    = pretty_errors.FILENAME_EXTENDED,
+    line_number_first   = True,
+    display_link        = True,
+    lines_before        = 5,
+    lines_after         = 2,
+    line_color          = pretty_errors.RED + '> ' + pretty_errors.default_config.line_color,
+    code_color          = '  ' + pretty_errors.default_config.line_color,
+    truncate_code       = True,
+    display_locals      = True
+)
+
+pretty_errors.replace_stderr()
 
 # tf.compat.v1.disable_eager_execution()
 # tf.compat.v1.disable_eager_execution()
@@ -66,7 +81,8 @@ class Clock(Thread):
 
     def has_history(self):
       hist = state['history']
-      return np.any(hist) and np.any(hist[0])
+      # return np.any(hist) and np.any(hist[0])
+      return any(hist) and any(hist[0])
 
     def get_next_token(self):
       hist = state['history']
@@ -78,18 +94,28 @@ class Clock(Thread):
         self.wait_for_more = True
         return None
 
-      return state['model'].decode(state['history'][0][state['playhead']]) 
+      # return state['model'].decode(state['history'][0][state['playhead']]) 
+      return state['history'][0][state['playhead']]
 
-    def play_next_token(self):
+    def process_next_token(self):
       e = self.get_next_token()
 
       if (e == None):
         print("No event / history is empty")
         return
 
-      (event_name, event_value) = e
-      if (event_name == 'note_on' or event_name == 'Note On'):    play(int(event_value))
-      if (event_name == 'time_shift'): state['until_next_event'] = event_value / state['time_shift_denominator']
+      action = state['model'].get_action(e)
+      if (action is None):
+          print(f'No action returned for event {e}')
+          return
+
+      for (name, value) in action:
+        if (name == 'play'): play(int(value))
+        if (name == 'wait'): state['until_next_event'] = value
+
+      # (event_name, event_value) = e
+      # if (event_name == 'note_on' or event_name == 'Note On'):    play(int(event_value))
+      # if (event_name == 'time_shift'): state['until_next_event'] = event_value / state['time_shift_denominator']
 
       state['playhead'] = state['playhead'] + 1
 
@@ -100,7 +126,7 @@ class Clock(Thread):
       self.generate_in_background()
       while not self.stopped.wait(state['until_next_event']):
         if (state['is_running'] == True and self.wait_for_more == False):
-          self.play_next_token()
+          self.process_next_token()
 
           if(len(state['history'][0]) == 0):
             self.generate_in_background()
@@ -149,6 +175,9 @@ def engine_print(unused_addr, args=None):
     try:
         # data = [state['model'].word2event[word] for word in state[field][0]] if field == 'history' else state[field]
         data = state[field]
+        if (field == 'history'):
+          pprint.pprint([state['model'].decode(e) for e in data[0]])
+          return
         print("[{0}] ~ {1}".format(field, data))
     except KeyError:
         print("no such key ~ {0}".format(field))
@@ -208,11 +237,12 @@ def load_model(checkpoint=None):
     print("Please provide a checkpoint for the model to load")
     exit(-1)
 
-  model_name = state['model_name']
-  model_path = os.path.join('modules', model_name)
+  # model_name = state['model_name']
+  # model_path = os.path.join('modules', model_name)
+  model_path = '/model'
   load_folder(model_path)
   from ornette import OrnetteModule
-  return OrnetteModule(state, checkpoint=os.path.join(model_path,checkpoint))
+  return OrnetteModule(state, checkpoint=checkpoint)
   print("Unkown model: " + str(state['model_name'] + ". Aborting load..."))
   exit(-1)
 
@@ -221,16 +251,30 @@ def load_model(checkpoint=None):
 
 
 # TODO: Move to init.py
+import yaml
+import urllib.request as req
+import os
+def download_checkpoint(name, url, force=False):
+  checkpoint_dir = '/ckpt'
+  ckptpath = os.path.normpath(f'{checkpoint_dir}/{name}')
+  if os.path.exists(ckptpath) and not force:
+    return
+  response = req.urlopen(url, timeout = 5)
+  content = response.read()
+  with open(ckptpath, 'wb' ) as f:
+    f.write( content )
+    f.close()
 
 def prep_module():
-  with open('/model/.ornette.yml') as file:
+  with open(os.path.normpath('/model/.ornette.yml')) as file:
     moduleconfig = yaml.load_all(file, Loader=yaml.FullLoader)
-
+    #
     for pair in moduleconfig:
       for k, v in pair.items():
-        if k is "checkpoints":
+        if k == "checkpoints":
           for checkpoint_name, checkpoint_url in v.items():
-            print("downloading", checkpoint_url)
+            print(f'downloading  {checkpoint_name}, "{checkpoint_url}"')
+            download_checkpoint(checkpoint_name, checkpoint_url, False)
         print(k, ' -> ', v)
 
 # /TODO
