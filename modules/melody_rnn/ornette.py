@@ -33,8 +33,7 @@ class OrnetteModule():
       qpm = self.server_state['tempo']
       # qpm = 120
 
-      # length = self.server_state['max_buffer'];
-      length = 16
+      length = self.server_state['buffer_length']
       length_seconds = _steps_to_seconds(length, qpm)
       
       # Set the start time to begin on the next step after the last note ends.
