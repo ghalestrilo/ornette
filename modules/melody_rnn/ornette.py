@@ -1,6 +1,6 @@
 import magenta
 from magenta import music as mm
-from magenta.models.melody_rnn import melody_rnn_model
+from magenta.models.melody_rnn.melody_rnn_model import MelodyRnnModel, default_configs
 from magenta.models.melody_rnn.melody_rnn_sequence_generator import MelodyRnnSequenceGenerator
 from magenta.models.shared import sequence_generator_bundle
 from note_seq.protobuf import generator_pb2
@@ -15,11 +15,11 @@ import os
 
 class OrnetteModule():
   def __init__(self, state={}, checkpoint='attention_rnn'):
-    config      = magenta.models.melody_rnn.melody_rnn_model.default_configs[checkpoint]
+    config      = default_configs[checkpoint]
     checkpoint_file = os.path.normpath(f'/ckpt/{checkpoint}')
     bundle_file = sequence_generator_bundle.read_bundle_file(checkpoint_file)
     steps_per_quarter = 4
-    self.model = MelodyRnnSequenceGenerator(model=melody_rnn_model.MelodyRnnModel(config),
+    self.model = MelodyRnnSequenceGenerator(model=MelodyRnnModel(config),
       details=config.details,
       steps_per_quarter=steps_per_quarter,
       bundle=bundle_file)
@@ -77,7 +77,4 @@ class OrnetteModule():
     return [('play', token.pitch), ('wait', token.end_time - token.start_time)]
 
   def close(self):
-    pass
-  
-  def update_feed_dict(self):
     pass

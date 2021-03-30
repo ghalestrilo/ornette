@@ -1,0 +1,8 @@
+checkpoints:
+  polyphony_rnn: http://download.magenta.tensorflow.org/models/polyphony_rnn.mag
+  performance: http://download.magenta.tensorflow.org/models/performance.mag
+  performance_with_dynamics: http://download.magenta.tensorflow.org/models/performance_with_dynamics.mag
+  performance_with_dynamics_and_modulo_encoding: http://download.magenta.tensorflow.org/models/performance_with_dynamics_and_modulo_encoding.mag
+  density_conditioned_performance_with_dynamics: http://download.magenta.tensorflow.org/models/density_conditioned_performance_with_dynamics.mag
+  pitch_conditioned_performance_with_dynamics: http://download.magenta.tensorflow.org/models/pitch_conditioned_performance_with_dynamics.mag
+  multiconditioned_performance_with_dynamics: http://download.magenta.tensorflow.org/models/multiconditioned_performance_with_dynamics.mag
