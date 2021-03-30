@@ -1,4 +1,6 @@
 from bridge import Bridge
+from clock import Clock
+from module_interface import load_model
 import pprint
 
 state = {
@@ -25,8 +27,16 @@ class Host:
     def __init__(self,args):
       self.state = state
       init_state(args)
-      self.bridge = Bridge(self)
+      self.bridge = Bridge(self,args)
+      self.model = load_model(state,args.checkpoint)
+      self.clock = Clock(self)
       pass
+
+    def start(self):
+      self.clock.start()
+      self.bridge.start()
+      self.clock.stop()
+      self.model.close()
 
     # FIXME: May be reserved
     def set(self,field,value):
@@ -38,7 +48,7 @@ class Host:
           pass
     
     # FIXME: May be reserved
-    def print(unused_addr, args=None):
+    def print(self,args=None,formatted=True):
       field = args
       if (args == None):
         pprint.pprint(state)
@@ -46,16 +56,20 @@ class Host:
       try:
           # data = [state['model'].word2event[word] for word in state[field][0]] if field == 'history' else state[field]
           data = state[field]
-          if (field == 'history'):
-            pprint.pprint([state['model'].decode(e) for e in data[0]])
+          if (formatted == True and field == 'history'):
+            pprint.pprint([self.model.decode(e) for e in data[0]])
             return
           print("[{0}] ~ {1}".format(field, data))
       except KeyError:
           print("no such key ~ {0}".format(field))
           pass
 
+    def close(self):
+        self.clock.stop()
+        self.bridge.stop()
+
     def play(self,pitch):
-      self.server.play(pitch)
+      self.bridge.play(pitch)
 
     # TODO: Do I need this?
     def is_running(self):
@@ -64,28 +78,27 @@ class Host:
     def clock_running(self):
       return state['clock_running']
 
+    def push_event(self,event):
+        print("[event] ~ {0}".format(event))
+        state['history'][0].append(event)
+    # /TODO
 
-def push_event(unused_addr, event):
-    print("[event] ~ {0}".format(event))
-    state['history'][0].append(event)
-
-def sample_model(unused_addr, args):
-    model = args[0]
-    event = model.predict()
-    print(event)
+# def sample_model(, args):
+#     model = args[0]
+#     event = model.predict()
+#     print(event)
 
 
-def server_reset(unused_addr):
+def server_reset():
     [voice.clear() for voice in state['history']]
     state['playhead'] = 0
 
-# def debug_tensorflow(unused_addr):
+# def debug_tensorflow():
 #   tf.config.list_physical_devices("GPU")
 #   print('tf.test.is_gpu_available() = {}'.format(tf.test.is_gpu_available()))
 
 def init_state(args):
     state['module'] = args.module
     state['playback'] = args.playback
-    state['scclient'] = 
     state['max_seq'] = args.max_seq
     # state['history'] = [[int(x) for x in str(args.state).split(',')]]
