@@ -35,6 +35,7 @@ class Host:
     def start(self):
       self.clock.start()
       self.bridge.start()
+      # TODO: Try moving this to close
       self.clock.stop()
       self.model.close()
 
@@ -47,8 +48,7 @@ class Host:
           print("no such key ~ {0}".format(field))
           pass
     
-    # FIXME: May be reserved
-    def print(self,args=None,formatted=True):
+    def print(self, args=None, pretty=True):
       field = args
       if (args == None):
         pprint.pprint(state)
@@ -56,7 +56,7 @@ class Host:
       try:
           # data = [state['model'].word2event[word] for word in state[field][0]] if field == 'history' else state[field]
           data = state[field]
-          if (formatted == True and field == 'history'):
+          if (pretty == True and field == 'history'):
             pprint.pprint([self.model.decode(e) for e in data[0]])
             return
           print("[{0}] ~ {1}".format(field, data))
@@ -68,8 +68,10 @@ class Host:
         self.clock.stop()
         self.bridge.stop()
 
-    def play(self,pitch):
-      self.bridge.play(pitch)
+    def play(self,pitch,instr=None):
+      if (instr == None): self.bridge.play(pitch)
+      else: self.bridge.play(pitch, instr)
+      
 
     # TODO: Do I need this?
     def is_running(self):

@@ -37,8 +37,8 @@ class Bridge:
         dispatcher.map("/kill",  lambda _: host.close())
         dispatcher.map("/end",   lambda _: host.close())
 
-    def play(self,pitch):
-        self.client.send_message('/play2', ['s', 'superpiano', 'note', pitch - NOTE_OFFSET])
+    def play(self,pitch,sound='superpiano'):
+        self.client.send_message('/play2', ['s', sound, 'note', pitch - NOTE_OFFSET])
 
     def stop(self):
         self.server.shutdown()

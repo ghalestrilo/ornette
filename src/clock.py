@@ -19,16 +19,20 @@ class Clock(Thread):
     def stop(self):
       self.stopped.set()
 
+    #  TODO: Move to Host
     def generate(self):
       seq = self.host.model.tick()[-128:]
       self.state['playhead'] = self.state['playhead'] - self.state['buffer_length'] + (len(seq) - len(self.state['history'][0]))
       self.state['playhead'] = max(self.state['playhead'], 0)
       self.state['history'][0] = seq
       self.wait_for_more = False
+      self.start_metronome()
+    # /TODO
 
     def generate_in_background(self):
       Thread(target=self.generate).start()
 
+    # TODO: Move to Host
     def has_history(self):
       hist = self.state['history']
       # return np.any(hist) and np.any(hist[0])
@@ -65,7 +69,7 @@ class Clock(Thread):
         if (name == 'wait'): self.state['until_next_event'] = value
 
       self.state['playhead'] = self.state['playhead'] + 1
-
+    # /TODO: Move to Host
 
     def run(self):
       model = self.host.model
@@ -86,3 +90,12 @@ class Clock(Thread):
 
             if (self.state['debug_output'] == True):
               print('history: {}'.format([model.decode(h) for h in self.state['history'][0]]))
+
+    def start_metronome(self):
+      pass
+      # Thread(target=self.run_metronome).start()
+    
+    def run_metronome(self):
+      while not self.stopped.wait(60/self.state['tempo']/4):
+        if (self.state['is_running'] == True):
+          self.host.play(0,'hh')
