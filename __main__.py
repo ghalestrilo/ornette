@@ -18,7 +18,6 @@ from threading import Thread, Event
 
 
 from args import get_args
-from server import Server, state, play
 
 import pretty_errors
 

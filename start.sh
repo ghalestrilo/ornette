@@ -31,9 +31,9 @@ fi
 # FIXME: See if it isn't enough to just load a volume "modules/$modelname:/model"
 ornette_start_command="bash"
 
-# [ $checkpoint_name ] && ornette_start_command="python server.py --model_name=$modelname --checkpoint=$checkpoint_name;"
+# [ $checkpoint_name ] && ornette_start_command="python server.py --module=$modelname --checkpoint=$checkpoint_name;"
 
-ornette_start_command="python server.py --model_name=$modelname --checkpoint=$checkpoint_name"
+ornette_start_command="python server.py --module=$modelname --checkpoint=$checkpoint_name"
 
 [ $DEV ] && ornette_start_command="alias start=\"$ornette_start_command\"; bash"
 
