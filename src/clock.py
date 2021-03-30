@@ -25,30 +25,22 @@ class Clock(Thread):
       self.wait_for_more = False
 
     def run(self):
-      model = self.host.model
+      host = self.host
 
       self.generate_in_background()
       while not self.stopped.wait(self.state['until_next_event']):
-        if (self.state['is_running'] == True and self.wait_for_more == False):
+        if (host.is_running() == True and self.wait_for_more == False):
           self.host.process_next_token()
 
-          if(len(self.state['history'][0]) == 0):
+          if (host.must_generate()):
             self.generate_in_background()
-            return
-
-          if (self.state['playhead'] / len(self.state['history'][0]) > self.state['trigger_generate']):
-            if (self.state['debug_output'] == True):
-              print("Generating more tokens ({} /{} > {})".format(self.state['playhead'], len(self.state['history'][0]), self.state['trigger_generate']))            
-            self.generate_in_background()
-
-            if (self.state['debug_output'] == True):
-              print('history: {}'.format([model.decode(h) for h in self.state['history'][0]]))
 
     def start_metronome(self):
       pass
       # Thread(target=self.run_metronome).start()
     
     def run_metronome(self):
+      # TODO: step to time is host logic
       while not self.stopped.wait(60/self.state['tempo']/4):
         if (self.state['is_running'] == True):
           self.host.play(0,'hh')

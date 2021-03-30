@@ -9,14 +9,14 @@ state = {
     'history': [[]],
     'temperature': 1.2,
     'until_next_event': 0.25,
-    'buffer_length': 16,
+    'buffer_length': 64,
     'trigger_generate': 0.5,
     'playback': True,
     'playhead': 0,
     'module': None,
     'model': None,
     'scclient': None,
-    'debug_output': False,
+    'debug_output': True,
     'sync_mode': False,
     'return': 0,
     'tempo': 120,
@@ -73,12 +73,33 @@ class Host:
       else: self.bridge.play(pitch, instr)
 
     
+    # TODO: Bug here - playhead will not rewind
     def generate(self):
-      print("Generating...")
-      seq = self.model.tick()[-128:]
-      state['playhead'] = self.state['playhead'] - self.state['buffer_length'] + (len(seq) - len(self.state['history'][0]))
-      state['playhead'] = max(self.state['playhead'], 0)
+      state['is_generating'] = True
+      hist = self.state['history'][0]
+      threshold = self.state['trigger_generate']
+      playhead = self.state['playhead']
+
+      max_seq = self.state['buffer_length'] 
+
+      buflen = self.state['buffer_length']
+
+      if (self.is_debugging()):
+          print("Generating more tokens ({} /{} > {})".format(playhead, len(hist), threshold))
+
+      seq = self.model.tick()[-max_seq:]
+
+      # Maybe create Host#rewind
+      new_playhead = max(playhead - buflen + (len(seq) - len(hist)), 0)
+      if (self.is_debugging()):
+          print(f'Rewinding Playhead ({playhead} -> {new_playhead})')
+
+      self.state['playhead'] = new_playhead
       state['history'][0] = seq
+      
+      state['is_generating'] = False
+      if (self.is_debugging()):
+          print('history: {}'.format([self.model.decode(h) for h in hist]))
 
     
 
@@ -86,6 +107,14 @@ class Host:
       hist = self.state['history']
       # return np.any(hist) and np.any(hist[0])
       return any(hist) and any(hist[0])
+
+    def must_generate(self):
+      if (state['is_generating'] == True): return False
+      elif (self.has_history() == False): return True
+      return self.state['playhead'] / len(self.state['history'][0]) > self.state['trigger_generate']
+
+    def is_debugging(self):
+      return self.state['debug_output'] == True
 
     def get_next_token(self):
       hist = self.state['history']
