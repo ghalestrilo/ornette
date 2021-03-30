@@ -71,6 +71,15 @@ class Host:
     def play(self,pitch,instr=None):
       if (instr == None): self.bridge.play(pitch)
       else: self.bridge.play(pitch, instr)
+
+    
+    def generate(self):
+      print("Generating...")
+      seq = self.model.tick()[-128:]
+      state['playhead'] = self.state['playhead'] - self.state['buffer_length'] + (len(seq) - len(self.state['history'][0]))
+      state['playhead'] = max(self.state['playhead'], 0)
+      state['history'][0] = seq
+
     
 
     def has_history(self):

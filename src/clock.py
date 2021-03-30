@@ -11,6 +11,7 @@ class Clock(Thread):
       self.host = host
       self.stopped = Event()
       self.wait_for_more = False
+      # self.start_metronome()
 
     def bind(self,server_state):
       self.state = server_state
@@ -19,18 +20,9 @@ class Clock(Thread):
     def stop(self):
       self.stopped.set()
 
-    #  TODO: Move to Host
-    def generate(self):
-      seq = self.host.model.tick()[-128:]
-      self.state['playhead'] = self.state['playhead'] - self.state['buffer_length'] + (len(seq) - len(self.state['history'][0]))
-      self.state['playhead'] = max(self.state['playhead'], 0)
-      self.state['history'][0] = seq
-      self.wait_for_more = False
-      self.start_metronome()
-    # /TODO
-
     def generate_in_background(self):
-      Thread(target=self.generate).start()
+      Thread(target=self.host.generate).start()
+      self.wait_for_more = False
 
     def run(self):
       model = self.host.model
