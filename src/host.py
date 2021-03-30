@@ -71,7 +71,47 @@ class Host:
     def play(self,pitch,instr=None):
       if (instr == None): self.bridge.play(pitch)
       else: self.bridge.play(pitch, instr)
+    
+
+    def has_history(self):
+      hist = self.state['history']
+      # return np.any(hist) and np.any(hist[0])
+      return any(hist) and any(hist[0])
+
+    def get_next_token(self):
+      hist = self.state['history']
+
+      if (self.has_history() == False):
+        return None
+
+      if (self.state['playhead'] >= len(hist[0])):
+        self.wait_for_more = True
+        return None
+
+      # return self.host.model.decode(self.state['history'][0][self.state['playhead']])
+      return self.state['history'][0][self.state['playhead']]
+
+    def perform(self,action):
+        name, value = action
+        if (name == 'play'): self.play(int(value))
+        if (name == 'wait'): state['until_next_event'] = value
+
+    def process_next_token(self):
+      e = self.get_next_token()
+
+      if (e == None):
+        print("No event / history is empty")
+        return
+
+      actions = self.model.get_action(e)
+      if (actions is None):
+          print(f'No action returned for event {e}')
+          return
       
+      for action in actions:
+        self.perform(action)
+
+      self.state['playhead'] = self.state['playhead'] + 1
 
     # TODO: Do I need this?
     def is_running(self):
