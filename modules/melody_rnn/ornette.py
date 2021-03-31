@@ -13,9 +13,11 @@ def _steps_to_seconds(steps, qpm):
 
 import os
 
+# FIXME: Constructor changed - use host instead of state
 class OrnetteModule():
   def __init__(self, state={}, checkpoint='attention_rnn'):
-    config      = default_configs[checkpoint]
+    config_id   = 'attention_rnn'
+    config      = default_configs[config_id]
     checkpoint_file = os.path.normpath(f'/ckpt/{checkpoint}')
     bundle_file = sequence_generator_bundle.read_bundle_file(checkpoint_file)
     steps_per_quarter = 4
@@ -31,9 +33,10 @@ class OrnetteModule():
 
   def generate(self, primer_sequence=None):
       qpm = self.server_state['tempo']
-      # qpm = 120
-
       length = self.server_state['buffer_length']
+
+      # self.host.steps_to_seconds(length, qpm)
+      # self.host.buffer_length_seconds (= steps_to_seconds(length, qpm))
       length_seconds = _steps_to_seconds(length, qpm)
       
       # Set the start time to begin on the next step after the last note ends.
@@ -42,7 +45,7 @@ class OrnetteModule():
       if (primer_sequence != None and any(primer_sequence)):
           last_end_time = max(n.end_time for n in primer_sequence)
 
-      # TODO: Move to constructor
+      # TODO: Abstract this code
       generator_options = generator_pb2.GeneratorOptions()
       generator_options.generate_sections.add(
           #start_time=last_end_time + _steps_to_seconds(1, qpm),

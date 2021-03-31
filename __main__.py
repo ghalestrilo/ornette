@@ -14,7 +14,7 @@ from module_interface import prep_module
 import pretty_errors
 
 pretty_errors.configure(
-    separator_character = '*',
+    separator_character = '=',
     filename_display    = pretty_errors.FILENAME_EXTENDED,
     line_number_first   = True,
     display_link        = True,

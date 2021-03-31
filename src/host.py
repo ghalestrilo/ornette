@@ -28,7 +28,7 @@ class Host:
       self.state = state
       init_state(args)
       self.bridge = Bridge(self,args)
-      self.model = load_model(state,args.checkpoint)
+      self.model = load_model(self,args.checkpoint)
       self.clock = Clock(self)
       pass
 
@@ -98,6 +98,7 @@ class Host:
       state['history'][0] = seq
       
       state['is_generating'] = False
+      self.clock.notify_wait(False)
       if (self.is_debugging()):
           print('history: {}'.format([self.model.decode(h) for h in hist]))
 
@@ -117,17 +118,8 @@ class Host:
       return self.state['debug_output'] == True
 
     def get_next_token(self):
-      hist = self.state['history']
-
-      if (self.has_history() == False):
-        return None
-
-      if (self.state['playhead'] >= len(hist[0])):
-        self.wait_for_more = True
-        return None
-
-      # return self.host.model.decode(self.state['history'][0][self.state['playhead']])
-      return self.state['history'][0][self.state['playhead']]
+      return self.peek(0)
+      # return self.state['history'][0][self.state['playhead']]
 
     def perform(self,action):
         name, value = action
@@ -162,6 +154,26 @@ class Host:
         print("[event] ~ {0}".format(event))
         state['history'][0].append(event)
     # /TODO
+
+    # TODO: Refactor get_next_token() to call peek(0)
+    def peek(self,offset=1):
+      """ Check next event in history """
+      hist = self.state['history']
+      playhead = self.state['playhead']
+
+      if (self.has_history() == False):
+        return None
+
+      # FIXME: I think this is not being called
+      if (playhead >= len(hist[0])):
+        self.clock.notify_wait()
+
+      if (playhead + offset >= len(hist[0])):
+        return None
+
+      return hist[playhead + offset]
+
+      
 
 # def sample_model(, args):
 #     model = args[0]
