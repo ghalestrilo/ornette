@@ -1,3 +1,4 @@
+import math
 import magenta
 from magenta import music as mm
 from note_seq.protobuf import generator_pb2
@@ -26,6 +27,7 @@ class OrnetteModule():
     bundle_file = sequence_generator_bundle.read_bundle_file(bundle_path)
 
     self.server_state = host.state
+    self.host = host
 
     self.model = PerformanceRnnSequenceGenerator(
         model=PerformanceRnnModel(config),
@@ -61,7 +63,7 @@ class OrnetteModule():
     # TEMP: Constructing noteseq dict to feed into the model
     # TODO: bind 'notes' value to self.history
     noteseq = NoteSequence(
-      notes=primer_sequence,
+      notes=primer_sequence[-16:],
       quantization_info={
           'steps_per_quarter': 4
           },
@@ -73,12 +75,16 @@ class OrnetteModule():
     return self.model.generate(noteseq, generator_options)
 
   def tick(self):
-    return self.generate(self.server_state['history'][0]).notes
+    def by_start_time(e): return e.start_time if e is not None else []
+    seq = self.generate(self.server_state['history'][0]).notes
+    seq.sort(key=by_start_time)
+    return seq
 
   def get_action(self,token):
-    wait = max(0, self.host.peek().start_time - token.start_time)
+    next_note = self.host.peek()
+    wait = max(0, next_note.start_time - token.start_time if next_note is not None else 0)
     sus = token.end_time - token.start_time
-    return [('play', token.pitch), ('wait', wait)]
+    return [('play', token.pitch), ('wait', wait*10)]
     # return [('play', token.pitch), ('wait', token.end_time - token.start_time)]
   
   def decode(self, token):

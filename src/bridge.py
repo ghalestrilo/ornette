@@ -19,12 +19,12 @@ class Bridge:
         host = self.host
         dispatcher.map("/start", lambda _: host.set('is_running', True))
         dispatcher.map("/pause", lambda _: host.set('is_running', False))
-        dispatcher.map("/reset", lambda _: host.server_reset())
+        dispatcher.map("/reset", lambda _: host.reset())
         dispatcher.map("/event", lambda _, ev: host.push_event(ev))  # event2word
         # dispatcher.map("/tfdebug", debug_tensorflow)
 
         dispatcher.map("/set", lambda addr, k, v: host.set(k, v))
-        dispatcher.map("/debug", lambda addr, key: host.print(key))
+        dispatcher.map("/debug", lambda addr, key: host.print() if key == 'all' else host.print(key))
 
         # if (self.host.model):
         #     dispatcher.map("/sample", sample_model, self.model)

@@ -103,7 +103,7 @@ class Host:
           print('history: {}'.format([self.model.decode(h) for h in hist]))
 
     
-
+    # Query Methods
     def has_history(self):
       hist = self.state['history']
       # return np.any(hist) and np.any(hist[0])
@@ -123,8 +123,13 @@ class Host:
 
     def perform(self,action):
         name, value = action
+        if (self.is_debugging()):
+          print(f'({state["playhead"]}/{len(state["history"][0])}): {name} {value}')
+
         if (name == 'play'): self.play(int(value))
         if (name == 'wait'): state['until_next_event'] = value
+        # TODO: divide wait by tempo rate
+          
 
     def process_next_token(self):
       e = self.get_next_token()
@@ -171,19 +176,16 @@ class Host:
       if (playhead + offset >= len(hist[0])):
         return None
 
-      return hist[playhead + offset]
+      return hist[0][playhead + offset]
 
-      
+    def reset(self):
+        [voice.clear() for voice in state['history']]
+        state['playhead'] = 0
 
 # def sample_model(, args):
 #     model = args[0]
 #     event = model.predict()
 #     print(event)
-
-
-def server_reset():
-    [voice.clear() for voice in state['history']]
-    state['playhead'] = 0
 
 # def debug_tensorflow():
 #   tf.config.list_physical_devices("GPU")

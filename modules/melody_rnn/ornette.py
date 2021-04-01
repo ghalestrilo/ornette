@@ -13,11 +13,9 @@ def _steps_to_seconds(steps, qpm):
 
 import os
 
-# FIXME: Constructor changed - use host instead of state
 class OrnetteModule():
-  def __init__(self, state={}, checkpoint='attention_rnn'):
-    config_id   = 'attention_rnn'
-    config      = default_configs[config_id]
+  def __init__(self, host, checkpoint='attention_rnn'):
+    config      = default_configs[checkpoint]
     checkpoint_file = os.path.normpath(f'/ckpt/{checkpoint}')
     bundle_file = sequence_generator_bundle.read_bundle_file(checkpoint_file)
     steps_per_quarter = 4
@@ -27,7 +25,8 @@ class OrnetteModule():
       bundle=bundle_file)
     self.realtime_ready = True
     # self.temperature=1.2
-    self.server_state = state
+    self.server_state = host.state
+    self.host = host
     # self.server_state['history'] = [None] # FIXME: How to properly do this?
     self.server_state['history'] = [[]]
 
@@ -77,7 +76,9 @@ class OrnetteModule():
     return self.server_state['history'][0][self.server_state['playhead'] + offset]
 
   def get_action(self,token):
-    return [('play', token.pitch), ('wait', token.end_time - token.start_time)]
+    next_note = self.host.peek()
+    wait = max(0, next_note.start_time - token.start_time if next_note is not None else 0)
+    return [('play', token.pitch), ('wait', wait)]
 
   def close(self):
     pass
