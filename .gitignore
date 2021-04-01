@@ -12,7 +12,7 @@ dataset/
 result/
 # models/
 
-unimplemented_models/
+unimplemented/
 logs/
 .dfc/
 

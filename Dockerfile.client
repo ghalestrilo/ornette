@@ -6,8 +6,5 @@ EXPOSE 5005/udp
 
 WORKDIR /ornette
 
-CMD ['osc-repl']
-ENTRYPOINT 'server.yaml'
-
-
-# apt install -y ruby && gem i osc-repl osc-ruby-ng --source http://gems.neurogami.com && osc-repl server.yaml
+# CMD ['osc-repl', 'server.yaml']
+ENTRYPOINT 'osc-repl'

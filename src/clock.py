@@ -10,7 +10,7 @@ class Clock(Thread):
       self.state = host.state
       self.host = host
       self.stopped = Event()
-      self.wait_for_more = False
+      self.should_wait = False
       # self.start_metronome()
 
     def bind(self,server_state):
@@ -22,14 +22,14 @@ class Clock(Thread):
 
     def generate_in_background(self):
       Thread(target=self.host.generate).start()
-      self.wait_for_more = False
+      # self.should_wait = False
 
     def run(self):
       host = self.host
 
       self.generate_in_background()
       while not self.stopped.wait(self.state['until_next_event']):
-        if (host.is_running() == True and self.wait_for_more == False):
+        if (host.is_running() == True and self.should_wait == False):
           self.host.process_next_token()
 
           if (host.must_generate()):
@@ -44,3 +44,6 @@ class Clock(Thread):
       while not self.stopped.wait(60/self.state['tempo']/4):
         if (self.state['is_running'] == True):
           self.host.play(0,'hh')
+
+    def notify_wait(self,should=True):
+      self.should_wait = should

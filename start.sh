@@ -9,31 +9,77 @@ modeldir="$modulesdir/$modelname"
 dockerfile="${modeldir}/Dockerfile"
 imagename="ornette_$modelname"
 
-# Validations
-# TODO: add docker as requirement
-# TODO: check that ~/.ornette exists
-[ ! $modelname ] && echo "No model provided" && exit
+ORNETTE_BASE="ornette/base"
+ORNETTE_CLIENT="ornette/client"
 
-[ ! -d "$checkpoint_dir" ] && mkdir -p $checkpoint_dir
 
+
+# Definitions
 function build_image(){
   docker image remove "$imagename" --force
   [ ! -e "${modeldir}/Dockerfile" ] && echo "Image $imagename not found and $modelname has no Dockerfile" && exit
   docker build -t "$imagename" "$modeldir"
 }
 
-# Assert that model container image exists
-docker image inspect $imagename > /dev/null;
-if [ $? = 1 ]; then build_image
-elif [ $REBUILD ]; then build_image
+function build_base_image(){
+  docker build -t $ORNETTE_BASE -f Dockerfile.base .
+}
+
+function build_client_image(){
+  docker build -t $ORNETTE_CLIENT -f Dockerfile.client .
+}
+
+
+
+
+
+
+
+
+
+
+# Validations
+# TODO: add docker as requirement
+# TODO: check that ~/.ornette exists
+[ ! $modelname ] && echo "No model provided (arg 1)" && exit
+[ ! $checkpoint_dir ] && echo "No checkpoint provided (arg 2)"
+
+[ ! -d "$checkpoint_dir" ] && mkdir -p $checkpoint_dir
+
+
+
+if [ $modelname = 'client' ]; then
+  # Assert that ornette client image exists
+  docker image inspect $ORNETTE_CLIENT > /dev/null;
+  if [ $? = 1 ];          then build_client_image
+  elif [ $REBUILD ]; then build_client_image
+  fi
+
+  docker run -it \
+    --net=host \
+    -v "$(pwd)":/ornette \
+    $ORNETTE_CLIENT
+  exit
 fi
 
-# FIXME: See if it isn't enough to just load a volume "modules/$modelname:/model"
-ornette_start_command="bash"
 
-# [ $checkpoint_name ] && ornette_start_command="python server.py --module=$modelname --checkpoint=$checkpoint_name;"
+# Assert that ornette base image exists
+docker image inspect $ORNETTE_BASE > /dev/null;
+if [ $? = 1 ];          then build_base_image
+elif [ $FULL_REBUILD ]; then build_base_image
+fi
 
-ornette_start_command="python server.py --module=$modelname --checkpoint=$checkpoint_name"
+# Assert that model container image exists
+docker image inspect $imagename > /dev/null;
+if [ $? = 1 ];          then build_image
+elif [ $REBUILD ];      then build_image
+elif [ $FULL_REBUILD ]; then build_image
+fi
+
+
+# Start Server
+
+ornette_start_command="python /ornette --module=$modelname --checkpoint=$checkpoint_name"
 
 [ $DEV ] && ornette_start_command="alias start=\"$ornette_start_command\"; bash"
 

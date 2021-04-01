@@ -30,7 +30,7 @@ def prep_module():
             download_checkpoint(checkpoint_name, checkpoint_url, False)
         print(k, ' -> ', v)
 
-def load_model(state,checkpoint=None):
+def load_model(host,checkpoint=None):
   if checkpoint is None:
     print("Please provide a checkpoint for the model to load")
     exit(-1)
@@ -38,4 +38,4 @@ def load_model(state,checkpoint=None):
   model_path = '/model'
   load_folder(model_path)
   from ornette import OrnetteModule
-  return OrnetteModule(state, checkpoint=checkpoint)
+  return OrnetteModule(host, checkpoint=checkpoint)
