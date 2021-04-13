@@ -34,9 +34,6 @@ class OrnetteModule():
   def generate(self, primer_sequence=None):
       qpm = self.server_state['tempo']
       length = self.server_state['buffer_length']
-
-      # self.host.steps_to_seconds(length, qpm)
-      # self.host.buffer_length_seconds (= steps_to_seconds(length, qpm))
       length_seconds = _steps_to_seconds(length, qpm)
       
       # Set the start time to begin on the next step after the last note ends.
@@ -81,9 +78,6 @@ class OrnetteModule():
     self.last_end_time = max(0,token.end_time)
 
     return decoded
-
-    # return (name, token.pitch, velocity, token.start_time)
-    # return (token.pitch, (token.end_time - token.start_time) / 120)
 
   def close(self):
     pass

@@ -48,7 +48,6 @@ class Host:
       self.clock.stop()
       self.model.close()
 
-    # FIXME: May be reserved
     def set(self,field,value):
       try:
         state[field] = value
@@ -64,7 +63,6 @@ class Host:
         pprint.pprint(state)
         return
       try:
-          # data = [state['model'].word2event[word] for word in state[field][0]] if field == 'history' else state[field]
           data = state[field]
           print("[{0}] ~ {1}".format(field, data))
           if (pretty == True and field == 'history'):
@@ -117,6 +115,8 @@ class Host:
       if (self.is_debugging()):
           print('history: {}'.format([self.model.decode(h) for h in hist]))
 
+
+
     
     # Query Methods
     def has_history(self):
@@ -134,29 +134,54 @@ class Host:
 
     def get_next_token(self):
       return self.peek(0)
-      # return self.state['history'][0][self.state['playhead']]
 
+    def peek(self,offset=1):
+      """ Check next event in history """
+      hist = self.state['history']
+      playhead = self.state['playhead']
+
+      if (self.has_history() == False): return None
+
+      # FIXME: I think this is not being called
+      if (playhead >= len(hist[0])): self.clock.notify_wait()
+
+      position = playhead + offset
+
+      if (position >= len(hist[0])): return None
+
+      if (position < 0):
+        print(f'Warning: trying to read a negative position in history ({playhead} + {offset} = {position})')
+        return None
+
+      return hist[0][position]
+    
+    # Playback Methods
     def get_action(self,message):
-        # ('note_on', token.pitch, velocity, token.start_time - self.last_end_time)
+        ''' Get Action
+            Decode a midi message into a sequence of actions
+        '''
         name, note, velocity, time = message
         msg = mido.Message(name,
           note=note,
           velocity=velocity,
-          time=int(time * state['tempo']))
+          time=int(time * 4 * state['tempo']))
           
         add_message(state, msg)
         return [('wait', time), ('play', note)]
 
     def perform(self,action):
-        # add_message(action, ...)
-        name, value = action
-        msg = None
-        if (self.is_debugging()):
-          print(f'({state["playhead"]}/{len(state["history"][0])}): {name} {value}')
+      ''' Performs a musical action described by a tuple (name, value)
+          Name can be:
+          
+          'wait': waits value miliseconds until next action is performed
+          'play': sends an osc message to play the desired note (value)
+      '''
+      name, value = action
+      if (self.is_debugging()):
+        print(f'({state["playhead"]}/{len(state["history"][0])}): {name} {value}')
 
-        if (name == 'play'): self.play(int(value))
-        if (name == 'wait'): state['until_next_event'] = value
-
+      if (name == 'play'): self.play(int(value))
+      if (name == 'wait'): state['until_next_event'] = value
 
     def process_next_token(self):
       ''' Reads the next token from the history
@@ -191,27 +216,6 @@ class Host:
         print("[event] ~ {0}".format(event))
         state['history'][0].append(event)
     # /TODO
-
-    # TODO: Refactor get_next_token() to call peek(0)
-    def peek(self,offset=1):
-      """ Check next event in history """
-      hist = self.state['history']
-      playhead = self.state['playhead']
-
-      if (self.has_history() == False): return None
-
-      # FIXME: I think this is not being called
-      if (playhead >= len(hist[0])): self.clock.notify_wait()
-
-      position = playhead + offset
-
-      if (position >= len(hist[0])): return None
-
-      if (position < 0):
-        print(f'Warning: trying to read a negative position in history ({playhead} + {offset} = {position})')
-        return None
-
-      return hist[0][position]
 
     def reset(self):
         [voice.clear() for voice in state['history']]
