@@ -26,6 +26,8 @@ class Bridge:
         dispatcher.map("/set", lambda addr, k, v: host.set(k, v))
         dispatcher.map("/debug", lambda addr, key: host.print() if key == 'all' else host.print(key))
 
+        dispatcher.map("/save", lambda addr, name: host.save_output(name))
+
         # if (self.host.model):
         #     dispatcher.map("/sample", sample_model, self.model)
         
@@ -37,8 +39,23 @@ class Bridge:
         dispatcher.map("/kill",  lambda _: host.close())
         dispatcher.map("/end",   lambda _: host.close())
 
+    # TODO: Set sound
+
     def play(self,pitch,sound='superpiano'):
-        self.client.send_message('/play2', ['s', sound, 'note', pitch - NOTE_OFFSET])
+        self.client.send_message('/play2',
+          [ 's', sound
+          , 'note', pitch - NOTE_OFFSET
+          , 'cut', pitch - NOTE_OFFSET
+          , 'gain', 1
+          ])
+    
+    def kill_note(self,pitch,sound='superpiano'):
+        self.client.send_message('/play2',
+          [ 's', sound
+          , 'note', pitch - NOTE_OFFSET
+          , 'cut', pitch - NOTE_OFFSET
+          , 'gain', 0
+          ])
 
     def stop(self):
         self.server.shutdown()

@@ -29,13 +29,11 @@ class OrnetteModule():
     self.host = host
     # self.server_state['history'] = [None] # FIXME: How to properly do this?
     self.server_state['history'] = [[]]
+    self.last_end_time = 0
 
   def generate(self, primer_sequence=None):
       qpm = self.server_state['tempo']
       length = self.server_state['buffer_length']
-
-      # self.host.steps_to_seconds(length, qpm)
-      # self.host.buffer_length_seconds (= steps_to_seconds(length, qpm))
       length_seconds = _steps_to_seconds(length, qpm)
       
       # Set the start time to begin on the next step after the last note ends.
@@ -67,18 +65,19 @@ class OrnetteModule():
 
   def tick(self, topk=1):
     return self.generate(self.server_state['history'][0]).notes
-  
+
   def decode(self, token):
-    return (token.pitch, token.end_time - token.start_time)
+    ''' Must return a mido message (type (note_on), note, velocity, duration)'''
+    velocity = 127
 
-  # TODO: move to server
-  def peek(self,offset=1):
-    return self.server_state['history'][0][self.server_state['playhead'] + offset]
+    decoded = [
+      ('note_on', token.pitch, velocity, token.start_time - self.last_end_time),
+      ('note_off', token.pitch, velocity, token.end_time - token.start_time)
+    ]
 
-  def get_action(self,token):
-    next_note = self.host.peek()
-    wait = max(0, next_note.start_time - token.start_time if next_note is not None else 0)
-    return [('play', token.pitch), ('wait', wait)]
+    self.last_end_time = max(0,token.end_time)
+
+    return decoded
 
   def close(self):
     pass

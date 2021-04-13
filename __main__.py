@@ -9,7 +9,7 @@ load_folder('src')
 
 from args import get_args
 from host import Host
-from module_interface import prep_module
+from data import prep_module
 
 import pretty_errors
 
@@ -17,7 +17,7 @@ pretty_errors.configure(
     separator_character = '=',
     filename_display    = pretty_errors.FILENAME_EXTENDED,
     line_number_first   = True,
-    display_link        = True,
+    #display_link        = True,
     lines_before        = 5,
     lines_after         = 2,
     line_color          = pretty_errors.RED + '> ' + pretty_errors.default_config.line_color,
