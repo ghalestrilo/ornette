@@ -1,17 +1,11 @@
 server-transformer:
-	pyenv local 3.7.4; \
-	bash -c "source envs/MusicTransformer-tensorflow2.0/bin/activate ;\
-		python server.py --module=MusicTransformer-tensorflow2.0 ;\
-		deactivate"
+	
 
-server-remi:
-	pyenv local 3.6.12; \
-	bash -c "source envs/remi/bin/activate ;\
-		python server.py --module=remi;\
-		deactivate"
+server-melody_rnn:
+	./start.sh server-melody_rnn
 
 client:
-	osc-repl server.yaml
+	./start.sh client
 
 envs:
 	bash scripts/create-envs.sh

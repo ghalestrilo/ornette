@@ -67,9 +67,6 @@ class OrnetteModule():
 
   def tick(self, topk=1):
     return self.generate(self.server_state['history'][0]).notes
-  
-  def decode(self, token):
-    return (token.pitch, token.end_time - token.start_time)
 
   # TODO: move to server
   def peek(self,offset=1):
@@ -79,6 +76,13 @@ class OrnetteModule():
     next_note = self.host.peek()
     wait = max(0, next_note.start_time - token.start_time if next_note is not None else 0)
     return [('play', token.pitch), ('wait', wait)]
+
+  def decode(self, token):
+    ''' Must return a mido message (type (note_on), note, velocity, duration)'''
+    velocity = 127
+
+    # return (name, token.pitch, velocity, token.start_time)
+    return (token.pitch, (token.end_time - token.start_time) / 120)
 
   def close(self):
     pass

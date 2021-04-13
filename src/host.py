@@ -1,26 +1,35 @@
 from bridge import Bridge
 from clock import Clock
-from module_interface import load_model
+from data import load_model, save_output, add_message
 import pprint
+import mido
 
 state = {
-    'is_running': False,
-    'is_generating': False,
-    'history': [[]],
-    'temperature': 1.2,
-    'until_next_event': 0.25,
-    'buffer_length': 64,
-    'trigger_generate': 0.5,
-    'playback': True,
-    'playhead': 0,
+    # Basic Config
     'module': None,
-    'model': None,
+    'model': None, # Deprecate
     'scclient': None,
     'debug_output': True,
-    'sync_mode': False,
+    'sync_mode': False, # Deprecate
+
+    'temperature': 1.2,
+    'until_next_event': 0.25,
+
+    # Controls
+    'buffer_length': 64,
+    'trigger_generate': 0.5,
+
+    # Operation/Playback Variables
+    'is_running': False,
+    'is_generating': False,
+    'playback': True,
+    'playhead': 0,
+    'history': [[]],
+    'output_data': [],
     'return': 0,
     'tempo': 120,
     'time_shift_denominator': 100,
+    'save_output': True
 }
 
 class Host:
@@ -49,6 +58,7 @@ class Host:
           pass
     
     def print(self, args=None, pretty=True):
+      """ Print a key from the host state """
       field = args
       if (args == None):
         pprint.pprint(state)
@@ -59,7 +69,11 @@ class Host:
           if (pretty == True and field == 'history'):
             pprint.pprint([self.model.decode(e) for e in data[0]])
             return
+          if (pretty == True and field == 'output_data'):
+            pprint.pprint(data)
+            return
           print("[{0}] ~ {1}".format(field, data))
+
       except KeyError:
           print("no such key ~ {0}".format(field))
           pass
@@ -122,14 +136,24 @@ class Host:
       # return self.state['history'][0][self.state['playhead']]
 
     def perform(self,action):
+        # add_message(action, ...)
         name, value = action
+        msg = None
         if (self.is_debugging()):
           print(f'({state["playhead"]}/{len(state["history"][0])}): {name} {value}')
 
-        if (name == 'play'): self.play(int(value))
-        if (name == 'wait'): state['until_next_event'] = value
-        # TODO: divide wait by tempo rate
-          
+        if (name == 'play'):
+            self.play(int(value))
+            # TODO: Move Mido Message to data
+            msg = mido.Message('note_on', note=value, velocity=127, time=32)
+
+        if (name == 'wait'):
+            state['until_next_event'] = value
+            msg = mido.Message('note_on', note=0, velocity=127, time=32)
+
+        if (msg is not None): add_message(state, msg)
+
+
 
     def process_next_token(self):
       e = self.get_next_token()
@@ -147,6 +171,8 @@ class Host:
         self.perform(action)
 
       self.state['playhead'] = self.state['playhead'] + 1
+
+
 
     # TODO: Do I need this?
     def is_running(self):
@@ -166,33 +192,35 @@ class Host:
       hist = self.state['history']
       playhead = self.state['playhead']
 
-      if (self.has_history() == False):
-        return None
+      if (self.has_history() == False): return None
 
       # FIXME: I think this is not being called
-      if (playhead >= len(hist[0])):
-        self.clock.notify_wait()
+      if (playhead >= len(hist[0])): self.clock.notify_wait()
 
-      if (playhead + offset >= len(hist[0])):
+      position = playhead + offset
+
+      if (position >= len(hist[0])): return None
+
+      if (position < 0):
+        print(f'Warning: trying to read a negative position in history ({playhead} + {offset} = {position})')
         return None
 
-      return hist[0][playhead + offset]
+      return hist[0][position]
 
     def reset(self):
         [voice.clear() for voice in state['history']]
         state['playhead'] = 0
 
-# def sample_model(, args):
-#     model = args[0]
-#     event = model.predict()
-#     print(event)
+    def save_output(self, name):
+        save_output(name, state['output_data'])
 
-# def debug_tensorflow():
-#   tf.config.list_physical_devices("GPU")
-#   print('tf.test.is_gpu_available() = {}'.format(tf.test.is_gpu_available()))
+#     def debug_tensorflow():
+#       tf.config.list_physical_devices("GPU")
+#       print('tf.test.is_gpu_available() = {}'.format(tf.test.is_gpu_available()))
 
 def init_state(args):
     state['module'] = args.module
     state['playback'] = args.playback
     state['max_seq'] = args.max_seq
+    state['output'] = None
     # state['history'] = [[int(x) for x in str(args.state).split(',')]]
