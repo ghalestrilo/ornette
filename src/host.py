@@ -66,6 +66,7 @@ class Host:
       try:
           # data = [state['model'].word2event[word] for word in state[field][0]] if field == 'history' else state[field]
           data = state[field]
+          print("[{0}] ~ {1}".format(field, data))
           if (pretty == True and field == 'history'):
             pprint.pprint([self.model.decode(e) for e in data[0]])
             return
@@ -135,6 +136,17 @@ class Host:
       return self.peek(0)
       # return self.state['history'][0][self.state['playhead']]
 
+    def get_action(self,message):
+        # ('note_on', token.pitch, velocity, token.start_time - self.last_end_time)
+        name, note, velocity, time = message
+        msg = mido.Message(name,
+          note=note,
+          velocity=velocity,
+          time=int(time * state['tempo']))
+          
+        add_message(state, msg)
+        return [('wait', time), ('play', note)]
+
     def perform(self,action):
         # add_message(action, ...)
         name, value = action
@@ -142,33 +154,27 @@ class Host:
         if (self.is_debugging()):
           print(f'({state["playhead"]}/{len(state["history"][0])}): {name} {value}')
 
-        if (name == 'play'):
-            self.play(int(value))
-            # TODO: Move Mido Message to data
-            msg = mido.Message('note_on', note=value, velocity=127, time=32)
-
-        if (name == 'wait'):
-            state['until_next_event'] = value
-            msg = mido.Message('note_on', note=0, velocity=127, time=32)
-
-        if (msg is not None): add_message(state, msg)
-
+        if (name == 'play'): self.play(int(value))
+        if (name == 'wait'): state['until_next_event'] = value
 
 
     def process_next_token(self):
+      ''' Reads the next token from the history
+          Decodes the token onto a mido messagee
+          Saves the message to the output
+          Decodes each message into actions
+          Performs the required actions
+          Increments playhead
+      '''
       e = self.get_next_token()
 
       if (e == None):
         print("No event / history is empty")
         return
 
-      actions = self.model.get_action(e)
-      if (actions is None):
-          print(f'No action returned for event {e}')
-          return
-      
-      for action in actions:
-        self.perform(action)
+      for message in self.model.decode(e):
+        for action in self.get_action(message):
+          self.perform(action)
 
       self.state['playhead'] = self.state['playhead'] + 1
 

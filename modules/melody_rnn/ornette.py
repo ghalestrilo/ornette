@@ -29,6 +29,7 @@ class OrnetteModule():
     self.host = host
     # self.server_state['history'] = [None] # FIXME: How to properly do this?
     self.server_state['history'] = [[]]
+    self.last_end_time = 0
 
   def generate(self, primer_sequence=None):
       qpm = self.server_state['tempo']
@@ -68,21 +69,21 @@ class OrnetteModule():
   def tick(self, topk=1):
     return self.generate(self.server_state['history'][0]).notes
 
-  # TODO: move to server
-  def peek(self,offset=1):
-    return self.server_state['history'][0][self.server_state['playhead'] + offset]
-
-  def get_action(self,token):
-    next_note = self.host.peek()
-    wait = max(0, next_note.start_time - token.start_time if next_note is not None else 0)
-    return [('play', token.pitch), ('wait', wait)]
-
   def decode(self, token):
     ''' Must return a mido message (type (note_on), note, velocity, duration)'''
     velocity = 127
 
+    decoded = [
+      ('note_on', token.pitch, velocity, token.start_time - self.last_end_time),
+      ('note_off', token.pitch, velocity, token.end_time - token.start_time)
+    ]
+
+    self.last_end_time = max(0,token.end_time)
+
+    return decoded
+
     # return (name, token.pitch, velocity, token.start_time)
-    return (token.pitch, (token.end_time - token.start_time) / 120)
+    # return (token.pitch, (token.end_time - token.start_time) / 120)
 
   def close(self):
     pass
