@@ -29,7 +29,8 @@ state = {
     'return': 0,
     'tempo': 120,
     'time_shift_denominator': 100,
-    'save_output': True
+    'save_output': True,
+    'batch_mode': False,
 }
 
 class Host:
@@ -180,6 +181,8 @@ class Host:
       if (self.is_debugging()):
         print(f'({state["playhead"]}/{len(state["history"][0])}): {name} {value}')
 
+      if (state['batch_mode']): return
+
       if (name == 'play'): self.play(int(value))
       if (name == 'wait'): state['until_next_event'] = value
 
@@ -233,4 +236,5 @@ def init_state(args):
     state['playback'] = args.playback
     state['max_seq'] = args.max_seq
     state['output'] = None
+    state['batch_mode'] = args.batch_mode
     # state['history'] = [[int(x) for x in str(args.state).split(',')]]
