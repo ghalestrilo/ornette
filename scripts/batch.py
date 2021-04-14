@@ -1,5 +1,5 @@
 from pythonosc import udp_client
-
+from time import sleep
 
 import argparse
 
@@ -26,10 +26,10 @@ class BatchClient(udp_client.SimpleUDPClient):
     udp_client.SimpleUDPClient.__init__(self,ip, port)
 
   def start(self):
-    self.send_message('/start')
+    self.send_message('/start', [])
 
   def stop(self):
-    self.send_message('/stop')
+    self.send_message('/stop', [])
 
   def set(self,key,value):
     self.send_message('/set', [key, value])
@@ -40,16 +40,38 @@ class BatchClient(udp_client.SimpleUDPClient):
   def play(self,note):
     self.send_message('/play', [note + 40])
 
+  def reset(self):
+    self.send_message('/reset', [])
+  
+  def pause(self):
+    self.send_message('/pause', [])
+
 client = BatchClient(args.ip, args.port)
 
-# 1: Guess test
+# TODO: Automate this
+prompt = 'dataset/vgmidi/labelled/midi/Super Mario_N64_Super Mario 64_Dire Dire Docks.mid'
+
+
+# EXPERIMENT 1: Guess test
 if (args.experiment in ['all', 'guess']):
   print(f'[guess] Running experiment with model: ...')
+  client.set('batch_mode', 'True')
+  
   for i in range(0,args.iterations):
-      client.play(i)
       print(f'[guess] Iteration {i}')
-      # reset history
-      # /set buffer_size
+      client.set('buffer_size', i*10)
+      client.reset()
+      client.start()
+      sleep(4)
+      client.pause()
+      client.save(f'guess-promptname-{i}') # TODO: Update promptname
       # load (create function, cropping to buffer_size)
   pass
 
+# Algorithm
+# Set batch mode
+# (outer loop) Set prompt 
+# (inner loop) Set buffer size, reset history, set max_output_time
+#     Load, crop Prompt (TODO: load function in host, encode function in model)
+#     Run Model
+#     TODO: Await response? start another server thread?
