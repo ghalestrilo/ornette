@@ -9,8 +9,7 @@ data
 
 bin/
 dataset/
-result/
-#result/
+output/
 # models/
 
 unimplemented/
