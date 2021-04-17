@@ -8,6 +8,7 @@ modulesdir="$(pwd)/modules"
 modeldir="$modulesdir/$modelname"
 dockerfile="${modeldir}/Dockerfile"
 imagename="ornette_$modelname"
+batch_runner_command="python scripts/batch.py"
 
 ORNETTE_BASE="ornette/base"
 ORNETTE_CLIENT="ornette/client"
@@ -31,7 +32,7 @@ function build_client_image(){
 
 
 
-
+# timidity
 
 
 
@@ -59,6 +60,21 @@ if [ $modelname = 'client' ]; then
     --net=host \
     -v "$(pwd)":/ornette \
     $ORNETTE_CLIENT
+  exit
+fi
+
+if [ $modelname = 'batch' ]; then
+  # Assert that ornette client image exists
+  docker image inspect $ORNETTE_CLIENT > /dev/null;
+  if [ $? = 1 ];          then build_client_image
+  elif [ $REBUILD ]; then build_client_image
+  fi
+
+  docker run -it \
+    --net=host \
+    -v "$(pwd)":/ornette \
+    $ORNETTE_BASE \
+    $batch_runner_command
   exit
 fi
 

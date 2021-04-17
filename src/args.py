@@ -16,4 +16,5 @@ def get_args():
     parser.add_argument('--state',      type=str,  default="0",         help='the initial state of the improv')
 
     parser.add_argument("--playback",   type=bool, default=True,        help="Use supercollider for sound playback")
+    parser.add_argument("--batch-mode", type=bool, default=False,        help="Use supercollider for sound playback")
     return parser.parse_args()

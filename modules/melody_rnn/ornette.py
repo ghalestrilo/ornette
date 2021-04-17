@@ -28,7 +28,7 @@ class OrnetteModule():
     self.server_state = host.state
     self.host = host
     # self.server_state['history'] = [None] # FIXME: How to properly do this?
-    self.server_state['history'] = [[]]
+    self.server_state['history'] = [[]] # Move this to host
     self.last_end_time = 0
 
   def generate(self, primer_sequence=None):
@@ -76,8 +76,25 @@ class OrnetteModule():
     ]
 
     self.last_end_time = max(0,token.end_time)
-
     return decoded
+
+  # For Batch-running only
+  def encode(self, message):
+    ''' Receives a mido message, must return a model-compatible token '''
+
+    next_start_time = self.last_end_time + message.time
+
+    note = NoteSequence.Note(
+      instrument=0,
+      program=0,
+      start_time=self.last_end_time,
+      end_time=next_start_time,
+      velocity=message.velocity,
+      pitch=message.note,
+    )
+
+    self.last_end_time = next_start_time
+    return note
 
   def close(self):
     pass

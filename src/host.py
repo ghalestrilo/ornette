@@ -1,8 +1,9 @@
 from bridge import Bridge
 from clock import Clock
-from data import load_model, save_output, add_message
+
 import pprint
 import mido
+import data
 
 state = {
     # Basic Config
@@ -29,7 +30,11 @@ state = {
     'return': 0,
     'tempo': 120,
     'time_shift_denominator': 100,
-    'save_output': True
+    'save_output': True,
+
+    # Batch execution control
+    'batch_mode': False,
+    # 'batch_max_buffer': False,
 }
 
 class Host:
@@ -37,7 +42,7 @@ class Host:
       self.state = state
       init_state(args)
       self.bridge = Bridge(self,args)
-      self.model = load_model(self,args.checkpoint)
+      self.model = data.load_model(self,args.checkpoint)
       self.clock = Clock(self)
       pass
 
@@ -56,10 +61,9 @@ class Host:
           print("no such key ~ {0}".format(field))
           pass
     
-    def print(self, args=None, pretty=True):
+    def print(self, field=None, pretty=True):
       """ Print a key from the host state """
-      field = args
-      if (args == None):
+      if (field == None):
         pprint.pprint(state)
         return
       try:
@@ -100,7 +104,13 @@ class Host:
       if (self.is_debugging()):
           print("Generating more tokens ({} /{} > {})".format(playhead, len(hist), threshold))
 
+      # Generate sequence
       seq = self.model.tick()[-max_seq:]
+
+      # (Batch Mode) Notify maximum requested length has been met
+      if (state['batch_mode']):
+        if (len(seq) == max_seq):
+            self.notify_task_complete()
 
       # Maybe create Host#rewind
       new_playhead = max(playhead - buflen + (len(seq) - len(hist)), 0)
@@ -166,7 +176,7 @@ class Host:
           velocity=velocity,
           time=int(time * 4 * state['tempo']))
           
-        add_message(state, msg)
+        data.add_message(state, msg)
         return [('wait', time), ('play', note)]
 
     def perform(self,action):
@@ -179,6 +189,8 @@ class Host:
       name, value = action
       if (self.is_debugging()):
         print(f'({state["playhead"]}/{len(state["history"][0])}): {name} {value}')
+
+      if (state['batch_mode']): return
 
       if (name == 'play'): self.play(int(value))
       if (name == 'wait'): state['until_next_event'] = value
@@ -220,9 +232,18 @@ class Host:
     def reset(self):
         [voice.clear() for voice in state['history']]
         state['playhead'] = 0
+        state['output_data'].clear()
+
+    # Data Methods
+    def load_midi(self, name):
+        data.load_midi(self, name)
 
     def save_output(self, name):
-        save_output(name, state['output_data'])
+        data.save_output(name, state['output_data'])
+
+    # Batch Mode Methods
+    def notify_task_complete(self):
+        self.bridge.notify_task_complete()
 
 #     def debug_tensorflow():
 #       tf.config.list_physical_devices("GPU")
@@ -233,4 +254,5 @@ def init_state(args):
     state['playback'] = args.playback
     state['max_seq'] = args.max_seq
     state['output'] = None
+    state['batch_mode'] = args.batch_mode
     # state['history'] = [[int(x) for x in str(args.state).split(',')]]
