@@ -38,13 +38,6 @@ function build_batch_runner_image(){
 
 
 
-# timidity
-
-
-
-
-
-
 # Validations
 # TODO: add docker as requirement
 # TODO: check that ~/.ornette exists
@@ -109,7 +102,6 @@ ornette_start_command="python /ornette --module=$modelname --checkpoint=$checkpo
 docker run -it \
   --hostname server \
   --net=host \
-  -e BATCH_RUNNER=0 \
   --device /dev/nvidia0:/dev/nvidia0  \
   --device /dev/nvidiactl:/dev/nvidiactl \
   --device /dev/nvidia-uvm:/dev/nvidia-uvm \

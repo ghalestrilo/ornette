@@ -35,18 +35,18 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 # Main
 if __name__ == "__main__":
-    if (os.environ['BATCH_RUNNER']):
+    if ('BATCH_RUNNER' in os.environ.keys()):
       print("running batch mode")
       run_experiments()
-      pass
 
-    args = get_args()
+    else:
+      args = get_args()
 
-    prep_module()
+      prep_module()
 
-    # Prep Model
-    host = Host(args)
-    host.start()
+      # Prep Model
+      host = Host(args)
+      host.start()
 
 
     # if (state['return']==CODE_REBOOT):

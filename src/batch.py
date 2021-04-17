@@ -2,8 +2,10 @@ from time import sleep
 from args import get_batch_args
 from batch_client import BatchClient
 
-
 def run_experiments():
+  pass
+
+def run_experiments_(): # FIXME: After testing feature extraction, remove underscore suffix from method name
   args = get_batch_args()
 
   client = BatchClient(args.ip, args.port, args.port_in)
