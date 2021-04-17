@@ -35,6 +35,7 @@ state = {
     # Batch execution control
     'batch_mode': False,
     # 'batch_max_buffer': False,
+    'data_frame': None,
 }
 
 class Host:
@@ -244,6 +245,13 @@ class Host:
     # Batch Mode Methods
     def notify_task_complete(self):
         self.bridge.notify_task_complete()
+
+    # Analysis Methods
+    def get_decoded_history(self):
+        return []
+
+    def get_bars(self):
+        return []
 
 #     def debug_tensorflow():
 #       tf.config.list_physical_devices("GPU")

@@ -8,10 +8,12 @@ modulesdir="$(pwd)/modules"
 modeldir="$modulesdir/$modelname"
 dockerfile="${modeldir}/Dockerfile"
 imagename="ornette_$modelname"
-batch_runner_command="python scripts/batch.py"
+# batch_runner_command="python scripts/batch.py"
+ornette_base_command="python /ornette"
 
 ORNETTE_BASE="ornette/base"
 ORNETTE_CLIENT="ornette/client"
+ORNETTE_BATCH_RUNNER="ornette/batch-runner"
 
 
 
@@ -28,6 +30,10 @@ function build_base_image(){
 
 function build_client_image(){
   docker build -t $ORNETTE_CLIENT -f Dockerfile.client .
+}
+
+function build_batch_runner_image(){
+  docker build -t $ORNETTE_BATCH_RUNNER -f Dockerfile.batch_runner .
 }
 
 
@@ -65,16 +71,17 @@ fi
 
 if [ $modelname = 'batch' ]; then
   # Assert that ornette client image exists
-  docker image inspect $ORNETTE_CLIENT > /dev/null;
-  if [ $? = 1 ];          then build_client_image
-  elif [ $REBUILD ]; then build_client_image
+  docker image inspect $ORNETTE_BATCH_RUNNER > /dev/null;
+  if [ $? = 1 ];       then build_batch_runner_image
+  elif [ $REBUILD ];   then build_batch_runner_image
   fi
 
   docker run -it \
     --net=host \
+    -e BATCH_RUNNER=1 \
     -v "$(pwd)":/ornette \
-    $ORNETTE_BASE \
-    $batch_runner_command
+    $ORNETTE_BATCH_RUNNER \
+    $ornette_base_command
   exit
 fi
 
@@ -102,6 +109,7 @@ ornette_start_command="python /ornette --module=$modelname --checkpoint=$checkpo
 docker run -it \
   --hostname server \
   --net=host \
+  -e BATCH_RUNNER=0 \
   --device /dev/nvidia0:/dev/nvidia0  \
   --device /dev/nvidiactl:/dev/nvidiactl \
   --device /dev/nvidia-uvm:/dev/nvidia-uvm \
