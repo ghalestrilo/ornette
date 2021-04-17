@@ -1,17 +1,24 @@
 from time import sleep
 from args import get_batch_args
 from batch_client import BatchClient
+from features import get_features
 
-def run_experiments():
-  pass
+def test_feature_extraction(filename):
+    print(get_features(filename))
 
-def run_experiments_(): # FIXME: After testing feature extraction, remove underscore suffix from method name
+def run_experiments(): 
+  prompt = 'dataset/vgmidi/labelled/midi/Super Mario_N64_Super Mario 64_Dire Dire Docks.mid'
+
   args = get_batch_args()
+
+  # FIXME: Remove this
+  test_feature_extraction(prompt)
+  return
+  # /FIXME: Remove this
 
   client = BatchClient(args.ip, args.port, args.port_in)
 
   # TODO: Automate this
-  prompt = 'dataset/vgmidi/labelled/midi/Super Mario_N64_Super Mario 64_Dire Dire Docks.mid'
 
   # EXPERIMENT BLOCK
   try:
