@@ -176,7 +176,7 @@ class Host:
           velocity=velocity,
           time=int(time * 4 * state['tempo']))
           
-        add_message(state, msg)
+        data.add_message(state, msg)
         return [('wait', time), ('play', note)]
 
     def perform(self,action):
