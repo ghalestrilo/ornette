@@ -8,9 +8,59 @@ import pandas
 
 units = ['bars', 'seconds', 'notes', 'events']
 
-def get_features(midi_data):
-  []
+def get_features(midi_data=None):
+  if (midi_data is None):
+      print("no data passed to get_features")
+      return
+
+  # Extract Time Signature numerator
+  signature = get_signature(midi_data)
+  tempo = get_tempo(midi_data)
+  bars = get_bars(midi_data)
+
+  # Print Basic info
+  track_1 = midi_data.tracks[1]
+  print(f'length: {midi_data.length}')
+  print(f'tempo: {tempo}')
+  print(f'ticks_per_beat: {midi_data.ticks_per_beat}')
+  print(f'signature: {signature}')
+  print(f'bars: {len(bars)}')
+  # ticks_per_beat.numerator
   return
+
+# NOTE: This returns only the first numerator (only works for constant time signature pieces)
+def get_signature(midi_data):
+  for msg in midi_data:
+    if msg.is_meta:
+      if msg.type == 'time_signature':
+        return msg.numerator
+
+def get_tempo(midi_data):
+  for msg in midi_data:
+    if msg.is_meta:
+      if msg.type == 'set_tempo':
+        return msg.tempo
+
+def get_bars(midi_data):
+  signature = get_signature(midi_data)
+  tempo = get_tempo(midi_data)
+  ticks = 0
+  bars = [[]]
+  for msg in midi_data:
+    if not msg.is_meta:
+      # Detect New Bar
+      print(f'{ticks} > {signature * midi_data.ticks_per_beat} ?')
+      if ticks > (signature * midi_data.ticks_per_beat):
+        bars.append([])
+        ticks = 0
+      
+      bars[-1].append(msg)
+      ticks += mido.second2tick(msg.time,midi_data.ticks_per_beat,tempo)
+
+  return bars
+
+
+
 
 def length(host, sequence, unit='bars'):
   if (unit not in units):

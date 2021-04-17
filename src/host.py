@@ -171,6 +171,7 @@ class Host:
         ''' Get Action
             Decode a midi message into a sequence of actions
         '''
+        # TODO: use mido.tick2second() to convert time
         name, note, velocity, time = message
         msg = mido.Message(name,
           note=note,
