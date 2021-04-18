@@ -20,47 +20,25 @@ def get_features(midi_data=None):
   tempo = get_tempo(midi_data)
   bars = get_bars(midi_data)
 
-  # Print Basic info
-  track_1 = midi_data.tracks[1]
-  print(f'length: {midi_data.length}')
-  print(f'tempo: {tempo}')
-  print(f'ticks_per_beat: {midi_data.ticks_per_beat}')
-  print(f'signature: {signature}')
-  print(f'bars: {len(bars)}')
+  print(f'\n Track Summary: ')
+  track_df = build_track_dataframe(bars)
+  print(track_df.head(20))
 
-  # print('\nFull Song Histograms')
-  # for track in midi_data.tracks:
-  #   print(get_pitch_histogram(track))
+  for (index, track) in enumerate(midi_data.tracks):
+      print(f'\n Track {index}: ')
+      print(track[0:10])
+      track_bars = get_bars(track, midi_data=midi_data)
+      print([track_bars[10],track_bars[11]] if len(track_bars) >= 11 else None)
+      df = build_track_dataframe(track_bars)
+      print(df.head(20))
+      print(df.describe())
 
-  print('\nFirst Bar:\n')
-  # print('\n', get_pitch_histogram(track_1).head(40))
-  # print('\n', get_length_histogram(track_1).head(40))
-  # print('\n', get_pitch_intervals(track_1)[1:])
-  # print('\n', get_note_histogram(track_1))
-  # print('\n', get_inter_onset_histogram(track_1).head(40))
 
-  # TODO: Build dataframe from this
-  
-  # print(f'\n\tmean pitch: {get_pitch_histogram(track_1).mean()}')
-  # print(f'\tpitch classes: {pitch_count(track_1)}')
-  # print(f'\tnote classes: {note_count(track_1)}')
-  # print(f'\tmean note length: {get_length_histogram(track_1).mean()}')
-  # print(f'\tmean pitch interval: {average_pitch_interval(track_1)}')
-  # print(f'\tmean pitch interval (absolute): {average_absolute_pitch_interval(track_1)}')
-  # print(f'\tmean pitch count per bar: {average_pitch_count_per_bar(bars)}')
-  # print(f'\tmean ioi: {average_inter_onset_interval(track_1)}')
-  
+  return track_df
 
-  bar_data = [get_bar_features(bar) for bar in bars]
-
-  df = pd.DataFrame(bar_data,columns=get_feature_labels())
-  print(df.head(20))
-
-  # print(get_pitch_histogram(bars[1]).head(40))
-  # df = pd.DataFrame([get_pitch_histogram(bar) for bar in bars], columns=['pitch_histograms'])
-  # print(df.head())
-  # ticks_per_beat.numerator
-  return
+def build_track_dataframe(bars):
+  return pd.DataFrame([get_bar_features(bar) for bar in bars],
+    columns=get_feature_labels())
 
 def get_bar_features(bar):
   return [
@@ -97,23 +75,28 @@ def get_tempo(midi_data):
       if msg.type == 'set_tempo':
         return msg.tempo
 
-def get_bars(midi_data):
+def get_bars(sequence, midi_data=None):
+  if (midi_data is None): midi_data = sequence
   signature = get_signature(midi_data)
   tempo = get_tempo(midi_data)
+  bar_tick_length = signature * midi_data.ticks_per_beat
+  print(f'tempo: {tempo} | signature: {signature} | ticks/bar: {bar_tick_length}')
+  
   ticks = 0
   bars = [[]]
-  for msg in midi_data:
+  for msg in sequence:
     if not msg.is_meta:
       
       # print(f'{ticks} > {signature * midi_data.ticks_per_beat} ?')
       
       # Detect New Bar
-      if ticks > (signature * midi_data.ticks_per_beat):
+      if ticks > (bar_tick_length):
         bars.append([])
         ticks = 0
       
       bars[-1].append(msg)
-      ticks += mido.second2tick(msg.time,midi_data.ticks_per_beat,tempo)
+      # ticks += mido.second2tick(msg.time,midi_data.ticks_per_beat,tempo)
+      ticks += msg.time
 
   return bars
 
@@ -171,7 +154,7 @@ def average_inter_onset_interval(sequence):
   # (RL-Duet) IOI: Intervalo médio entre onsets (?)
   # Pergunta: consecutivos apenas ou NxN
   # TODO: Fix IOI calculation
-  hist = get_inter_onset_histogram(sequence).drop(0)
+  hist = get_inter_onset_histogram(sequence).drop(0, errors='ignore')
   return (0 
     if hist.empty
     else np.average(hist.keys(), weights=hist.values))
@@ -188,7 +171,7 @@ def ticks_until_note_event(name, note=None, sequence=[]):
     ticks = list(accumulate(subseq,
       func=lambda t, m: int(t) + int(m.time),
       initial=0))[-1]
-    # print(f'{note} lasts {msgcount} events until next {name} ({ticks} ticks)')
+    print(f'{note} lasts {msgcount} events until next {name} ({ticks} ticks)')
     return ticks
 
 def ticks_until_note_off(note, sequence):
