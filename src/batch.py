@@ -9,7 +9,9 @@ def test_feature_extraction(filename):
 
 def run_experiments(): 
   # prompt = 'dataset/vgmidi/labelled/midi/Super Mario_N64_Super Mario 64_Dire Dire Docks.mid'
-  prompt = 'output/prompt1.mid'
+  # prompt = 'output/prompt1.mid'
+  prompt = 'output/prompt2.mid'
+
 
   args = get_batch_args()
 

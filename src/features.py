@@ -26,9 +26,9 @@ def get_features(midi_data=None):
 
   for (index, track) in enumerate(midi_data.tracks):
       print(f'\n Track {index}: ')
-      print(track[0:10])
+      #print(track[0:10])
       track_bars = get_bars(track, midi_data=midi_data)
-      print([track_bars[10],track_bars[11]] if len(track_bars) >= 11 else None)
+      #print([track_bars[10],track_bars[11]] if len(track_bars) >= 11 else None)
       df = build_track_dataframe(track_bars)
       print(df.head(20))
       print(df.describe())
@@ -118,10 +118,6 @@ def length(host, sequence, unit='bars'):
       print(f'[error] unknown unit: {unit}')
       return
 
-# (SketchVAE) loss: cross entropy loss of the output with the ground-truth
-# (SketchVAE) pitch accuracy: comparing only the pitch tokens between each generation and the ground truth (whether the model generates the correct pitch in the correct position)
-# (SketchVAE) rhythm accuracy: comparing the duration and onset (regardless of what pitches it generates).
-
 def note_count(sequence):
   ''' Like pitch count, but ignores octaves (only cares about tonal information) '''
   return len(get_note_histogram(sequence))
@@ -171,7 +167,7 @@ def ticks_until_note_event(name, note=None, sequence=[]):
     ticks = list(accumulate(subseq,
       func=lambda t, m: int(t) + int(m.time),
       initial=0))[-1]
-    print(f'{note} lasts {msgcount} events until next {name} ({ticks} ticks)')
+    # print(f'{note} lasts {msgcount} events until next {name} ({ticks} ticks)')
     return ticks
 
 def ticks_until_note_off(note, sequence):
@@ -221,3 +217,7 @@ def get_inter_onset_histogram(sequence):
         for (index, msg) 
         in enumerate(sequence)
         if msg.type == 'note_on'])
+
+# (SketchVAE) loss: cross entropy loss of the output with the ground-truth
+# (SketchVAE) pitch accuracy: comparing only the pitch tokens between each generation and the ground truth (whether the model generates the correct pitch in the correct position)
+# (SketchVAE) rhythm accuracy: comparing the duration and onset (regardless of what pitches it generates).
