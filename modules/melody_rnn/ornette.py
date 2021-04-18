@@ -6,11 +6,6 @@ from magenta.models.shared import sequence_generator_bundle
 from note_seq.protobuf import generator_pb2
 from note_seq import NoteSequence
 
-# TODO: Use in server
-def _steps_to_seconds(steps, qpm):
-    steps_per_quarter = 4
-    return steps * 60.0 / qpm / steps_per_quarter
-
 import os
 
 class OrnetteModule():
@@ -24,16 +19,13 @@ class OrnetteModule():
       steps_per_quarter=steps_per_quarter,
       bundle=bundle_file)
     self.realtime_ready = True
-    # self.temperature=1.2
     self.server_state = host.state
     self.host = host
-    # self.server_state['history'] = [None] # FIXME: How to properly do this?
-    self.server_state['history'] = [[]] # Move this to host
+    self.host.set('history', [[]])
     self.last_end_time = 0
 
   def generate(self, primer_sequence=None, length=4):
       length_seconds = self.host.steps_to_seconds(length)
-      
       last_end_time = 0
       
       if (primer_sequence != None and any(primer_sequence)):
@@ -42,12 +34,9 @@ class OrnetteModule():
       # TODO: Abstract this code
       generator_options = generator_pb2.GeneratorOptions()
       generator_options.generate_sections.add(
-          #start_time=last_end_time + _steps_to_seconds(1, qpm),
           start_time=length_seconds + last_end_time,
           end_time=length_seconds + last_end_time + length)
 
-      # TEMP: Constructing noteseq dict to feed into the model
-      # TODO: bind 'notes' value to self.history
       noteseq = NoteSequence(
         notes=primer_sequence[:-min(len(primer_sequence),length)],
         quantization_info={
