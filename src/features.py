@@ -1,6 +1,6 @@
 import mido
 import pandas as pd
-from itertools import chain, takewhile, accumulate
+from itertools import chain, takewhile, accumulate, count
 
 # Extract Features
 
@@ -32,8 +32,19 @@ def get_features(midi_data=None):
   #   print(get_pitch_histogram(track))
 
   print('\nFirst Bar:\n')
-  print(get_pitch_histogram(track_1).head(40))
-  print(get_length_histogram(track_1).head(40))
+  # print('\n', get_pitch_histogram(track_1).head(40))
+  # print('\n', get_length_histogram(track_1).head(40))
+  # print('\n', get_pitch_intervals(track_1)[1:])
+  print('\n', get_inter_onset_histogram(track_1).head(40))
+
+  # print(f'\n mean pitch: {get_pitch_histogram(track_1).mean()}')
+  # print(f'\n mean length: {get_length_histogram(track_1).mean()}')
+  # print(f'\n mean interval: {get_pitch_intervals(track_1).mean()}')
+  print(f'\n mean pitch count per bar: {average_pitch_count_per_bar(bars)}')
+
+  # TODO: Fix IOI calculation
+  print(f'\n mean ioi: {get_inter_onset_histogram(track_1).mean()}')
+  
 
   # print(get_pitch_histogram(bars[1]).head(40))
   # df = pd.DataFrame([get_pitch_histogram(bar) for bar in bars], columns=['pitch_histograms'])
@@ -91,51 +102,77 @@ def pitch_count(sequence):
   # return len(histogram)
   pass
 
-def average_pitch_count_per_bar(host, sequence):
+def average_pitch_count_per_bar(bars):
   # (RL-Duet) PC/bar: Pitch count per bar (número de notas distintas por compasso)
   # return len(histogram)
-  pass
+  return pd.DataFrame([get_pitch_histogram(bar).count()
+    for bar
+    in bars],columns=['pc_bar']).mean()
 
-def average_pitch_interval(host, sequence):
+def average_pitch_interval(sequence):
   # (RL-Duet) PI: Intervalo médio entre pitches
   # Pergunta: consecutivos apenas ou NxN
-  pass
-
-def average_pitch_interval(host, sequence):
-  # Pergunta: consecutivos apenas ou NxN
-  pass
+  return get_pitch_intervals(sequence).mean()
 
 def average_inter_onset_interval(host, sequence):
   # (RL-Duet) IOI: Intervalo médio entre onsets (?)
   # Pergunta: consecutivos apenas ou NxN
   pass
 
-def get_pitch_histogram(sequence):
-  # (RL-Duet) Histograma de Pitches (Notas) - Diferença de Wasserstein contra Ground-Truth
-  df = pd.DataFrame([msg.note for msg in sequence if msg.type == 'note_on'], columns=['note'])
-  return df.groupby('note')['note'].count()
+
+
+def ticks_until_note_event(name, note=None, sequence=[]):
+    msgs = takewhile(lambda m: (m.type != name)
+      if note is None
+      else (m.type != name or m.note != note), sequence)
+    msgcount = len(list(msgs))
+    return list(accumulate(sequence[1:1+msgcount],
+      func=lambda t, m: int(t) + int(m.time),
+      initial=0))[-1]
 
 def ticks_until_note_off(note, sequence):
-    msgs = takewhile(lambda m: not (m.type == 'note_off' and m.note == note), sequence)
-    msgcount = len(list(msgs))
-    return list(accumulate(sequence[1:1+msgcount],func=lambda t, m: int(t) + int(m.time), initial=0))[-1]
+    return ticks_until_note_event('note_off', note=note, sequence=sequence)
+
+def ticks_until_next_onset(sequence):
+    return ticks_until_note_event('note_on', note=None, sequence=sequence)
+
+def get_histogram(label, sequence):
+  df = pd.DataFrame(sequence, columns=[label])
+  return df.groupby(label)[label].count()
+
+def get_pitch_histogram(sequence):
+  # (RL-Duet) Histograma de Pitches (Notas) - Diferença de Wasserstein contra Ground-Truth
+  return get_histogram('note', [msg.note for msg in sequence if msg.type == 'note_on'])
 
 def get_length_histogram(sequence):
   # (RL-Duet) Histograma de Comprimento - Diferença de Wasserstein contra Ground-Truth
-  df = pd.DataFrame([ ticks_until_note_off(msg.note, sequence[index:])
+  return get_histogram('length', [
+      ticks_until_note_off(msg.note, sequence[index:])
         for (index, msg) 
         in enumerate(sequence)
-        if msg.type == 'note_on'], columns=['length'])
-  return df.groupby('length')['length'].count()
+        if msg.type == 'note_on'])
 
-  # return [ ticks_until_note_off(msg.note, sequence[index:])
-  #       for (index, msg) 
-  #       in enumerate(sequence)
-  #       if msg.type == 'note_on']
+def get_difflist(name, sequence):
+    return pd.Series(sequence, name=name).diff()
 
-def for_each_bar(host, sequence, method):
-  # receives a function, builds a dataframe using provided method for each bar of the sequence
-  pass
+def get_pitch_intervals(sequence):
+    return get_difflist('intervals', [msg.note for msg in sequence if msg.type == 'note_on'])
+
+# TODO: Fix IOI calculation
+def get_inter_onset_histogram(sequence):
+  return get_difflist('ioi', [ ticks_until_next_onset(sequence[index:])
+        for (index, msg) 
+        in enumerate(sequence)
+        if msg.type == 'note_on'])
+  # return get_histogram('ioi', chain.from_iterable([
+  #     accumulate(sequence[1:1+len(list(takewhile(lambda submsg: submsg.type != 'note_on', sequence[index:])))],
+  #       func=lambda length, note_on_index: length + note_on_index.time,
+  #       initial=0)
+  #     for (index, msg)
+  #     in enumerate(sequence)
+  # ]))
+
+
 
 
 # Opcionalmente, generate(count=1, unit='bars') # enum unit: ['bar','note','event','seconds']
@@ -144,3 +181,15 @@ def for_each_bar(host, sequence, method):
 #
 #- length(filename, scale='bar'): # enum unit: ['bar','note','event','seconds']
 #    retorna o comprimento dos dados contidos no arquivo na unidade desejada
+
+
+
+
+# chain.from_iterable([
+#     accumulate(takewhile(lambda submsg: submsg.type != 'note_on', track[index:]),
+#       func=lambda length, note_on_index: length + note_on_index.time,
+#       initial=0)
+#     for (index, msg)
+#     in enumerate(track)
+# ])
+# 
