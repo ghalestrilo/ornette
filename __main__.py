@@ -10,6 +10,7 @@ load_folder('src')
 from args import get_args
 from host import Host
 from data import prep_module
+from batch import run_experiments
 
 import pretty_errors
 
@@ -34,13 +35,18 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 # Main
 if __name__ == "__main__":
-    args = get_args()
+    if ('BATCH_RUNNER' in os.environ.keys()):
+      print("running batch mode")
+      run_experiments()
 
-    prep_module()
+    else:
+      args = get_args()
 
-    # Prep Model
-    host = Host(args)
-    host.start()
+      prep_module()
+
+      # Prep Model
+      host = Host(args)
+      host.start()
 
 
     # if (state['return']==CODE_REBOOT):
