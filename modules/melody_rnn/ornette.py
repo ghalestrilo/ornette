@@ -31,12 +31,9 @@ class OrnetteModule():
     self.server_state['history'] = [[]] # Move this to host
     self.last_end_time = 0
 
-  def generate(self, primer_sequence=None):
-      qpm = self.server_state['tempo']
-      length = self.server_state['buffer_length']
-      length_seconds = _steps_to_seconds(length, qpm)
+  def generate(self, primer_sequence=None, length=4):
+      length_seconds = self.host.steps_to_seconds(length)
       
-      # Set the start time to begin on the next step after the last note ends.
       last_end_time = 0
       
       if (primer_sequence != None and any(primer_sequence)):
@@ -52,19 +49,19 @@ class OrnetteModule():
       # TEMP: Constructing noteseq dict to feed into the model
       # TODO: bind 'notes' value to self.history
       noteseq = NoteSequence(
-        notes=primer_sequence,
+        notes=primer_sequence[:-min(len(primer_sequence),length)],
         quantization_info={
             'steps_per_quarter': 4
             },
-        tempos=[ { 'time': 0, 'qpm': qpm } ],
+        tempos=[ {
+          'time': 0,
+          'qpm': self.server_state['tempo']
+        } ],
         total_quantized_steps=11,
       )
 
       # generate the output sequence
-      return self.model.generate(noteseq, generator_options)
-
-  def tick(self, topk=1):
-    return self.generate(self.server_state['history'][0]).notes
+      return self.model.generate(noteseq, generator_options).notes
 
   def decode(self, token):
     ''' Must return a mido message (type (note_on), note, velocity, duration)'''

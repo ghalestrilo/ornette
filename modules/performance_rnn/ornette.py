@@ -11,10 +11,7 @@ from magenta.models.shared import sequence_generator_bundle
 
 import os
 
-# TODO: Use in server
-def _steps_to_seconds(steps, qpm):
-    steps_per_quarter = 4
-    return steps * 60.0 / qpm / steps_per_quarter
+
 
 class OrnetteModule():
   def __init__(self, host, checkpoint='performance_with_dynamics'):
@@ -42,8 +39,10 @@ class OrnetteModule():
   
   # update Module#generate to receive only number of tokens
   def generate(self, primer_sequence=None):
+    # TODO: Move this logic to the server
     qpm = self.server_state['tempo']
     length = self.server_state['buffer_length']
+    length_seconds = _steps_to_seconds(length, qpm)
 
     # TODO: last_end_time / last_start_time could be a state field
     if (primer_sequence != None and any(primer_sequence)):

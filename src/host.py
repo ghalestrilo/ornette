@@ -28,9 +28,11 @@ state = {
     'history': [[]],
     'output_data': [],
     'return': 0,
-    'tempo': 120,
     'time_shift_denominator': 100,
     'save_output': True,
+    'tempo': 120,
+    'time_signature': 4, 
+    'missing_beats': 4,  # How many beats should the generator generate?
 
     # Batch execution control
     'batch_mode': False,
@@ -98,23 +100,21 @@ class Host:
       threshold = self.state['trigger_generate']
       playhead = self.state['playhead']
 
-      max_seq = self.state['buffer_length'] 
-
-      buflen = self.state['buffer_length']
+      max_len = self.state['buffer_length'] 
 
       if (self.is_debugging()):
           print("Generating more tokens ({} /{} > {})".format(playhead, len(hist), threshold))
 
       # Generate sequence
-      seq = self.model.tick()[-max_seq:]
+      seq = self.model.generate(state['history'][0],
+          length=state['missing_beats'])[-max_len:]
 
       # (Batch Mode) Notify maximum requested length has been met
-      if (state['batch_mode']):
-        if (len(seq) == max_seq):
-            self.notify_task_complete()
+      if (state['batch_mode'] and len(seq) >= max_len):
+          self.notify_task_complete()
 
       # Maybe create Host#rewind
-      new_playhead = max(playhead - buflen + (len(seq) - len(hist)), 0)
+      new_playhead = max(playhead - max_len + (len(seq) - len(hist)), 0)
       if (self.is_debugging()):
           print(f'Rewinding Playhead ({playhead} -> {new_playhead})')
 
@@ -253,6 +253,10 @@ class Host:
 
     def get_bars(self):
         return []
+
+    def steps_to_seconds(self,steps):
+        steps_per_quarter = 4
+        return steps * 60.0 / state['tempo'] / steps_per_quarter
 
 #     def debug_tensorflow():
 #       tf.config.list_physical_devices("GPU")
