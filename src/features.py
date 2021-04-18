@@ -1,5 +1,6 @@
 import mido
-import pandas
+import pandas as pd
+from itertools import chain, takewhile, accumulate
 
 # Extract Features
 
@@ -25,6 +26,18 @@ def get_features(midi_data=None):
   print(f'ticks_per_beat: {midi_data.ticks_per_beat}')
   print(f'signature: {signature}')
   print(f'bars: {len(bars)}')
+
+  # print('\nFull Song Histograms')
+  # for track in midi_data.tracks:
+  #   print(get_pitch_histogram(track))
+
+  print('\nFirst Bar:\n')
+  print(get_pitch_histogram(track_1).head(40))
+  print(get_length_histogram(track_1).head(40))
+
+  # print(get_pitch_histogram(bars[1]).head(40))
+  # df = pd.DataFrame([get_pitch_histogram(bar) for bar in bars], columns=['pitch_histograms'])
+  # print(df.head())
   # ticks_per_beat.numerator
   return
 
@@ -48,8 +61,10 @@ def get_bars(midi_data):
   bars = [[]]
   for msg in midi_data:
     if not msg.is_meta:
+      
+      # print(f'{ticks} > {signature * midi_data.ticks_per_beat} ?')
+      
       # Detect New Bar
-      print(f'{ticks} > {signature * midi_data.ticks_per_beat} ?')
       if ticks > (signature * midi_data.ticks_per_beat):
         bars.append([])
         ticks = 0
@@ -97,11 +112,25 @@ def average_inter_onset_interval(host, sequence):
 
 def get_pitch_histogram(sequence):
   # (RL-Duet) Histograma de Pitches (Notas) - Diferença de Wasserstein contra Ground-Truth
-  pass
+  df = pd.DataFrame([msg.note for msg in sequence if msg.type == 'note_on'], columns=['note'])
+  return df.groupby('note')['note'].count()
+
+def ticks_until_note_off(note, sequence):
+    msgs = takewhile(lambda m: not (m.type == 'note_off' and m.note == note), sequence)
+    return list(accumulate(msgs,func=lambda t, m: int(t) + int(m.time), initial=0))[-1]
 
 def get_length_histogram(sequence):
   # (RL-Duet) Histograma de Comprimento - Diferença de Wasserstein contra Ground-Truth
-  pass
+  df = pd.DataFrame([ ticks_until_note_off(msg.note, sequence[index:])
+        for (index, msg) 
+        in enumerate(sequence)
+        if msg.type == 'note_on'], columns=['length'])
+  return df.groupby('length')['length'].count()
+
+  # return [ ticks_until_note_off(msg.note, sequence[index:])
+  #       for (index, msg) 
+  #       in enumerate(sequence)
+  #       if msg.type == 'note_on']
 
 def for_each_bar(host, sequence, method):
   # receives a function, builds a dataframe using provided method for each bar of the sequence
