@@ -117,7 +117,8 @@ def get_pitch_histogram(sequence):
 
 def ticks_until_note_off(note, sequence):
     msgs = takewhile(lambda m: not (m.type == 'note_off' and m.note == note), sequence)
-    return list(accumulate(msgs,func=lambda t, m: int(t) + int(m.time), initial=0))[-1]
+    msgcount = len(list(msgs))
+    return list(accumulate(sequence[1:1+msgcount],func=lambda t, m: int(t) + int(m.time), initial=0))[-1]
 
 def get_length_histogram(sequence):
   # (RL-Duet) Histograma de Comprimento - Diferença de Wasserstein contra Ground-Truth
