@@ -75,8 +75,11 @@ def load_midi(host, filename):
     for i, track in enumerate(mid.tracks):
       host.state['history'].append([])
       for msg in track:
-        if msg.is_meta: continue
-        host.state['history'][i].append(host.model.encode(msg))
+        host.state['output_data'].append(msg)
+        print(msg)
+        if msg.type == 'note_on':
+          print(f'Adding to history: {msg}')
+          host.state['history'][i].append(host.model.encode(msg))
 
     host.print('history')
 
