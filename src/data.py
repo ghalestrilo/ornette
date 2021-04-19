@@ -70,6 +70,8 @@ def load_midi(host, filename):
 
     host.reset()
 
+    host.set('ticks_per_beat', mid.ticks_per_beat)
+
     # This logic 'could' go into the host
     host.state['history'] = []
     for i, track in enumerate(mid.tracks):
@@ -80,6 +82,16 @@ def load_midi(host, filename):
         if msg.type == 'note_on':
           print(f'Adding to history: {msg}')
           host.state['history'][i].append(host.model.encode(msg))
+          continue
+
+        if msg.is_meta:
+          if msg.type == 'track_name':
+              host.set('track_name', msg.name)
+          if msg.type == 'set_tempo':
+              host.set('tempo', msg.tempo)
+          if msg.type == 'time_signature':
+              host.set('time_signature_numerator', msg.numerator)
+              host.set('time_signature_denominator', msg.denominator)
 
     host.print('history')
 
@@ -125,7 +137,6 @@ def init_output_data(state):
       MetaMessage('time_signature',
             numerator=state['time_signature_numerator'],
             denominator=state['time_signature_denominator']),
-      MetaMessage('track_name', name='Piano'),
     ]
 
     
