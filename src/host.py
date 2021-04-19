@@ -120,18 +120,9 @@ class Host:
       if (state['batch_mode'] and len(seq) >= max_len):
           self.notify_task_complete()
 
-      # Maybe create Host#rewind
-      generator_overflow = max(0, len(seq) - len(hist))
-      target_playhead = playhead - max_len + generator_overflow
-      new_playhead = max(target_playhead, 0)
+      # Update Playhead
+      self.rewind(max(0, len(seq) - max_len))
 
-      print(f' max_len: {max_len} | generator_overflow: {generator_overflow} | len(seq): {len(seq)} | len(hist): {len(hist)}')
-      print(f' target playhead: {target_playhead}')
-
-      if (self.is_debugging()):
-          print(f'Rewinding Playhead ({playhead} -> {new_playhead})')
-
-      self.state['playhead'] = new_playhead
       state['history'][0] = seq
       
       state['is_generating'] = False
@@ -139,7 +130,16 @@ class Host:
       if (self.is_debugging()):
           print('history: {}'.format([self.model.decode(h) for h in hist]))
 
+    def rewind(self, number):
+      playhead = self.state['playhead']
+      target_playhead = playhead - number
+      new_playhead = max(target_playhead, 0)
+      if (self.is_debugging()):
+          # print(f' max_len: {max_len} | generator_overflow: {generator_overflow} | len(seq): {len(seq)} | len(hist): {len(hist)}')
+          # print(f' target playhead: {target_playhead}')
+          print(f'Rewinding Playhead ({playhead} -> {new_playhead})')
 
+      self.state['playhead'] = new_playhead
 
     
     # Query Methods
