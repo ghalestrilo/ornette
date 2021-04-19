@@ -8,10 +8,8 @@ import data
 state = {
     # Basic Config
     'module': None,
-    'model': None, # Deprecate
     'scclient': None,
     'debug_output': True,
-    'sync_mode': False, # Deprecate
 
     'temperature': 1.2,
     'until_next_event': 0.25,
@@ -21,18 +19,23 @@ state = {
     'trigger_generate': 0.5,
 
     # Operation/Playback Variables
+    'history': [[]],
     'is_running': False,
     'is_generating': False,
     'playback': True,
     'playhead': 0,
-    'history': [[]],
-    'output_data': [],
     'return': 0,
     'time_shift_denominator': 100,
-    'save_output': True,
-    'tempo': 120,
-    'time_signature': 4, 
     'missing_beats': 4,  # How many beats should the generator generate?
+
+    # MIDI  Output fields
+    'output_data': [],
+    'save_output': True,
+    'track_name': 'Test 1',
+    'tempo': 120,
+    'time_signature_numerator': 4, 
+    'time_signature_denominator': 4,
+    'ticks_per_beat': 960, # TODO: How do I determine that?
 
     # Batch execution control
     'batch_mode': False,
@@ -50,11 +53,14 @@ class Host:
       pass
 
     def start(self):
-      self.clock.start()
-      self.bridge.start()
-      # TODO: Try moving this to close
-      self.clock.stop()
-      self.model.close()
+      try:
+        self.reset()
+        self.clock.start()
+        self.bridge.start()
+      except KeyboardInterrupt:
+          self.close()
+          return
+      self.close()
 
     def set(self,field,value):
       try:
@@ -86,6 +92,7 @@ class Host:
 
     def close(self):
         self.clock.stop()
+        self.model.close()
         self.bridge.stop()
 
     def play(self,pitch,instr=None):
@@ -114,7 +121,13 @@ class Host:
           self.notify_task_complete()
 
       # Maybe create Host#rewind
-      new_playhead = max(playhead - max_len + (len(seq) - len(hist)), 0)
+      generator_overflow = max(0, len(seq) - len(hist))
+      target_playhead = playhead - max_len + generator_overflow
+      new_playhead = max(target_playhead, 0)
+
+      print(f' max_len: {max_len} | generator_overflow: {generator_overflow} | len(seq): {len(seq)} | len(hist): {len(hist)}')
+      print(f' target playhead: {target_playhead}')
+
       if (self.is_debugging()):
           print(f'Rewinding Playhead ({playhead} -> {new_playhead})')
 
@@ -175,6 +188,7 @@ class Host:
         name, note, velocity, time = message
         msg = mido.Message(name,
           note=note,
+          channel=1,
           velocity=velocity,
           time=int(time * 4 * state['tempo']))
           
@@ -234,14 +248,14 @@ class Host:
     def reset(self):
         [voice.clear() for voice in state['history']]
         state['playhead'] = 0
-        state['output_data'].clear()
+        data.init_output_data(state)
 
     # Data Methods
     def load_midi(self, name):
         data.load_midi(self, name)
 
     def save_output(self, name):
-        data.save_output(name, state['output_data'])
+        data.save_output(name, state['output_data'], state['ticks_per_beat'])
 
     # Batch Mode Methods
     def notify_task_complete(self):

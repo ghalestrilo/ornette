@@ -26,9 +26,7 @@ def get_features(midi_data=None):
 
   for (index, track) in enumerate(midi_data.tracks):
       print(f'\n Track {index}: ')
-      #print(track[0:10])
       track_bars = get_bars(track, midi_data=midi_data)
-      #print([track_bars[10],track_bars[11]] if len(track_bars) >= 11 else None)
       df = build_track_dataframe(track_bars)
       print(df.head(20))
       print(df.describe())

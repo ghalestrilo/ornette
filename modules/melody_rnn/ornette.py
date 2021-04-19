@@ -57,7 +57,7 @@ class OrnetteModule():
     velocity = 127
 
     decoded = [
-      ('note_on', token.pitch, velocity, token.start_time - self.last_end_time),
+      ('note_on', token.pitch, velocity, max(0, token.start_time - self.last_end_time)),
       ('note_off', token.pitch, velocity, token.end_time - token.start_time)
     ]
 

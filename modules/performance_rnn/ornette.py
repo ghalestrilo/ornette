@@ -15,9 +15,6 @@ import os
 
 class OrnetteModule():
   def __init__(self, host, checkpoint='performance_with_dynamics'):
-    
-    # config_id = bundle.generator_details.id if bundle else FLAGS.config
-    # config_id = 'performance_with_dynamics'
     config = default_configs[checkpoint]
     
     bundle_path = os.path.normpath(f'/ckpt/{checkpoint}') # TODO: improve checkpoint-loading logic

@@ -7,6 +7,9 @@ from mido import MidiFile
 def test_feature_extraction(filename):
     get_features(MidiFile(filename))
 
+def get_filename(expname,index):
+  return f'{expname}-promptname-{index}'
+
 def run_experiments(): 
   # prompt = 'dataset/vgmidi/labelled/midi/Super Mario_N64_Super Mario 64_Dire Dire Docks.mid'
   # prompt = 'output/prompt1.mid'
@@ -16,8 +19,8 @@ def run_experiments():
   args = get_batch_args()
 
   # FIXME: Remove this
-  test_feature_extraction(prompt)
-  return
+  # test_feature_extraction(prompt)
+  # return
   # /FIXME: Remove this
 
   client = BatchClient(args.ip, args.port, args.port_in)
@@ -44,9 +47,11 @@ def run_experiments():
             client.pause()
             client.debug('history')
             client.debug('output_data')
-            client.save(f'guess-promptname-{i}') # TODO: Update promptname
+            client.save(get_filename('guess',i)) # TODO: Update promptname
             # load (create function, cropping to buffer_size)
       
+      for i in range(0,args.iterations):
+        get_features(MidiFile(get_filename('guess',i)))
 
     # Algorithm
     # Set batch mode
