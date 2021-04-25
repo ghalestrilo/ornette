@@ -4,22 +4,51 @@ from batch_client import BatchClient
 from features import get_features
 from mido import MidiFile
 
-def test_feature_extraction(filename):
-    get_features(MidiFile(filename))
+from datetime import date
+from time import time
+from os import path, mkdir, listdir
+
+
+# Folder and File Names
+basefoldername = str(date.today())
+i = 0
+while True:
+    foldername = f'{basefoldername}-{i}'
+    if not path.exists(path.normpath(f'output/{foldername}')):
+      mkdir(path.normpath(f'output/{foldername}'))
+      break
+    i = i + 1
 
 def get_filename(expname,index):
-  return f'{expname}-promptname-{index}'
+  return path.normpath(f"{foldername}/{expname}-promptname-{index}")
 
+def get_output_dir():
+  
+  return path.join(path.curdir,'output')
+
+def get_midi_filename(expname,index):
+  return path.join(get_output_dir(), f'{get_filename(expname,index)}.mid')
+
+def get_pickle_filename(expname,index):
+  return path.join(get_output_dir(), f'{get_filename(expname,index)}.pkl')
+
+def save_df(df, filename):
+    print(f'Saving dataframe to {filename}')
+    df.to_pickle(filename)
+
+
+
+
+# Main 
 def run_experiments(): 
   # prompt = 'dataset/vgmidi/labelled/midi/Super Mario_N64_Super Mario 64_Dire Dire Docks.mid'
   # prompt = 'output/prompt1.mid'
   prompt = 'output/prompt1.mid'
 
-
   args = get_batch_args()
 
   # FIXME: Remove this
-  # test_feature_extraction(prompt)
+  # get_features(prompt)
   # return
   # /FIXME: Remove this
 
@@ -39,7 +68,7 @@ def run_experiments():
       if (args.skip_generation == False):
         for i in range(0,args.iterations):
             print(f'[guess] Iteration {i}')
-            client.set('buffer_size', i*args.block_size)
+            client.set('buffer_length', i*args.block_size)
             client.reset()
             client.start()
 
@@ -48,11 +77,31 @@ def run_experiments():
             client.pause()
             client.debug('history')
             client.debug('output_data')
-            client.save(get_filename('guess',i)) # TODO: Update promptname
+            client.save(get_filename('guess',i))
             # load (create function, cropping to buffer_size)
       
-      for i in range(0,args.iterations):
-        get_features(MidiFile(f'output/{get_filename("guess",i)}.mid'))
+      for i in range(0, args.iterations):
+        midi_filename = get_midi_filename("guess", i)
+        pickle_filename = get_pickle_filename("guess", i)
+
+        print("get_midi_filename: {}".format(midi_filename))
+        print("get_pickle_filename: {}".format(pickle_filename))
+        print("{} exists: {}".format(
+          midi_filename,
+          path.exists(midi_filename)
+          ))
+
+        print(f'{get_output_dir()}/{foldername} exists: {path.exists(path.join(get_output_dir(),foldername))}')
+
+        if not path.exists(midi_filename):
+          print(f"fatal: midi file not found ({midi_filename})")
+          exit(1)
+
+        print(f"Extracting features from file: {midi_filename}")
+        df = get_features(MidiFile(midi_filename))
+        save_df(df, get_pickle_filename("guess", i))
+        
+
 
     # Algorithm
     # Set batch mode

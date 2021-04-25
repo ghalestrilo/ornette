@@ -37,7 +37,8 @@ def get_batch_args():
 
     parser.add_argument('--block-size', type=int,  default=16,          help='Length of increment to the server\'s buffer_size at each iteration of an experiment')
 
-    parser.add_argument('--iterations', type=int,  default=1,          help='Number of times to run the experiment')
+    # parser.add_argument('--iterations', type=int,  default=1,          help='Number of times to run the experiment')
+    parser.add_argument('--iterations', type=int,  default=5,          help='Number of times to run the experiment')
     parser.add_argument('--experiment', type=str,  default='all',       choices=['all', 'guess'], help='Which experiment to run')
     parser.add_argument('--skip-generation', type=bool,  default=False, help='Skip sample generation, just analyze generated data')
 

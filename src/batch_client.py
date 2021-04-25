@@ -22,6 +22,7 @@ class BatchClient(udp_client.SimpleUDPClient):
 
   def save(self,filename):
     self.send_message('/save', [filename])
+    self.wait()
 
   def play(self,note):
     self.send_message('/play', [note + 40])
@@ -33,4 +34,6 @@ class BatchClient(udp_client.SimpleUDPClient):
     self.send_message('/pause', [])
 
   def wait(self):
+    print("Waiting...")
     self.server.serve_forever()
+    print("OK!")

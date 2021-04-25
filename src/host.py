@@ -277,7 +277,7 @@ class Host:
         data.load_midi(self, name)
 
     def save_output(self, name):
-        data.save_output(name, state['output_data'], state['ticks_per_beat'])
+        data.save_output(name, state['output_data'], state['ticks_per_beat'], self)
 
     # Batch Mode Methods
     def notify_task_complete(self):
