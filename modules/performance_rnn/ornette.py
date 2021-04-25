@@ -58,7 +58,7 @@ class OrnetteModule():
           },
       tempos=[ {
         'time': 0,
-        'qpm': self.server_state['tempo']
+        'qpm': self.server_state['bpm']
       } ],
       total_quantized_steps=11,
     )

@@ -41,7 +41,7 @@ class Clock(Thread):
     
     def run_metronome(self):
       # TODO: step to time is host logic
-      while not self.stopped.wait(60/self.state['tempo']/4):
+      while not self.stopped.wait(60/self.state['bpm']/4):
         if (self.state['is_running'] == True):
           self.host.play(0,'hh')
 

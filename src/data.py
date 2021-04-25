@@ -13,6 +13,7 @@ from datetime import datetime
 
 from os.path import normpath
 from mido import MidiFile, MidiTrack, Message, MetaMessage
+from mido import bpm2tempo
 
 
 def load_folder(name):
@@ -88,7 +89,7 @@ def load_midi(host, filename):
           if msg.type == 'track_name':
               host.set('track_name', msg.name)
           if msg.type == 'set_tempo':
-              host.set('tempo', msg.tempo)
+              host.set('bpm', msg.tempo)
           if msg.type == 'time_signature':
               host.set('time_signature_numerator', msg.numerator)
               host.set('time_signature_denominator', msg.denominator)
@@ -122,8 +123,10 @@ def save_output(filename=None, data=[], tpb=960):
     print(f'Saving data to: {filename}')
 
     mid = MidiFile(ticks_per_beat=tpb)
-    mid.tracks.append(data)
-    #mid.tracks[-1].append(MetaMessage('end_of_track'))
+    track = MidiTrack()
+    for msg in data: track.append(msg)
+    mid.tracks.append(track) 
+    track.append(MetaMessage('end_of_track'))
     mid.save(normpath(filename))
 
 
@@ -133,7 +136,7 @@ def init_output_data(state):
 
     state['output_data'] = state['output_data'] + [
       MetaMessage('track_name', name=state['track_name']),
-      MetaMessage('set_tempo', tempo=state['tempo']),
+      MetaMessage('set_tempo', tempo=state['midi_tempo']),
       MetaMessage('time_signature',
             numerator=state['time_signature_numerator'],
             denominator=state['time_signature_denominator']),

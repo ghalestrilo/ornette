@@ -3,3 +3,9 @@ checkpoints:
   mono_rnn: http://download.magenta.tensorflow.org/models/mono_rnn.mag
   lookback_rnn: http://download.magenta.tensorflow.org/models/lookback_rnn.mag
   attention_rnn: http://download.magenta.tensorflow.org/models/attention_rnn.mag
+
+profiles:
+  attention_rnn: 
+    checkpoint: attention_rnn
+    buffer_length: 64
+    trigger_generate: 0.5

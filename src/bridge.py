@@ -42,26 +42,26 @@ class Bridge:
 
     # TODO: Set sound
 
-    def play(self,pitch,sound='superpiano'):
+    def play(self,pitch):
         self.client.send_message('/play2',
-          [ 's', sound
-          , 'note', pitch - NOTE_OFFSET
+          [ 'note', pitch - NOTE_OFFSET
           , 'cut', pitch - NOTE_OFFSET
           , 'gain', 1
-          ])
+          ]
+          +
+          self.host.get_instrument())
     
-    def kill_note(self,pitch,sound='superpiano'):
+    def kill_note(self,pitch):
         self.client.send_message('/play2',
-          [ 's', sound
-          , 'note', pitch - NOTE_OFFSET
+          [ 'note', pitch - NOTE_OFFSET
           , 'cut', pitch - NOTE_OFFSET
           , 'gain', 0
-          ])
+          ]
+          +
+          self.host.get_instrument())
 
     def stop(self):
         self.server.shutdown()
 
     def notify_task_complete(self):
         self.client.send_message('/ok',[])
-
-# /TODO: Move to server.py

@@ -35,22 +35,24 @@ class OrnetteModule():
       generator_options = generator_pb2.GeneratorOptions()
       generator_options.generate_sections.add(
           start_time=length_seconds + last_end_time,
-          end_time=length_seconds + last_end_time + length)
+          end_time=length_seconds + last_end_time + length_seconds)
 
       noteseq = NoteSequence(
-        notes=primer_sequence[:-min(len(primer_sequence),length)],
+        notes=primer_sequence,
         quantization_info={
             'steps_per_quarter': 4
             },
         tempos=[ {
           'time': 0,
-          'qpm': self.server_state['tempo']
+          'qpm': self.server_state['bpm']
         } ],
         total_quantized_steps=11,
       )
 
       # generate the output sequence
-      return self.model.generate(noteseq, generator_options).notes
+      notes = self.model.generate(noteseq, generator_options).notes
+      print(f'generated {len(notes)} notes')
+      return notes
 
   def decode(self, token):
     ''' Must return a mido message (type (note_on), note, velocity, duration)'''

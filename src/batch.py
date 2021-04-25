@@ -13,7 +13,7 @@ def get_filename(expname,index):
 def run_experiments(): 
   # prompt = 'dataset/vgmidi/labelled/midi/Super Mario_N64_Super Mario 64_Dire Dire Docks.mid'
   # prompt = 'output/prompt1.mid'
-  prompt = 'output/prompt2.mid'
+  prompt = 'output/prompt1.mid'
 
 
   args = get_batch_args()
@@ -34,6 +34,7 @@ def run_experiments():
       print(f'[guess] Running experiment with model: ...')
       client.set('batch_mode', True)
       client.set('trigger_generate', 1)
+      # client.set('debug_output', False)
       
       if (args.skip_generation == False):
         for i in range(0,args.iterations):
@@ -51,7 +52,7 @@ def run_experiments():
             # load (create function, cropping to buffer_size)
       
       for i in range(0,args.iterations):
-        get_features(MidiFile(get_filename('guess',i)))
+        get_features(MidiFile(f'output/{get_filename("guess",i)}'))
 
     # Algorithm
     # Set batch mode

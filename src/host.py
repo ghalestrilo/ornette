@@ -15,8 +15,8 @@ state = {
     'until_next_event': 0.25,
 
     # Controls
-    'buffer_length': 64,
-    'trigger_generate': 0.5,
+    'buffer_length': 64,     # read from .ornette.yml
+    'trigger_generate': 0.5, # read from .ornette.yml
 
     # Operation/Playback Variables
     'history': [[]],
@@ -27,15 +27,19 @@ state = {
     'return': 0,
     'time_shift_denominator': 100,
     'missing_beats': 4,  # How many beats should the generator generate?
+    # 'instrument': [ 's', 'superpiano' ],
+    'instrument': [ 's', 'mc', 'midichan', 0 ],
 
     # MIDI  Output fields
     'output_data': [],
     'save_output': True,
-    'track_name': 'Test 1',
-    'tempo': 120,
+    'track_name': 'Acoustic Grand Piano',
+    'bpm': 120,
+    'midi_tempo': None,
     'time_signature_numerator': 4, 
     'time_signature_denominator': 4,
     'ticks_per_beat': 960, # TODO: How do I determine that?
+    'steps_per_quarter': 8,
 
     # Batch execution control
     'batch_mode': False,
@@ -99,8 +103,6 @@ class Host:
       if (instr == None): self.bridge.play(pitch)
       else: self.bridge.play(pitch, instr)
 
-    
-    # TODO: Bug here - playhead will not rewind
     def generate(self):
       state['is_generating'] = True
       hist = self.state['history'][0]
@@ -114,21 +116,23 @@ class Host:
 
       # Generate sequence
       seq = self.model.generate(state['history'][0],
-          length=state['missing_beats'])[-max_len:]
+          length=state['missing_beats'],
+          )
 
-      # (Batch Mode) Notify maximum requested length has been met
-      if (state['batch_mode'] and len(seq) >= max_len):
-          self.notify_task_complete()
+      # # (Batch Mode) Notify maximum requested length has been met
+      # if (state['batch_mode'] and len(seq) >= max_len):
+      #     self.notify_task_complete()
 
       # Update Playhead
+      print(f'rewinding {len(seq) - max_len} tokens')
       self.rewind(max(0, len(seq) - max_len))
 
-      state['history'][0] = seq
+      state['history'][0] = seq[-max_len:]
       
       state['is_generating'] = False
       self.clock.notify_wait(False)
-      if (self.is_debugging()):
-          print('history: {}'.format([self.model.decode(h) for h in hist]))
+      # if (self.is_debugging()):
+      #     print('history: {}'.format([self.model.decode(h) for h in hist]))
 
     def rewind(self, number):
       playhead = self.state['playhead']
@@ -151,7 +155,8 @@ class Host:
     def must_generate(self):
       if (state['is_generating'] == True): return False
       elif (self.has_history() == False): return True
-      return self.state['playhead'] / len(self.state['history'][0]) > self.state['trigger_generate']
+      # print(f'{self.state["playhead"]} / {len(self.state["history"][0])} >= {self.state["trigger_generate"]}')
+      return self.state['playhead'] / len(self.state['history'][0]) >= self.state['trigger_generate']
 
     def is_debugging(self):
       return self.state['debug_output'] == True
@@ -183,14 +188,14 @@ class Host:
     def get_action(self,message):
         ''' Get Action
             Decode a midi message into a sequence of actions
+            
         '''
-        # TODO: use mido.tick2second() to convert time
         name, note, velocity, time = message
         msg = mido.Message(name,
           note=note,
           channel=1,
           velocity=velocity,
-          time=int(time * 4 * state['tempo']))
+          time=int(mido.second2tick(time, state['ticks_per_beat'], state['midi_tempo']))) 
           
         data.add_message(state, msg)
         return [('wait', time), ('play', note)]
@@ -205,6 +210,12 @@ class Host:
       name, value = action
       if (self.is_debugging()):
         print(f'({state["playhead"]}/{len(state["history"][0])}): {name} {value}')
+
+      # (Batch Mode) Notify maximum requested length has been met
+      if (state['batch_mode']
+            and len(state['history'][0]) >= state['buffer_length']
+            and self.must_generate()):
+          self.notify_task_complete()
 
       if (state['batch_mode']): return
 
@@ -222,10 +233,12 @@ class Host:
       e = self.get_next_token()
 
       if (e == None):
-        print("No event / history is empty")
+        if (self.is_debugging()): print("No event / history is empty")
         return
 
+
       for message in self.model.decode(e):
+        # if (save_output): data.add_message(state, msg)
         for action in self.get_action(message):
           self.perform(action)
 
@@ -248,6 +261,7 @@ class Host:
     def reset(self):
         [voice.clear() for voice in state['history']]
         state['playhead'] = 0
+        if state['midi_tempo'] is None: state['midi_tempo'] = mido.bpm2tempo(state['bpm'])
         data.init_output_data(state)
 
     # Data Methods
@@ -261,6 +275,22 @@ class Host:
     def notify_task_complete(self):
         self.bridge.notify_task_complete()
 
+    def get_instrument(self):
+        return state['instrument']
+
+#     def debug_tensorflow():
+#       tf.config.list_physical_devices("GPU")
+#       print('tf.test.is_gpu_available() = {}'.format(tf.test.is_gpu_available()))
+
+    def steps_to_seconds(self,steps):
+        return (state['ticks_per_beat'] * steps
+          / state['bpm']
+          / state['steps_per_quarter'])
+
+    # def tempo2miditempo(self, tempo, pulses_per_quarter_note):
+    #   return 60000 / (tempo * pulses_per_quarter_note)
+
+
     # Analysis Methods
     def get_decoded_history(self):
         return []
@@ -268,13 +298,7 @@ class Host:
     def get_bars(self):
         return []
 
-    def steps_to_seconds(self,steps):
-        steps_per_quarter = 4
-        return steps * 60.0 / state['tempo'] / steps_per_quarter
 
-#     def debug_tensorflow():
-#       tf.config.list_physical_devices("GPU")
-#       print('tf.test.is_gpu_available() = {}'.format(tf.test.is_gpu_available()))
 
 def init_state(args):
     state['module'] = args.module
