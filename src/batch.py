@@ -52,7 +52,7 @@ def run_experiments():
             # load (create function, cropping to buffer_size)
       
       for i in range(0,args.iterations):
-        get_features(MidiFile(f'output/{get_filename("guess",i)}'))
+        get_features(MidiFile(f'output/{get_filename("guess",i)}.mid'))
 
     # Algorithm
     # Set batch mode

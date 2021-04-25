@@ -37,10 +37,14 @@ class OrnetteModule():
         note_performance=config.note_performance)
   
   # update Module#generate to receive only number of tokens
-  def generate(self, primer_sequence=None, length=4):
+  def generate(self, history=None, length=4):
     length_seconds = self.host.steps_to_seconds(length)
     last_end_time = 0
+    
+    # Get first voice
+    primer_sequence = [] if history is None else history[0]
       
+      # Get last end time
     if (primer_sequence != None and any(primer_sequence)):
         last_end_time = max(n.end_time for n in primer_sequence)
     

@@ -115,7 +115,7 @@ class Host:
           print("Generating more tokens ({} /{} > {})".format(playhead, len(hist), threshold))
 
       # Generate sequence
-      seq = self.model.generate(state['history'][0],
+      seq = self.model.generate(state['history'],
           length=state['missing_beats'],
           )
 
@@ -152,10 +152,16 @@ class Host:
       # return np.any(hist) and np.any(hist[0])
       return any(hist) and any(hist[0])
 
+    def task_ended(self):
+      did_it_end = len(state['history'][0]) >= state['buffer_length']
+      if (did_it_end): self.notify_task_complete()
+      return did_it_end
+
     def must_generate(self):
       if (state['is_generating'] == True): return False
       elif (self.has_history() == False): return True
       # print(f'{self.state["playhead"]} / {len(self.state["history"][0])} >= {self.state["trigger_generate"]}')
+      if (state['batch_mode'] and self.task_ended()): return False
       return self.state['playhead'] / len(self.state['history'][0]) >= self.state['trigger_generate']
 
     def is_debugging(self):
@@ -212,9 +218,11 @@ class Host:
         print(f'({state["playhead"]}/{len(state["history"][0])}): {name} {value}')
 
       # (Batch Mode) Notify maximum requested length has been met
-      if (state['batch_mode']
-            and len(state['history'][0]) >= state['buffer_length']
-            and self.must_generate()):
+      print(f'\nbatch_mode: {state["batch_mode"]}')
+      print(f"history[0] >= buffer_length: {len(state['history'][0]) >= state['buffer_length']}")
+      print(f"{len(state['history'][0])} >= {state['buffer_length']}: {len(state['history'][0]) >= state['buffer_length']}")
+      print(f'self.must_generate(): {self.must_generate()}\n')
+      if (state['batch_mode'] and state['playhead'] >= state['buffer_length']):
           self.notify_task_complete()
 
       if (state['batch_mode']): return
