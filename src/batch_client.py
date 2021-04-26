@@ -33,6 +33,9 @@ class BatchClient(udp_client.SimpleUDPClient):
   def pause(self):
     self.send_message('/pause', [])
 
+  def end(self):
+    self.send_message('/end', [])
+
   def wait(self):
     print("Waiting...")
     self.server.serve_forever()

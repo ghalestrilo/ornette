@@ -15,6 +15,8 @@ ORNETTE_BASE="ornette/base"
 ORNETTE_CLIENT="ornette/client"
 ORNETTE_BATCH_RUNNER="ornette/batch-runner"
 
+DOCKER_START="docker run -it"
+if [ $NOT_INTERACTIVE ]; then DOCKER_START="docker run -t"; fi
 
 
 # Definitions
@@ -43,7 +45,6 @@ function build_batch_runner_image(){
 # TODO: check that ~/.ornette exists
 [ ! $modelname ] && echo "No model provided (arg 1)" && exit
 [ ! $checkpoint_dir ] && echo "No checkpoint provided (arg 2)"
-
 [ ! -d "$checkpoint_dir" ] && mkdir -p $checkpoint_dir
 
 
@@ -55,7 +56,7 @@ if [ $modelname = 'client' ]; then
   elif [ $REBUILD ]; then build_client_image
   fi
 
-  docker run -it \
+  $DOCKER_START \
     --net=host \
     -v "$(pwd)":/ornette \
     $ORNETTE_CLIENT
@@ -68,10 +69,12 @@ if [ $modelname = 'batch' ]; then
   if [ $? = 1 ];       then build_batch_runner_image
   elif [ $REBUILD ];   then build_batch_runner_image
   fi
-
-  docker run -it \
+  
+  $DOCKER_START \
     --net=host \
     -e BATCH_RUNNER=1 \
+    -e MODELNAME=$MODELNAME \
+    -e NOT_INTERACTIVE=$NOT_INTERACTIVE \
     -v "$(pwd)":/ornette \
     $ORNETTE_BATCH_RUNNER \
     $ornette_base_command
@@ -99,7 +102,7 @@ ornette_start_command="python /ornette --module=$modelname --checkpoint=$checkpo
 
 [ $DEV ] && ornette_start_command="alias start=\"$ornette_start_command\"; bash"
 
-docker run -it \
+$DOCKER_START \
   --hostname server \
   --net=host \
   --device /dev/nvidia0:/dev/nvidia0  \

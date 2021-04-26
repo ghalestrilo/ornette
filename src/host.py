@@ -218,14 +218,7 @@ class Host:
       if (self.is_debugging()):
         print(f'({state["playhead"]}/{len(state["history"][0])}): {name} {value}')
 
-      # (Batch Mode) Notify maximum requested length has been met
-      print(f'\nbatch_mode: {state["batch_mode"]}')
-      print(f"history[0] >= buffer_length: {len(state['history'][0]) >= state['buffer_length']}")
-      print(f"{len(state['history'][0])} >= {state['buffer_length']}: {len(state['history'][0]) >= state['buffer_length']}")
-      print(f'self.must_generate(): {self.must_generate()}\n')
-      print(f'playhead: {state["playhead"]}\n')
       task_complete = state['batch_mode'] and (state['playhead'] >= state['buffer_length'] - 1)
-      print(f'task_complete: {task_complete}')
       if (task_complete):
           self.notify_task_complete()
 

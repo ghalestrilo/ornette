@@ -6,7 +6,7 @@ from mido import MidiFile
 
 from datetime import date
 from time import time
-from os import path, mkdir, listdir
+from os import path, mkdir, listdir, environ
 
 
 # Folder and File Names
@@ -37,6 +37,7 @@ def save_df(df, filename):
     df.to_pickle(filename)
 
 
+NOT_INTERACTIVE= True if 'NOT_INTERACTIVE' in environ.keys() and environ['NOT_INTERACTIVE'] == 1 else False
 
 
 # Main 
@@ -53,6 +54,7 @@ def run_experiments():
   # /FIXME: Remove this
 
   client = BatchClient(args.ip, args.port, args.port_in)
+  if (NOT_INTERACTIVE): client.wait()
 
   # TODO: Automate this
 
@@ -75,8 +77,6 @@ def run_experiments():
             client.wait()
 
             client.pause()
-            client.debug('history')
-            client.debug('output_data')
             client.save(get_filename('guess',i))
             # load (create function, cropping to buffer_size)
       
@@ -114,8 +114,9 @@ def run_experiments():
     # Load MIDI using Mido
     # Convert Mido to Pandas (?)
     # Calculate Error (NEED HELP)
-
+    if (NOT_INTERACTIVE): client.end()
   except KeyboardInterrupt:
     print("Terminating...")
     client.pause()
+    if (NOT_INTERACTIVE): client.end()
     exit(1)
