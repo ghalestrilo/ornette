@@ -130,7 +130,7 @@ def save_output(filename=None, data=[], tpb=960, host=None):
     mid.save(normpath(filename))
     while not os.path.exists(filename):
         pass
-    if host is not None: host.notify_task_complete()
+    # if host is not None: host.notify_task_complete()
 
 
 def init_output_data(state):

@@ -68,7 +68,7 @@ def run_experiments():
       if (args.skip_generation == False):
         for i in range(0,args.iterations):
             print(f'[guess] Iteration {i}')
-            client.set('buffer_length', i*args.block_size)
+            client.set('buffer_length', (1 + i) * args.block_size)
             client.reset()
             client.start()
 

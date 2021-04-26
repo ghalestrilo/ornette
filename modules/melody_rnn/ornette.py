@@ -10,15 +10,14 @@ import os
 
 class OrnetteModule():
   def __init__(self, host, checkpoint='attention_rnn'):
-    config      = default_configs[checkpoint]
+    config          = default_configs[checkpoint]
     checkpoint_file = os.path.normpath(f'/ckpt/{checkpoint}')
-    bundle_file = sequence_generator_bundle.read_bundle_file(checkpoint_file)
-    steps_per_quarter = 4
+    bundle_file     = sequence_generator_bundle.read_bundle_file(checkpoint_file)
+    host.state['steps_per_quarter'] = config.steps_per_quarter
     self.model = MelodyRnnSequenceGenerator(model=MelodyRnnModel(config),
       details=config.details,
-      steps_per_quarter=steps_per_quarter,
+      steps_per_quarter=config.steps_per_quarter,
       bundle=bundle_file)
-    self.realtime_ready = True
     self.server_state = host.state
     self.host = host
     self.host.set('history', [[]])
@@ -43,19 +42,14 @@ class OrnetteModule():
 
       noteseq = NoteSequence(
         notes=primer_sequence,
-        quantization_info={
-            'steps_per_quarter': self.server_state['steps_per_quarter']
-            },
-        tempos=[ {
-          'time': 0,
-          'qpm': self.server_state['bpm']
-        } ],
+        quantization_info={ 'steps_per_quarter': self.server_state['steps_per_quarter'] },
+        tempos=[ { 'time': 0, 'qpm': self.server_state['bpm'] } ],
         total_quantized_steps=11,
       )
 
       # generate the output sequence
       notes = self.model.generate(noteseq, generator_options).notes
-      print(f'generated {len(notes)} notes')
+      # print(f'generated {len(notes)} notes')
       return notes
 
   def decode(self, token):
@@ -70,7 +64,6 @@ class OrnetteModule():
     self.last_end_time = max(0,token.end_time)
     return decoded
 
-  # For Batch-running only
   def encode(self, message):
     ''' Receives a mido message, must return a model-compatible token '''
 

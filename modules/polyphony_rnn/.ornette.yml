@@ -1,0 +1,16 @@
+checkpoints:
+  polyphony_rnn: http://download.magenta.tensorflow.org/models/polyphony_rnn.mag
+
+
+configs:
+  polyphony:
+    config: polyphony
+    temperature: 1.0
+    qpm: None
+    log: INFO
+    num_steps: 128
+    condition_on_primer: False
+    inject_primer_during_generation: True
+    beam_size: 1
+    branch_factor: 1
+    steps_per_iteration: 1

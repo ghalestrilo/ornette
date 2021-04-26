@@ -153,14 +153,15 @@ class Host:
       return any(hist) and any(hist[0])
 
     def task_ended(self):
+      # if len(state['history']) == 0 or len(state['history'][0]): return False
       did_it_end = len(state['history'][0]) >= state['buffer_length']
-      if (did_it_end): self.notify_task_complete()
+      # if (did_it_end): self.notify_task_complete()
       return did_it_end
 
     def must_generate(self):
       if (state['is_generating'] == True): return False
       elif (self.has_history() == False): return True
-      # print(f'{self.state["playhead"]} / {len(self.state["history"][0])} >= {self.state["trigger_generate"]}')
+      print(f'{self.state["playhead"]} / {len(self.state["history"][0])} >= {self.state["trigger_generate"]}')
       if (state['batch_mode'] and self.task_ended()): return False
       return self.state['playhead'] / len(self.state['history'][0]) >= self.state['trigger_generate']
 
@@ -222,7 +223,10 @@ class Host:
       print(f"history[0] >= buffer_length: {len(state['history'][0]) >= state['buffer_length']}")
       print(f"{len(state['history'][0])} >= {state['buffer_length']}: {len(state['history'][0]) >= state['buffer_length']}")
       print(f'self.must_generate(): {self.must_generate()}\n')
-      if (state['batch_mode'] and state['playhead'] >= state['buffer_length']):
+      print(f'playhead: {state["playhead"]}\n')
+      task_complete = state['batch_mode'] and (state['playhead'] >= state['buffer_length'] - 1)
+      print(f'task_complete: {task_complete}')
+      if (task_complete):
           self.notify_task_complete()
 
       if (state['batch_mode']): return
@@ -242,6 +246,8 @@ class Host:
 
       if (e == None):
         if (self.is_debugging()): print("No event / history is empty")
+        if (state['batch_mode'] and self.task_ended()):
+            self.notify_task_complete()
         return
 
 
