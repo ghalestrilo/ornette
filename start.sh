@@ -71,14 +71,18 @@ if [ $modelname = 'batch' ]; then
   fi
 
   ornette_start_command="$ornette_base_command"
-  [ $NOT_INTERACTIVE ] && ornette_start_command="$ornette_start_command --interactive=False";
+  ornette_start_command="$ornette_base_command --interactive"
+  [ $NOT_INTERACTIVE ] && ornette_start_command="$ornette_base_command";
   [ $MODELNAME ] && ornette_start_command="$ornette_start_command --modelname $MODELNAME";
-
+  echo $DOCKER_START \
+    --net=host \
+    -e BATCH_RUNNER=1 \
+    -v "$(pwd)":/ornette \
+    $IMAGE_BATCH_RUNNER \
+    $ornette_start_command
   $DOCKER_START \
     --net=host \
     -e BATCH_RUNNER=1 \
-    -e MODELNAME="$MODELNAME" \
-    -e NOT_INTERACTIVE="$NOT_INTERACTIVE" \
     -v "$(pwd)":/ornette \
     $IMAGE_BATCH_RUNNER \
     $ornette_start_command

@@ -51,6 +51,7 @@ def run_experiments():
   if (not args.interactive):
     client.wait()
     client.set('debug_output', False)
+  else: print("\n\nInteractive mode\n\n")
 
   # TODO: Automate this
 

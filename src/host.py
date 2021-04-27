@@ -58,13 +58,13 @@ class Host:
       self.clock = Clock(self)
 
       # Notify startup for batch runner
-      if (self.state['batch_mode']): self.notify_task_complete()
       pass
 
     def start(self):
       try:
         self.reset()
         self.clock.start()
+        if (self.state['batch_mode']): self.notify_task_complete()
         self.bridge.start()
       except KeyboardInterrupt:
           self.close()
@@ -183,12 +183,12 @@ class Host:
 
       if (self.has_history() == False): return None
 
-      # FIXME: I think this is not being called
-      if (playhead >= len(hist[0])): self.clock.notify_wait()
-
+      no_more_tokens = playhead >= len(hist[0])
       position = playhead + offset
 
-      if (position >= len(hist[0])): return None
+      if (no_more_tokens):
+          self.clock.notify_wait()
+          return None
 
       if (position < 0):
         print(f'Warning: trying to read a negative position in history ({playhead} + {offset} = {position})')
@@ -278,6 +278,7 @@ class Host:
         data.load_midi(self, name)
 
     def save_output(self, name):
+        self.set('is_running',False)
         data.save_output(name, state['output_data'], state['ticks_per_beat'], self)
 
     # Batch Mode Methods
