@@ -27,6 +27,11 @@ class BatchClient(udp_client.SimpleUDPClient):
   def play(self,note):
     self.send_message('/play', [note + 40])
 
+  def run(self,filename):
+    self.set('output_filename', filename)
+    self.start() # TODO: on host: unset 'batch_complete'
+    self.wait()
+
   def reset(self):
     self.send_message('/reset', [])
   

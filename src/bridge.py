@@ -64,4 +64,5 @@ class Bridge:
         self.server.shutdown()
 
     def notify_task_complete(self):
+        print('[server] task complete')
         self.client.send_message('/ok',[])

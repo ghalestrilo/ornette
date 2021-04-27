@@ -11,9 +11,9 @@ imagename="ornette_$modelname"
 # batch_runner_command="python scripts/batch.py"
 ornette_base_command="python /ornette"
 
-ORNETTE_BASE="ornette/base"
-ORNETTE_CLIENT="ornette/client"
-ORNETTE_BATCH_RUNNER="ornette/batch-runner"
+IMAGE_BASE="ornette/base"
+IMAGE_CLIENT="ornette/client"
+IMAGE_BATCH_RUNNER="ornette/batch-runner"
 
 DOCKER_START="docker run -it"
 if [ $NOT_INTERACTIVE ]; then DOCKER_START="docker run -t"; fi
@@ -27,15 +27,15 @@ function build_image(){
 }
 
 function build_base_image(){
-  docker build -t $ORNETTE_BASE -f Dockerfile.base .
+  docker build -t $IMAGE_BASE -f Dockerfile.base .
 }
 
 function build_client_image(){
-  docker build -t $ORNETTE_CLIENT -f Dockerfile.client .
+  docker build -t $IMAGE_CLIENT -f Dockerfile.client .
 }
 
 function build_batch_runner_image(){
-  docker build -t $ORNETTE_BATCH_RUNNER -f Dockerfile.batch_runner .
+  docker build -t $IMAGE_BATCH_RUNNER -f Dockerfile.batch_runner .
 }
 
 
@@ -51,7 +51,7 @@ function build_batch_runner_image(){
 
 if [ $modelname = 'client' ]; then
   # Assert that ornette client image exists
-  docker image inspect $ORNETTE_CLIENT > /dev/null;
+  docker image inspect $IMAGE_CLIENT > /dev/null;
   if [ $? = 1 ];          then build_client_image
   elif [ $REBUILD ]; then build_client_image
   fi
@@ -59,31 +59,35 @@ if [ $modelname = 'client' ]; then
   $DOCKER_START \
     --net=host \
     -v "$(pwd)":/ornette \
-    $ORNETTE_CLIENT
+    $IMAGE_CLIENT
   exit
 fi
 
 if [ $modelname = 'batch' ]; then
   # Assert that ornette client image exists
-  docker image inspect $ORNETTE_BATCH_RUNNER > /dev/null;
+  docker image inspect $IMAGE_BATCH_RUNNER > /dev/null;
   if [ $? = 1 ];       then build_batch_runner_image
   elif [ $REBUILD ];   then build_batch_runner_image
   fi
-  
+
+  ornette_start_command="$ornette_base_command"
+  [ $NOT_INTERACTIVE ] && ornette_start_command="$ornette_start_command --interactive=False";
+  [ $MODELNAME ] && ornette_start_command="$ornette_start_command --modelname $MODELNAME";
+
   $DOCKER_START \
     --net=host \
     -e BATCH_RUNNER=1 \
-    -e MODELNAME=$MODELNAME \
-    -e NOT_INTERACTIVE=$NOT_INTERACTIVE \
+    -e MODELNAME="$MODELNAME" \
+    -e NOT_INTERACTIVE="$NOT_INTERACTIVE" \
     -v "$(pwd)":/ornette \
-    $ORNETTE_BATCH_RUNNER \
-    $ornette_base_command
+    $IMAGE_BATCH_RUNNER \
+    $ornette_start_command
   exit
 fi
 
 
 # Assert that ornette base image exists
-docker image inspect $ORNETTE_BASE > /dev/null;
+docker image inspect $IMAGE_BASE > /dev/null;
 if [ $? = 1 ];          then build_base_image
 elif [ $FULL_REBUILD ]; then build_base_image
 fi
@@ -99,6 +103,7 @@ fi
 # Start Server
 
 ornette_start_command="python /ornette --module=$modelname --checkpoint=$checkpoint_name"
+[ $NOT_INTERACTIVE ] && ornette_start_command="$ornette_start_command --batch-mode=True"
 
 [ $DEV ] && ornette_start_command="alias start=\"$ornette_start_command\"; bash"
 

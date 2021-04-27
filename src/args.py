@@ -33,7 +33,9 @@ def get_batch_args():
     parser.add_argument('--state',      type=str,  default="0",         help='the initial state of the improv')
 
     parser.add_argument("--playback",   type=bool, default=True,        help="Use supercollider for sound playback")
-    parser.add_argument("--batch-mode", type=bool, default=False,       help="Use supercollider for sound playback")
+    # parser.add_argument("--batch-mode", type=bool, default=False,       help="Run in batch mode")
+    parser.add_argument("--interactive", type=bool, default=True,       help="Run in interactive mode")
+    parser.add_argument("--modelname",   type=str,  default='unknown',  help="Name of model being analyzed")
 
     parser.add_argument('--block-size', type=int,  default=16,          help='Length of increment to the server\'s buffer_size at each iteration of an experiment')
 

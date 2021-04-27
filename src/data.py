@@ -129,8 +129,8 @@ def save_output(filename=None, data=[], tpb=960, host=None):
     track.append(MetaMessage('end_of_track'))
     mid.save(normpath(filename))
     while not os.path.exists(filename):
-        pass
-    # if host is not None: host.notify_task_complete()
+        print(f'{filename} does not exist')
+    if host is not None: host.notify_task_complete()
 
 
 def init_output_data(state):

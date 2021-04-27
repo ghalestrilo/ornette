@@ -4,6 +4,7 @@ from clock import Clock
 import pprint
 import mido
 import data
+from os import environ
 
 state = {
     # Basic Config
@@ -47,6 +48,7 @@ state = {
     'data_frame': None,
 }
 
+
 class Host:
     def __init__(self,args):
       self.state = state
@@ -54,6 +56,9 @@ class Host:
       self.bridge = Bridge(self,args)
       self.model = data.load_model(self,args.checkpoint)
       self.clock = Clock(self)
+
+      # Notify startup for batch runner
+      if (self.state['batch_mode']): self.notify_task_complete()
       pass
 
     def start(self):
@@ -161,7 +166,7 @@ class Host:
     def must_generate(self):
       if (state['is_generating'] == True): return False
       elif (self.has_history() == False): return True
-      print(f'{self.state["playhead"]} / {len(self.state["history"][0])} >= {self.state["trigger_generate"]}')
+      # print(f'{self.state["playhead"]} / {len(self.state["history"][0])} >= {self.state["trigger_generate"]}')
       if (state['batch_mode'] and self.task_ended()): return False
       return self.state['playhead'] / len(self.state['history'][0]) >= self.state['trigger_generate']
 
@@ -215,14 +220,12 @@ class Host:
           'play': sends an osc message to play the desired note (value)
       '''
       name, value = action
-      if (self.is_debugging()):
-        print(f'({state["playhead"]}/{len(state["history"][0])}): {name} {value}')
+      # if (self.is_debugging()):
+      #   print(f'({state["playhead"]}/{len(state["history"][0])}): {name} {value}')
 
-      task_complete = state['batch_mode'] and (state['playhead'] >= state['buffer_length'] - 1)
-      if (task_complete):
-          self.notify_task_complete()
-
-      if (state['batch_mode']): return
+      if (state['batch_mode']):
+        state['until_next_event'] = 0
+        return
 
       if (name == 'play'): self.play(int(value))
       if (name == 'wait'): state['until_next_event'] = value
@@ -240,12 +243,11 @@ class Host:
       if (e == None):
         if (self.is_debugging()): print("No event / history is empty")
         if (state['batch_mode'] and self.task_ended()):
-            self.notify_task_complete()
+            self.set('is_running', False)
+            self.save_output(state['output_filename'])
         return
 
-
       for message in self.model.decode(e):
-        # if (save_output): data.add_message(state, msg)
         for action in self.get_action(message):
           self.perform(action)
 
