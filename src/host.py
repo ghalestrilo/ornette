@@ -129,7 +129,6 @@ class Host:
       #     self.notify_task_complete()
 
       # Update Playhead
-      print(f'rewinding {len(seq) - max_len} tokens')
       self.rewind(max(0, len(seq) - max_len))
 
       state['history'][0] = seq[-max_len:]
@@ -155,7 +154,7 @@ class Host:
     def has_history(self):
       hist = self.state['history']
       # return np.any(hist) and np.any(hist[0])
-      return any(hist) and any(hist[0])
+      return any(hist) and any(hist[0]) and (len(hist[0]) > 0)
 
     def task_ended(self):
       # if len(state['history']) == 0 or len(state['history'][0]): return False
@@ -253,9 +252,6 @@ class Host:
 
       self.state['playhead'] = self.state['playhead'] + 1
 
-
-
-    # TODO: Do I need this?
     def is_running(self):
       return state['is_running']
 
@@ -272,13 +268,13 @@ class Host:
         state['playhead'] = 0
         if state['midi_tempo'] is None: state['midi_tempo'] = mido.bpm2tempo(state['bpm'])
         data.init_output_data(state)
+        self.clock.notify_wait(False)
 
     # Data Methods
     def load_midi(self, name):
         data.load_midi(self, name)
 
     def save_output(self, name):
-        self.set('is_running',False)
         data.save_output(name, state['output_data'], state['ticks_per_beat'], self)
 
     # Batch Mode Methods

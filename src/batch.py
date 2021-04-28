@@ -60,26 +60,27 @@ def run_experiments():
   # EXPERIMENT BLOCK
   try:
     # EXPERIMENT 1: Guess test
-    if (args.experiment in ['all', 'guess']):
+    if (args.experiment in ['all', 'free']):
+      expname = 'free'
       print(f'[guess] Running experiment with model: {args.modelname}')
       client.set('batch_mode', True)
       client.set('trigger_generate', 1)
+      client.set('batch_unit', 'measures')
       # client.set('debug_output', False)
       
       if (args.skip_generation == False):
         for i in range(0,args.iterations):
             print(f'[guess] Iteration {i}')
             client.reset()
+            client.pause()
             client.set('buffer_length', (1 + i) * args.block_size)
-            client.set('batch_unit', 'measures')
             # load (create function, cropping to buffer_size)
             # client.set('missing_measures', 1)
 
-            client.run(get_filename('guess',i))
+            client.run(get_filename(expname,i))
       
       for i in range(0, args.iterations):
-        midi_filename = get_midi_filename("guess", i)
-        pickle_filename = get_pickle_filename("guess", i)
+        midi_filename = get_midi_filename(expname, i)
 
         # print("get_midi_filename: {}".format(midi_filename))
         # print("get_pickle_filename: {}".format(pickle_filename))
@@ -92,7 +93,7 @@ def run_experiments():
 
         # print(f"Extracting features from file: {midi_filename}")
         df = get_features(MidiFile(midi_filename))
-        save_df(df, get_pickle_filename("guess", i))
+        save_df(df, get_pickle_filename(expname, i))
         
 
 

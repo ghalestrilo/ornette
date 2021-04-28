@@ -27,7 +27,7 @@ class Clock(Thread):
     def run(self):
       host = self.host
 
-      self.generate_in_background()
+      # self.generate_in_background()
       while not self.stopped.wait(self.state['until_next_event']):
         if (host.is_running() == True and self.should_wait == False):
           self.host.process_next_token()

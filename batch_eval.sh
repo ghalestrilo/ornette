@@ -3,11 +3,11 @@
 declare -a models
 declare -a checkpoints
 
-# models=(melody_rnn performance_rnn polyphony_rnn)
-# checkpoints=(attention_rnn performance_with_dynamics polyphony_rnn)
+models=(melody_rnn performance_rnn polyphony_rnn)
+checkpoints=(attention_rnn performance_with_dynamics polyphony_rnn)
 
-models=(melody_rnn)
-checkpoints=(attention_rnn)
+# models=(melody_rnn)
+# checkpoints=(attention_rnn)
 
 count=${#models[@]}
 
