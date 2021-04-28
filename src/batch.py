@@ -77,7 +77,10 @@ def run_experiments():
             # load (create function, cropping to buffer_size)
             # client.set('missing_measures', 1)
 
-            client.run(get_filename(expname,i))
+            # client.run(get_filename(expname,i))
+            client.generate(1, 'measures')
+            client.save(get_filename(expname,i))
+            client.wait()
       
       for i in range(0, args.iterations):
         midi_filename = get_midi_filename(expname, i)

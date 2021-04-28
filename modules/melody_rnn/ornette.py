@@ -21,10 +21,10 @@ class OrnetteModule():
     self.server_state = host.state
     self.host = host
     self.host.set('history', [[]])
+    self.host.set('generation_unit', 'seconds')
     self.last_end_time = 0
 
-  def generate(self, history=None, length=4):
-      length_seconds = self.host.steps_to_seconds(length)
+  def generate(self, history=None, length_seconds=4):
       last_end_time = 0
 
       # Get first voice
@@ -37,8 +37,8 @@ class OrnetteModule():
       # TODO: Abstract this code
       generator_options = generator_pb2.GeneratorOptions()
       generator_options.generate_sections.add(
-          start_time=length_seconds + last_end_time,
-          end_time=length_seconds + last_end_time + length_seconds)
+          start_time=last_end_time,
+          end_time=last_end_time + length_seconds)
 
       noteseq = NoteSequence(
         notes=primer_sequence,

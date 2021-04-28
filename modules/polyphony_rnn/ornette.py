@@ -43,10 +43,10 @@ class OrnetteModule():
       self.server_state = host.state
       self.host = host
       self.host.set('history', [[]])
+      self.host.set('generation_unit', 'seconds')
       self.last_end_time = 0
 
-  def generate(self, history=None, length=4):
-    length_seconds = self.host.steps_to_seconds(length)
+  def generate(self, history=None, length_seconds=4):
     last_end_time = 0
 
     # Get first voice

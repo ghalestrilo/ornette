@@ -23,6 +23,7 @@ class OrnetteModule():
     self.server_state = host.state
     self.host = host
     self.host.set('history', [[]])
+    self.host.set('generation_unit', 'seconds')
     self.last_end_time = 0
 
     self.model = PerformanceRnnSequenceGenerator(
@@ -37,8 +38,7 @@ class OrnetteModule():
         note_performance=config.note_performance)
   
   # update Module#generate to receive only number of tokens
-  def generate(self, history=None, length=4):
-    length_seconds = self.host.steps_to_seconds(length)
+  def generate(self, history=None, length_seconds=4):
     last_end_time = 0
     
     # Get first voice
@@ -50,20 +50,15 @@ class OrnetteModule():
     
     generator_options = generator_pb2.GeneratorOptions()
     generator_options.generate_sections.add(
-        start_time=length_seconds + last_end_time,
-        end_time=length_seconds + last_end_time + length)
+        start_time=last_end_time,
+        end_time=last_end_time + length_seconds)
     
     # TEMP: Constructing noteseq dict to feed into the model
     # TODO: bind 'notes' value to self.history
     noteseq = NoteSequence(
-      notes=primer_sequence[-16:],
-      quantization_info={
-          'steps_per_quarter': 4
-          },
-      tempos=[ {
-        'time': 0,
-        'qpm': self.server_state['bpm']
-      } ],
+      notes=primer_sequence,
+      quantization_info={ 'steps_per_quarter': self.server_state['steps_per_quarter'] },
+        tempos=[ { 'time': 0, 'qpm': self.server_state['bpm'] } ],
       total_quantized_steps=11,
     )
 

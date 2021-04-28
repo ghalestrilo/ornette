@@ -28,8 +28,10 @@ state = {
     'return': 0,
     'time_shift_denominator': 100,
     'missing_beats': 4,  # How many beats should the generator generate?
-    # 'instrument': [ 's', 'superpiano' ],
-    'instrument': [ 's', 'mc', 'midichan', 0 ],
+    'input_unit': 'beats',
+    'output_unit': 'beats',
+    'instrument': [ 's', 'superpiano' ],
+    # 'instrument': [ 's', 'mc', 'midichan', 0 ],
 
     # MIDI  Output fields
     'output_data': [],
@@ -81,18 +83,23 @@ class Host:
     
     def print(self, field=None, pretty=True):
       """ Print a key from the host state """
+      
       if (field == None):
         pprint.pprint(state)
         return
       try:
+          if (field == 'time'):
+            self.time_debug()
+            return
+
           data = state[field]
-          print("[{0}] ~ {1}".format(field, data))
           if (pretty == True and field == 'history'):
             pprint.pprint([self.model.decode(e) for e in data[0]])
             return
           if (pretty == True and field == 'output_data'):
             pprint.pprint(data)
             return
+
           print("[{0}] ~ {1}".format(field, data))
 
       except KeyError:
@@ -108,7 +115,7 @@ class Host:
       if (instr == None): self.bridge.play(pitch)
       else: self.bridge.play(pitch, instr)
 
-    def generate(self):
+    def generate(self, length=state['missing_beats'], unit='beats'):
       state['is_generating'] = True
       hist = self.state['history'][0]
       threshold = self.state['trigger_generate']
@@ -117,12 +124,13 @@ class Host:
       max_len = self.state['buffer_length'] 
 
       if (self.is_debugging()):
-          print("Generating more tokens ({} /{} > {})".format(playhead, len(hist), threshold))
+          print(f'[server] generating tokens ({playhead}/{len(hist)} > {threshold})')
+          print(f'[server] requested length: {length} {unit} ({self.to_ticks(length, unit)} ticks)')
 
       # Generate sequence
-      seq = self.model.generate(state['history'],
-          length=state['missing_beats'],
-          )
+      ticks = self.to_ticks(length, unit)
+      final_length = self.from_ticks(ticks, state['input_unit'])
+      seq = self.model.generate(state['history'], final_length)
 
       # # (Batch Mode) Notify maximum requested length has been met
       # if (state['batch_mode'] and len(seq) >= max_len):
@@ -219,15 +227,21 @@ class Host:
           'play': sends an osc message to play the desired note (value)
       '''
       name, value = action
-      # if (self.is_debugging()):
-      #   print(f'({state["playhead"]}/{len(state["history"][0])}): {name} {value}')
+      if (self.is_debugging()):
+        print(f'({state["playhead"]}/{len(state["history"][0])}): {name} {value}')
 
       if (state['batch_mode']):
         state['until_next_event'] = 0
         return
 
       if (name == 'play'): self.play(int(value))
-      if (name == 'wait'): state['until_next_event'] = value
+      
+      # FIXME: Calculate seconds from incoming value unit (melody_rnn: beats)
+      if (name == 'wait'):
+          # ticks = self.to_ticks(value, state['output_unit'])
+          # secs = self.from_ticks(ticks, 'seconds')
+          state['until_next_event'] = value
+      
 
     def process_next_token(self):
       ''' Reads the next token from the history
@@ -288,14 +302,90 @@ class Host:
 #       tf.config.list_physical_devices("GPU")
 #       print('tf.test.is_gpu_available() = {}'.format(tf.test.is_gpu_available()))
 
-    def steps_to_seconds(self,steps):
-        return (state['ticks_per_beat'] * steps
-          / state['bpm']
-          / state['steps_per_quarter'])
 
-    # def tempo2miditempo(self, tempo, pulses_per_quarter_note):
-    #   return 60000 / (tempo * pulses_per_quarter_note)
 
+
+
+
+
+
+    # def steps_to_seconds(self,steps):
+    #     return (state['ticks_per_beat'] * steps
+    #       / state['bpm']
+    #       / state['steps_per_quarter'])
+
+    def get_measure_length(self, unit):
+        length = 1
+        if (unit == 'measures'): return length
+        return self.get_beat_length(length, unit)
+
+    def get_beat_length(self, length, unit):
+        length = length * 4 * state['time_signature_numerator'] / state['time_signature_denominator']
+        if (unit == 'beats'): return length
+
+        length = length * state['ticks_per_beat']
+        if (unit == 'ticks'): return length
+        
+        if (unit == 'seconds'):
+          return mido.tick2second(length,
+            state['ticks_per_beat'],
+            state['midi_tempo'])
+        return None
+
+    def from_ticks(self, length, unit):
+        if (length is None): return None
+        if (unit == 'ticks'): return length
+
+        if (unit == 'seconds'):
+          return mido.tick2second(length,
+            state['ticks_per_beat'],
+            state['midi_tempo'])
+
+        length = length / state['ticks_per_beat']
+        if (unit == 'beats'):
+          return length
+
+        length = length / (4 * state['time_signature_numerator'] / state['time_signature_denominator'])
+        if (unit == 'measures'): 
+          return length
+
+        return None
+
+    def to_ticks(self, length, unit):
+        if (length is None): return None
+        if (unit == 'seconds'): return mido.second2tick(length, state['ticks_per_beat'], state['midi_tempo'])
+
+        if (unit == 'ticks'): return length
+
+        length = length * state['ticks_per_beat']
+        if (unit == 'beats'): return length
+
+        length = length * 4 * state['time_signature_numerator'] / state['time_signature_denominator']
+        if (unit == 'measures'): return length
+        return None
+
+    def ticks_per_token(self):
+      return sum([0 for x in state['history']]) / len(state['history']) if self.has_history() else None
+
+    def time_debug(self, measures=1):
+      # beats = self.get_measure_length('beats')
+      # ticks = self.get_measure_length('ticks')
+      # seconds = self.get_measure_length('seconds')
+      # tokens = self.get_measure_length('tokens')
+      ticks = self.to_ticks(measures, 'measures')
+      beats = self.from_ticks(ticks, 'beats')
+      ticks = self.from_ticks(ticks, 'ticks')
+      seconds = self.from_ticks(ticks, 'seconds')
+      tokens = self.from_ticks(ticks, 'tokens')
+      tempo = state['midi_tempo']
+      bpm = state['bpm']
+      tpb = state['ticks_per_beat']
+      gtf = self.to_ticks
+      print('[server] Time info:')
+      print(f'   {measures} measure = {beats} beats = {ticks} ticks = {seconds} seconds ~ {tokens} tokens')
+      print(f'   {gtf(1, "measures")} == {gtf(beats, "beats")} == {gtf(ticks, "ticks")} == {gtf(seconds, "seconds")} ~ {gtf(tokens, "tokens")}')
+      print(f'   tempo: {tempo} | bpm: {bpm} | tpb: {tpb}')
+      print(f'   missing beats: {state["missing_beats"]} | unit: {state["input_unit"]}')
 
     # Analysis Methods
     def get_decoded_history(self):
