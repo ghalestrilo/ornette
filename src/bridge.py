@@ -26,7 +26,7 @@ class Bridge:
         dispatcher.map("/set", lambda addr, k, v: host.set(k, v))
         dispatcher.map("/debug", lambda addr, key: host.print() if key == 'all' else host.print(key))
 
-        dispatcher.map("/generate", lambda addr, length, unit: host.generate(length, unit))
+        dispatcher.map("/generate", lambda addr, length, unit: host.generate(length, unit, True))
         dispatcher.map("/load", lambda addr, name: host.load_midi(name))
         dispatcher.map("/save", lambda addr, name: host.save_output(name))
 

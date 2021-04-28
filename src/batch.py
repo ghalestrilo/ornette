@@ -55,14 +55,14 @@ def run_experiments():
 
   # TODO: Automate this
 
-  print(f'[global] Starting experiment suite: {get_output_dir()}/{foldername}')
+  print(f'[batch] Starting experiment suite: {get_output_dir()}/{foldername}')
 
   # EXPERIMENT BLOCK
   try:
     # EXPERIMENT 1: Guess test
     if (args.experiment in ['all', 'free']):
       expname = 'free'
-      print(f'[guess] Running experiment with model: {args.modelname}')
+      print(f'[batch - free] Running experiment with model: {args.modelname}')
       client.set('batch_mode', True)
       client.set('trigger_generate', 1)
       client.set('batch_unit', 'measures')
@@ -70,17 +70,15 @@ def run_experiments():
       
       if (args.skip_generation == False):
         for i in range(0,args.iterations):
-            print(f'[guess] Iteration {i}')
+            print(f'[batch - free] Iteration {i}')
             client.reset()
             client.pause()
             client.set('buffer_length', (1 + i) * args.block_size)
             # load (create function, cropping to buffer_size)
             # client.set('missing_measures', 1)
 
-            # client.run(get_filename(expname,i))
             client.generate(1, 'measures')
             client.save(get_filename(expname,i))
-            client.wait()
       
       for i in range(0, args.iterations):
         midi_filename = get_midi_filename(expname, i)

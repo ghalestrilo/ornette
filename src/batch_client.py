@@ -43,6 +43,7 @@ class BatchClient(udp_client.SimpleUDPClient):
 
   def generate(self, length, unit):
     self.send_message('/generate', [length, unit])
+    self.wait()
 
   def wait(self):
     print("Waiting...")

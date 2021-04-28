@@ -115,7 +115,7 @@ class Host:
       if (instr == None): self.bridge.play(pitch)
       else: self.bridge.play(pitch, instr)
 
-    def generate(self, length=state['missing_beats'], unit='beats'):
+    def generate(self, length=state['missing_beats'], unit='beats', respond=False):
       state['is_generating'] = True
       hist = self.state['history'][0]
       threshold = self.state['trigger_generate']
@@ -145,6 +145,8 @@ class Host:
       self.clock.notify_wait(False)
       # if (self.is_debugging()):
       #     print('history: {}'.format([self.model.decode(h) for h in hist]))
+
+      if (respond): self.notify_task_complete()
 
     def rewind(self, number):
       playhead = self.state['playhead']
