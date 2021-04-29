@@ -80,7 +80,7 @@ import os
     def encode(self, message):
         ''' Receives a mido message, must return a model-compatible token '''
 
-        next_start_time = self.last_end_time + message.time
+        next_start_time = self.last_end_time + self.host.from_ticks(message.time, 'beats')
 
         note = NoteSequence.Note(
             instrument=0,

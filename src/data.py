@@ -99,7 +99,7 @@ def load_midi(host, filename, max_ticks=None):
         print(msg)
         if msg.type in ['note_on']: history[i].append(host.model.encode(msg))
 
-    host.set('history',history)
+    host.set('history',[voice for voice in history if any(voice)])
     return history
 
 
