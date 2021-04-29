@@ -79,6 +79,7 @@ def run_experiments():
 
             client.generate(1, 'measures')
             client.save(get_filename(expname,i))
+            # client.wait()
       
       for i in range(0, args.iterations):
         midi_filename = get_midi_filename(expname, i)

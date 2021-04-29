@@ -146,7 +146,9 @@ class Host:
       # if (self.is_debugging()):
       #     print('history: {}'.format([self.model.decode(h) for h in hist]))
 
-      if (respond): self.notify_task_complete()
+      if (respond):
+        self.dump_history()
+        self.notify_task_complete()
 
     def rewind(self, number):
       playhead = self.state['playhead']
@@ -209,14 +211,13 @@ class Host:
     def get_action(self,message):
         ''' Get Action
             Decode a midi message into a sequence of actions
-            
         '''
         name, note, velocity, time = message
         msg = mido.Message(name,
           note=note,
           channel=1,
           velocity=velocity,
-          time=int(mido.second2tick(time, state['ticks_per_beat'], state['midi_tempo']))) 
+          time=int(round(mido.second2tick(time, state['ticks_per_beat'], state['midi_tempo'])))) 
           
         data.add_message(state, msg)
         return [('wait', time), ('play', note)]
@@ -392,6 +393,11 @@ class Host:
     # Analysis Methods
     def get_decoded_history(self):
         return []
+
+    def dump_history(self):
+      for e in state['history'][0]:
+          for message in self.model.decode(e):
+            self.get_action(message)
 
     def get_bars(self):
         return []

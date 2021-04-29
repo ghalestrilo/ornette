@@ -66,21 +66,22 @@ class OrnetteModule():
     self.generator_options = generator_pb2.GeneratorOptions()
     self.generator_options.args['temperature'].float_value = self.host.state['temperature']
     self.generator_options.generate_sections.add(
-        start_time=length_seconds + last_end_time,
-        end_time=length_seconds + last_end_time + length_seconds)
+        start_time= last_end_time + 0,
+        end_time= last_end_time + length_seconds)
 
     notes = self.model.generate(noteseq, self.generator_options).notes
+    print(notes)
     return notes
 
   def decode(self, token):
     ''' Must return a mido message (type (note_on), note, velocity, duration)'''
     velocity = 127
-
+    print(token.start_time)
     decoded = [
-      ('note_on', token.pitch, velocity, max(0, token.start_time - self.last_end_time)),
-      ('note_off', token.pitch, velocity, token.end_time - token.start_time)
+      ('note_on', token.pitch, token.velocity, max(0, token.start_time - self.last_end_time)),
+      ('note_off', token.pitch, token.velocity, token.end_time - token.start_time)
     ]
-
+    self.last_end_time = token.end_time
     return decoded
 
   def encode(self, message):
