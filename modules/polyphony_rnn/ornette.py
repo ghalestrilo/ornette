@@ -70,13 +70,10 @@ class OrnetteModule():
         end_time= last_end_time + length_seconds)
 
     notes = self.model.generate(noteseq, self.generator_options).notes
-    print(notes)
     return notes
 
   def decode(self, token):
     ''' Must return a mido message (type (note_on), note, velocity, duration)'''
-    velocity = 127
-    print(token.start_time)
     decoded = [
       ('note_on', token.pitch, token.velocity, max(0, token.start_time - self.last_end_time)),
       ('note_off', token.pitch, token.velocity, token.end_time - token.start_time)
