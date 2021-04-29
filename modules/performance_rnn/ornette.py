@@ -11,8 +11,6 @@ from magenta.models.shared import sequence_generator_bundle
 
 import os
 
-
-class OrnetteModule():
     def __init__(self, host, checkpoint='performance_with_dynamics'):
         config = default_configs[checkpoint]
 
@@ -53,8 +51,6 @@ class OrnetteModule():
             start_time=last_end_time,
             end_time=last_end_time + length_seconds)
 
-        # TEMP: Constructing noteseq dict to feed into the model
-        # TODO: bind 'notes' value to self.history
         noteseq = NoteSequence(
             notes=primer_sequence,
             quantization_info={
@@ -70,7 +66,6 @@ class OrnetteModule():
 
     def decode(self, token):
         ''' Must return a mido message array (type (note_on), note, velocity, duration)'''
-        velocity = 127
 
         start = max(0, token.start_time - self.last_end_time)
         end   = max(0, token.end_time - token.start_time)

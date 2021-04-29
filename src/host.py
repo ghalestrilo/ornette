@@ -94,7 +94,9 @@ class Host:
 
           data = state[field]
           if (pretty == True and field == 'history'):
-            pprint.pprint([self.model.decode(e) for e in data[0]])
+            for voice in data:
+              pprint.pprint([self.model.decode(e) for e in voice])
+            print(f'{len(data)} voices total')
             return
           if (pretty == True and field == 'output_data'):
             pprint.pprint(data)
@@ -287,9 +289,15 @@ class Host:
         data.init_output_data(state)
         self.clock.notify_wait(False)
 
-    # Data Methods
     def load_midi(self, name):
+        # self.reset()
+        # history = data.load_midi(self, name)
+        # for voice in history:
+        #   state['history'].append(voice.copy())
+
         data.load_midi(self, name)
+
+        self.print('history')
 
     def save_output(self, name):
         data.save_output(name, state['output_data'], state['ticks_per_beat'], self)

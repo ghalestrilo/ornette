@@ -65,7 +65,7 @@ def add_message(state, message):
     state['output_data'].append(message)
 
 
-def load_midi(host, filename):
+def load_midi(host, filename, max_ticks=None):
     print(f'loading file: {filename}')
     mid = MidiFile(filename)
 
@@ -74,16 +74,17 @@ def load_midi(host, filename):
     host.set('ticks_per_beat', mid.ticks_per_beat)
 
     # This logic 'could' go into the host
-    host.state['history'] = []
+    history = []
+    ticks_so_far = 0
     for i, track in enumerate(mid.tracks):
-      host.state['history'].append([])
+      history.append([])
+      # history[i].append(host.model.encode(msg))
       for msg in track:
+        if max_ticks is not None and ticks_so_far >= max_ticks:
+          return
+        ticks_so_far = ticks_so_far + msg.time
+
         host.state['output_data'].append(msg)
-        print(msg)
-        if msg.type == 'note_on':
-          print(f'Adding to history: {msg}')
-          host.state['history'][i].append(host.model.encode(msg))
-          continue
 
         if msg.is_meta:
           if msg.type == 'track_name':
@@ -93,8 +94,13 @@ def load_midi(host, filename):
           if msg.type == 'time_signature':
               host.set('time_signature_numerator', msg.numerator)
               host.set('time_signature_denominator', msg.denominator)
+          continue
+        
+        print(msg)
+        if msg.type in ['note_on']: history[i].append(host.model.encode(msg))
 
-    host.print('history')
+    host.set('history',history)
+    return history
 
 
 # load_bars(start, end):

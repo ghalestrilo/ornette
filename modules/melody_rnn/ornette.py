@@ -15,16 +15,16 @@ class OrnetteModule():
         checkpoint_file = os.path.normpath(f'/ckpt/{checkpoint}')
         bundle_file = sequence_generator_bundle.read_bundle_file(
             checkpoint_file)
-        host.state['steps_per_quarter'] = config.steps_per_quarter
         self.model = MelodyRnnSequenceGenerator(model=MelodyRnnModel(config),
                                                 details=config.details,
                                                 steps_per_quarter=config.steps_per_quarter,
                                                 bundle=bundle_file)
         self.server_state = host.state
         self.host = host
+        self.host.set('steps_per_quarter', config.steps_per_quarter)
         self.host.set('history', [[]])
         self.host.set('generation_unit', 'seconds')
-        self.last_end_time = 0
+        self.last_end_time = 0 # TODO: Move to host, reset with reset()
 
     def generate(self, history=None, length_seconds=4):
         last_end_time = 0
