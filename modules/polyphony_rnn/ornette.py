@@ -74,28 +74,33 @@ class OrnetteModule():
 
   def decode(self, token):
     ''' Must return a mido message (type (note_on), note, velocity, duration)'''
+    last_end_time = max(0, token.start_time - self.host.get('last_end_time'))
     decoded = [
-      ('note_on', token.pitch, token.velocity, max(0, token.start_time - self.last_end_time)),
+      ('note_on', token.pitch, token.velocity, last_end_time),
       ('note_off', token.pitch, token.velocity, token.end_time - token.start_time)
     ]
-    self.last_end_time = token.end_time
+    self.host.set('last_end_time', token.end_time)
     return decoded
 
   def encode(self, message):
     ''' Receives a mido message, must return a model-compatible token '''
 
-    next_start_time = self.last_end_time + message.time
+    last_end_time = self.host.get('last_end_time')
+
+    # next_start_time = self.last_end_time + message.time
+    next_start_time = last_end_time + self.host.from_ticks(message.time, 'beats')
 
     note = NoteSequence.Note(
       instrument=0,
       program=0,
-      start_time=self.last_end_time,
+      start_time=last_end_time,
       end_time=next_start_time,
       velocity=message.velocity,
       pitch=message.note,
     )
-    self.last_end_time = next_start_time
+    last_end_time = next_start_time
     return note
   
   def close(self):
     pass
+  

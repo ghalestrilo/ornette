@@ -6,6 +6,8 @@ import mido
 import data
 from os import environ
 
+units = ['measures', 'bars', 'seconds', 'ticks', 'beats']
+
 state = {
     # Basic Config
     'module': None,
@@ -31,6 +33,7 @@ state = {
     'input_unit': 'beats',
     'output_unit': 'beats',
     'instrument': [ 's', 'superpiano' ],
+    'last_end_time': 0,
     # 'instrument': [ 's', 'mc', 'midichan', 0 ],
 
     # MIDI  Output fields
@@ -78,9 +81,16 @@ class Host:
         state[field] = value
         print("[{0}] ~ {1}".format(field, value))
       except KeyError:
-          print("no such key ~ {0}".format(field))
+          print(f'no such key ~ {field}')
           pass
     
+    def get(self,field):
+      try:
+        return state[field]
+      except KeyError:
+          print(f'no such key ~ {field}')
+          pass
+
     def print(self, field=None, pretty=True):
       """ Print a key from the host state """
       
@@ -94,7 +104,9 @@ class Host:
 
           data = state[field]
           if (pretty == True and field == 'history'):
-            pprint.pprint([self.model.decode(e) for e in data[0]])
+            for voice in data:
+              pprint.pprint([self.model.decode(e) for e in voice])
+            print(f'{len(data)} voices total')
             return
           if (pretty == True and field == 'output_data'):
             pprint.pprint(data)
@@ -129,8 +141,13 @@ class Host:
 
       # Generate sequence
       ticks = self.to_ticks(length, unit)
-      final_length = self.from_ticks(ticks, state['input_unit'])
-      seq = self.model.generate(state['history'], final_length)
+      final_length = self.from_ticks(ticks, self.get('input_unit'))
+      print(f'request: self.model.generate(history, {final_length})')
+
+      if final_length is None:
+        print(f'[server] error: trying to generate length {final_length}')
+        return
+      seq = self.model.generate(self.get('history'), final_length)
 
       # # (Batch Mode) Notify maximum requested length has been met
       # if (state['batch_mode'] and len(seq) >= max_len):
@@ -282,14 +299,15 @@ class Host:
 
     def reset(self):
         [voice.clear() for voice in state['history']]
-        state['playhead'] = 0
+        self.set('playhead', 0)
+        self.set('last_end_time', 0)
         if state['midi_tempo'] is None: state['midi_tempo'] = mido.bpm2tempo(state['bpm'])
         data.init_output_data(state)
         self.clock.notify_wait(False)
 
-    # Data Methods
-    def load_midi(self, name):
-        data.load_midi(self, name)
+    def load_midi(self, name, barcount=None):
+        data.load_midi(self, name, barcount, 'bars')
+        print(f' [server] loaded {len(self.get("history")[0])} tokens to history')
 
     def save_output(self, name):
         data.save_output(name, state['output_data'], state['ticks_per_beat'], self)
@@ -336,27 +354,33 @@ class Host:
         return None
 
     def from_ticks(self, length, unit):
+        if unit not in units:
+          print(f'[server] unknown unit: \'{unit}\'')
         if (length is None): return None
         if (unit == 'ticks'): return length
 
         if (unit == 'seconds'):
           return mido.tick2second(length,
-            state['ticks_per_beat'],
-            state['midi_tempo'])
+            self.get('ticks_per_beat'),
+            self.get('midi_tempo'))
 
         length = length / state['ticks_per_beat']
         if (unit == 'beats'):
           return length
 
         length = length / (4 * state['time_signature_numerator'] / state['time_signature_denominator'])
-        if (unit == 'measures'): 
+        if (unit in ['measures', 'bars']): 
           return length
 
         return None
 
     def to_ticks(self, length, unit):
+        if unit not in units:
+          print(f'[server] unknown unit: \'{unit}\'')
         if (length is None): return None
-        if (unit == 'seconds'): return mido.second2tick(length, state['ticks_per_beat'], state['midi_tempo'])
+        if (unit == 'seconds'): return mido.second2tick(length,
+            self.get('ticks_per_beat'),
+            self.get('midi_tempo'))
 
         if (unit == 'ticks'): return length
 
@@ -364,7 +388,7 @@ class Host:
         if (unit == 'beats'): return length
 
         length = length * 4 * state['time_signature_numerator'] / state['time_signature_denominator']
-        if (unit == 'measures'): return length
+        if (unit in ['measures', 'bars']): return length
         return None
 
     def ticks_per_token(self):
