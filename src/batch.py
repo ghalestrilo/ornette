@@ -24,7 +24,7 @@ def run_experiments():
 
   i = 0
   while True:
-      foldername = f'{basefoldername}-{i}'
+      foldername = f'{basefoldername}-{args.modelname}-{i}'
       if not path.exists(path.normpath(f'output/{foldername}')):
         mkdir(path.normpath(f'output/{foldername}'))
         break
@@ -34,9 +34,9 @@ def run_experiments():
   # File Management
   def get_filename(expname,index,primer=None):
     return path.normpath(
-      f"{foldername}/{args.modelname}-{expname}-{index}"
-      if primer is not None else
-      f"{foldername}/{args.modelname}-{expname}-{primer}-{index}")
+      f"{foldername}/{expname}-{index}"
+      if primer is None else
+      f"{foldername}/{expname}-{primer}-{index}")
 
   def get_primer_filename(name):
     return path.join(primerdir,f'{name}.mid')
@@ -108,13 +108,15 @@ def run_experiments():
       bars_output = 4  # vary output length
       for primer in primers:
         for i in range(args.iterations):
-          log(f' Iteration: {i}')
+          log(f'iteration: {i}')
           for j in range(1,args.max_bars):
             bars_input = j # Vary input length
             client.reset()
             client.load_bars(get_primer_filename(primer),bars_input)
             for b in range(bars_output): client.generate(1, 'bars')
-            client.save(get_filename(expname,i,f'{primer}-{j}-bars'))
+            filename = get_filename(expname,i,f'{primer}-{j}-bars')
+            log(f'save output to: {filename}')
+            client.save(filename)
 
     # EXPERIMENT 3: Output precision based on requested output length
     if args.experiment in ['all', 'cond-length']:
@@ -122,13 +124,15 @@ def run_experiments():
       bars_input = 4 # Fixed input length
       for primer in primers:
         for i in range(args.iterations):
-          log(f' Iteration: {i}')
+          log(f'iteration: {i}')
           for j in range(1,args.max_bars):
             bars_output = j # Vary output length
             client.reset()
             client.load_bars(get_primer_filename(primer),bars_input)
             for b in range(bars_output): client.generate(1, 'bars')
-            client.save(get_filename(expname,i,f'{primer}-{j}-bars'))
+            filename = get_filename(expname,i,f'{primer}-{j}-bars')
+            log(f'save output to: {filename}')
+            client.save(filename)
 
     
   except KeyboardInterrupt:

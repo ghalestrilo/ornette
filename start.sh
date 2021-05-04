@@ -116,6 +116,7 @@ $DOCKER_START \
   --device /dev/nvidia0:/dev/nvidia0  \
   --device /dev/nvidiactl:/dev/nvidiactl \
   --device /dev/nvidia-uvm:/dev/nvidia-uvm \
+  -e AUTOGRAPH_VERBOSITY=1 \
   -v "$(pwd)":/ornette \
   -v "$modeldir":/model \
   -v "$HOME/.ornette/checkpoints/$modelname":/ckpt \

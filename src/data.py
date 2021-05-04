@@ -157,6 +157,3 @@ def init_output_data(state):
             numerator=state['time_signature_numerator'],
             denominator=state['time_signature_denominator']),
     ]
-
-    
-    

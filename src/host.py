@@ -92,7 +92,8 @@ class Host:
           pass
 
     def log(self, msg):
-      if self.is_debugging(): print(f"[server] {msg}")
+      # if self.is_debugging(): print(f"[server] {msg}")
+      print(f"[server:{self.get('module')}] {msg}")
 
     def print(self, field=None, pretty=True):
       """ Print a key from the host state """
@@ -165,6 +166,7 @@ class Host:
       self.clock.notify_wait(False)
       # if (self.is_debugging()):
       #     print('history: {}'.format([self.model.decode(h) for h in hist]))
+
 
       if (respond):
         self.dump_history()
