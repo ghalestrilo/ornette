@@ -43,12 +43,12 @@ def prep_module():
                             f'downloading  {checkpoint_name}, "{checkpoint_url}"')
                         download_checkpoint(
                             checkpoint_name, checkpoint_url, False)
-                print(k, ' -> ', v)
+                # print(k, ' -> ', v)
 
 
 def load_model(host, checkpoint=None):
     if checkpoint is None:
-        print("Please provide a checkpoint for the model to load")
+        host.log("Please provide a checkpoint for the model to load")
         exit(-1)
 
     model_path = '/model'
@@ -129,10 +129,10 @@ def save_output(filename=None, data=[], tpb=960, host=None):
     filename = join(os.path.curdir, 'output',f'{filename}.mid')
 
     if (data is None or len(data) < 1):
-        print(f'[error] No data to write in file: {filename}')
+        host.log(f'[error] No data to write in file: {filename}')
         return
 
-    print(f'Saving data to: {filename}')
+    host.log(f'Saving data to: {filename}')
 
     mid = MidiFile(ticks_per_beat=tpb)
     track = MidiTrack()

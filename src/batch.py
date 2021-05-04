@@ -8,13 +8,12 @@ from datetime import date
 from time import time
 from os import path, mkdir, listdir, environ
 
-
-
 # Main 
 def run_experiments(): 
   expname = ''
+
+  # TODO: Load primers from file/directory
   primers = ['primer1']
-  # primers = [path.join(primerdir,f'{primername}.mid') for primername in primers]
 
   args = get_batch_args()
   print(args)
@@ -53,18 +52,18 @@ def run_experiments():
     return path.join(get_output_dir(), f'{get_filename(expname,index,primer)}.pkl')
 
   def save_df(df, filename):
-      # print(f'Saving dataframe to {filename}')
+      # log(f'Saving dataframe to {filename}')
       df.to_pickle(filename)
 
   def log(message):
       print(f'[batch:{expname}] {message}')
 
-  client = BatchClient(args.ip, args.port, args.port_in)
+  client = BatchClient(log,args.ip, args.port, args.port_in)
 
   if (not args.interactive):
     client.wait()
     client.set('debug_output', False)
-  else: print("\n\nInteractive mode\n\n")
+  else: log("\n\nInteractive mode\n\n")
 
   # TODO: Automate this
 
@@ -98,7 +97,7 @@ def run_experiments():
           log(f"fatal: midi file not found ({midi_filename})")
           exit(1)
 
-        # print(f"Extracting features from file: {midi_filename}")
+        # log(f"Extracting features from file: {midi_filename}")
         df = get_features(MidiFile(midi_filename))
         save_df(df, get_pickle_filename(expname, i))
         

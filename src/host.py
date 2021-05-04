@@ -79,17 +79,20 @@ class Host:
     def set(self,field,value):
       try:
         state[field] = value
-        print("[{0}] ~ {1}".format(field, value))
+        self.log("[{0}] ~ {1}".format(field, value))
       except KeyError:
-          print(f'no such key ~ {field}')
+          self.log(f'no such key ~ {field}')
           pass
     
     def get(self,field):
       try:
         return state[field]
       except KeyError:
-          print(f'no such key ~ {field}')
+          self.log(f'no such key ~ {field}')
           pass
+
+    def log(self, msg):
+      if self.is_debugging(): print(f"[server] {msg}")
 
     def print(self, field=None, pretty=True):
       """ Print a key from the host state """
@@ -106,16 +109,16 @@ class Host:
           if (pretty == True and field == 'history'):
             for voice in data:
               pprint.pprint([self.model.decode(e) for e in voice])
-            print(f'{len(data)} voices total')
+            self.log(f'{len(data)} voices total')
             return
           if (pretty == True and field == 'output_data'):
             pprint.pprint(data)
             return
 
-          print("[{0}] ~ {1}".format(field, data))
+          self.log("[{0}] ~ {1}".format(field, data))
 
       except KeyError:
-          print("no such key ~ {0}".format(field))
+          self.log("no such key ~ {0}".format(field))
           pass
 
     def close(self):
@@ -136,16 +139,16 @@ class Host:
       max_len = self.state['buffer_length'] 
 
       if (self.is_debugging()):
-          print(f'[server] generating tokens ({playhead}/{len(hist)} > {threshold})')
-          print(f'[server] requested length: {length} {unit} ({self.to_ticks(length, unit)} ticks)')
+          self.log(f'generating tokens ({playhead}/{len(hist)} > {threshold})')
+          self.log(f'requested length: {length} {unit} ({self.to_ticks(length, unit)} ticks)')
 
       # Generate sequence
       ticks = self.to_ticks(length, unit)
       final_length = self.from_ticks(ticks, self.get('input_unit'))
-      print(f'request: self.model.generate(history, {final_length})')
+      self.log(f'request: self.model.generate(history, {final_length})')
 
       if final_length is None:
-        print(f'[server] error: trying to generate length {final_length}')
+        self.log(f'error: trying to generate length {final_length}')
         return
       seq = self.model.generate(self.get('history'), final_length)
 
@@ -174,7 +177,7 @@ class Host:
       if (self.is_debugging()):
           # print(f' max_len: {max_len} | generator_overflow: {generator_overflow} | len(seq): {len(seq)} | len(hist): {len(hist)}')
           # print(f' target playhead: {target_playhead}')
-          print(f'Rewinding Playhead ({playhead} -> {new_playhead})')
+          self.log(f'Rewinding Playhead ({playhead} -> {new_playhead})')
 
       self.state['playhead'] = new_playhead
 
@@ -219,7 +222,7 @@ class Host:
           return None
 
       if (position < 0):
-        print(f'Warning: trying to read a negative position in history ({playhead} + {offset} = {position})')
+        self.log(f'Warning: trying to read a negative position in history ({playhead} + {offset} = {position})')
         return None
 
       return hist[0][position]
@@ -248,7 +251,7 @@ class Host:
       '''
       name, value = action
       if (self.is_debugging()):
-        print(f'({state["playhead"]}/{len(state["history"][0])}): {name} {value}')
+        self.log(f'({state["playhead"]}/{len(state["history"][0])}): {name} {value}')
 
       if (state['batch_mode']):
         state['until_next_event'] = 0
@@ -293,7 +296,7 @@ class Host:
       return state['clock_running']
 
     def push_event(self,event):
-        print("[event] ~ {0}".format(event))
+        self.log("[event] ~ {0}".format(event))
         state['history'][0].append(event)
     # /TODO
 
@@ -308,7 +311,7 @@ class Host:
     def load_midi(self, name, barcount=None):
         data.load_midi(self, name, barcount, 'bars')
         if self.get('batch_mode'): self.notify_task_complete()
-        print(f' [server] loaded {len(self.get("history")[0])} tokens to history')
+        self.log(f' loaded {len(self.get("history")[0])} tokens to history')
 
     def save_output(self, name):
         data.save_output(name, state['output_data'], state['ticks_per_beat'], self)
@@ -322,7 +325,7 @@ class Host:
 
 #     def debug_tensorflow():
 #       tf.config.list_physical_devices("GPU")
-#       print('tf.test.is_gpu_available() = {}'.format(tf.test.is_gpu_available()))
+#       self.log('tf.test.is_gpu_available() = {}'.format(tf.test.is_gpu_available()))
 
 
 
@@ -356,7 +359,7 @@ class Host:
 
     def from_ticks(self, length, unit):
         if unit not in units:
-          print(f'[server] unknown unit: \'{unit}\'')
+          self.log(f'unknown unit: \'{unit}\'')
         if (length is None): return None
         if (unit == 'ticks'): return length
 
@@ -377,7 +380,7 @@ class Host:
 
     def to_ticks(self, length, unit):
         if unit not in units:
-          print(f'[server] unknown unit: \'{unit}\'')
+          self.log(f'unknown unit: \'{unit}\'')
         if (length is None): return None
         if (unit == 'seconds'): return mido.second2tick(length,
             self.get('ticks_per_beat'),
@@ -405,11 +408,11 @@ class Host:
       bpm = state['bpm']
       tpb = state['ticks_per_beat']
       gtf = self.to_ticks
-      print('[server] Time info:')
-      print(f'   {measures} measure = {beats} beats = {ticks} ticks = {seconds} seconds ~ {tokens} tokens')
-      print(f'   {gtf(1, "measures")} == {gtf(beats, "beats")} == {gtf(ticks, "ticks")} == {gtf(seconds, "seconds")} ~ {gtf(tokens, "tokens")}')
-      print(f'   tempo: {tempo} | bpm: {bpm} | tpb: {tpb}')
-      print(f'   missing beats: {state["missing_beats"]} | unit: {state["input_unit"]}')
+      self.log('Time info:')
+      self.log(f'   {measures} measure = {beats} beats = {ticks} ticks = {seconds} seconds ~ {tokens} tokens')
+      self.log(f'   {gtf(1, "measures")} == {gtf(beats, "beats")} == {gtf(ticks, "ticks")} == {gtf(seconds, "seconds")} ~ {gtf(tokens, "tokens")}')
+      self.log(f'   tempo: {tempo} | bpm: {bpm} | tpb: {tpb}')
+      self.log(f'   missing beats: {state["missing_beats"]} | unit: {state["input_unit"]}')
 
     # Analysis Methods
     def get_decoded_history(self):

@@ -6,13 +6,17 @@ from itertools import chain, takewhile, accumulate, count
 # Extract Features
 
 
+
+def flog(msg):
+  if False: print(msg)
+
 # Feature Extraction
 
 units = ['bars', 'seconds', 'notes', 'events']
 
 def get_features(midi_data=None):
   if (midi_data is None):
-      print("no data passed to get_features")
+      flog("no data passed to get_features")
       return
 
   # Extract Time Signature numerator
@@ -20,16 +24,16 @@ def get_features(midi_data=None):
   tempo = get_tempo(midi_data)
   bars = get_bars(midi_data)
 
-  print(f'\n Track Summary: ')
+  flog(f'\n Track Summary: ')
   track_df = build_track_dataframe(bars)
-  print(track_df.head(20))
+  flog(track_df.head(20))
 
   for (index, track) in enumerate(midi_data.tracks):
-      print(f'\n Track {index}: ')
+      flog(f'\n Track {index}: ')
       track_bars = get_bars(track, midi_data=midi_data)
       df = build_track_dataframe(track_bars)
-      print(df.head(20))
-      print(df.describe())
+      flog(df.head(20))
+      flog(df.describe())
 
 
   return track_df
@@ -78,14 +82,14 @@ def get_bars(sequence, midi_data=None):
   signature = get_signature(midi_data)
   tempo = get_tempo(midi_data)
   bar_tick_length = signature * midi_data.ticks_per_beat
-  print(f'tempo: {tempo} | signature: {signature} | ticks/bar: {bar_tick_length}')
+  flog(f'tempo: {tempo} | signature: {signature} | ticks/bar: {bar_tick_length}')
   
   ticks = 0
   bars = [[]]
   for msg in sequence:
     if not msg.is_meta:
       
-      # print(f'{ticks} > {signature * midi_data.ticks_per_beat} ?')
+      # flog(f'{ticks} > {signature * midi_data.ticks_per_beat} ?')
       
       # Detect New Bar
       if ticks > (bar_tick_length):
@@ -113,7 +117,7 @@ def get_bars(sequence, midi_data=None):
 
 def length(host, sequence, unit='bars'):
   if (unit not in units):
-      print(f'[error] unknown unit: {unit}')
+      flog(f'[error] unknown unit: {unit}')
       return
 
 def note_count(sequence):
@@ -161,11 +165,11 @@ def ticks_until_note_event(name, note=None, sequence=[]):
       else (m.type != name or m.note != note), sequence[1:])
     msgcount = len(list(msgs)) + 1
     subseq = sequence[1:1+msgcount]
-    # print(list(subseq))
+    # flog(list(subseq))
     ticks = list(accumulate(subseq,
       func=lambda t, m: int(t) + int(m.time),
       initial=0))[-1]
-    # print(f'{note} lasts {msgcount} events until next {name} ({ticks} ticks)')
+    # flog(f'{note} lasts {msgcount} events until next {name} ({ticks} ticks)')
     return ticks
 
 def ticks_until_note_off(note, sequence):
@@ -198,7 +202,7 @@ def get_length_histogram(sequence):
         if msg.type == 'note_on'])
 
 def get_difflist(name, sequence):
-    # print(sequence)
+    # flog(sequence)
     return pd.Series(sequence, name=name).diff()
 
 def get_pitch_intervals(sequence):

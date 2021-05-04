@@ -2,11 +2,12 @@ from pythonosc import udp_client, osc_server
 from pythonosc.dispatcher import Dispatcher
 
 class BatchClient(udp_client.SimpleUDPClient):
-  def __init__(self, ip, port_out, port_in):
+  def __init__(self, logger, ip, port_out, port_in):
     udp_client.SimpleUDPClient.__init__(self, ip, port_out, port_in)
     dispatcher = Dispatcher()
     dispatcher.map('/ok', lambda _: self.server.shutdown())
     self.server = osc_server.ThreadingOSCUDPServer((ip, port_in), dispatcher)
+    self.log = logger
 
   def start(self):
     self.send_message('/start', [])
@@ -46,9 +47,9 @@ class BatchClient(udp_client.SimpleUDPClient):
     self.wait()
 
   def wait(self):
-    print("Waiting...")
+    self.log("waiting...")
     self.server.serve_forever()
-    print("OK!")
+    self.log("ok!")
   
   def load_bars(self,filename,barcount):
     self.send_message('/load_bars', [filename, barcount])
