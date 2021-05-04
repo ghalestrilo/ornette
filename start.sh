@@ -70,7 +70,6 @@ if [ $modelname = 'batch' ]; then
   elif [ $REBUILD ];   then build_batch_runner_image
   fi
 
-  ornette_start_command="$ornette_base_command"
   ornette_start_command="$ornette_base_command --interactive"
   [ $NOT_INTERACTIVE ] && ornette_start_command="$ornette_base_command";
   [ $MODELNAME ] && ornette_start_command="$ornette_start_command --modelname $MODELNAME";

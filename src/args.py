@@ -33,14 +33,16 @@ def get_batch_args():
     parser.add_argument('--state',      type=str,  default="0",         help='the initial state of the improv')
 
     parser.add_argument("--playback",   type=bool, default=True,        help="Use supercollider for sound playback")
-    # parser.add_argument("--batch-mode", type=bool, default=False,       help="Run in batch mode")
     parser.add_argument("--interactive", type=bool, default=False,       help="Run in interactive mode")
+    # parser.add_argument('--max-bars',    type=int,  default=12,          help='Max amount of bars to generate/use as input for model')
+    parser.add_argument('--max-bars',    type=int,  default=1,          help='Max amount of bars to generate/use as input for model')
+
     parser.add_argument("--modelname",   type=str,  default='unknown',  help="Name of model being analyzed")
 
     parser.add_argument('--block-size', type=int,  default=16,          help='Length of increment to the server\'s buffer_size at each iteration of an experiment')
 
-    # parser.add_argument('--iterations', type=int,  default=1,          help='Number of times to run the experiment')
-    parser.add_argument('--iterations', type=int,  default=5,          help='Number of times to run the experiment')
+    parser.add_argument('--iterations', type=int,  default=1,          help='Number of times to run the experiment')
+    # parser.add_argument('--iterations', type=int,  default=5,          help='Number of times to run the experiment')
     parser.add_argument('--experiment', type=str,  default='all',       choices=['all', 'guess'], help='Which experiment to run')
     parser.add_argument('--skip-generation', type=bool,  default=False, help='Skip sample generation, just analyze generated data')
 

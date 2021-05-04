@@ -49,3 +49,7 @@ class BatchClient(udp_client.SimpleUDPClient):
     print("Waiting...")
     self.server.serve_forever()
     print("OK!")
+  
+  def load_bars(self,filename,barcount):
+    self.send_message('/load_bars', [filename, barcount])
+    self.wait()

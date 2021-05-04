@@ -307,6 +307,7 @@ class Host:
 
     def load_midi(self, name, barcount=None):
         data.load_midi(self, name, barcount, 'bars')
+        if self.get('batch_mode'): self.notify_task_complete()
         print(f' [server] loaded {len(self.get("history")[0])} tokens to history')
 
     def save_output(self, name):
@@ -395,10 +396,6 @@ class Host:
       return sum([0 for x in state['history']]) / len(state['history']) if self.has_history() else None
 
     def time_debug(self, measures=1):
-      # beats = self.get_measure_length('beats')
-      # ticks = self.get_measure_length('ticks')
-      # seconds = self.get_measure_length('seconds')
-      # tokens = self.get_measure_length('tokens')
       ticks = self.to_ticks(measures, 'measures')
       beats = self.from_ticks(ticks, 'beats')
       ticks = self.from_ticks(ticks, 'ticks')
