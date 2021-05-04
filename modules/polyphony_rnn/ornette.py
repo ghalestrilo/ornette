@@ -100,3 +100,6 @@ class OrnetteModule():
   
   def close(self):
     pass
+  
+  def reset(self):
+    self.last_end_time = 0

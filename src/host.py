@@ -287,16 +287,11 @@ class Host:
         state['playhead'] = 0
         if state['midi_tempo'] is None: state['midi_tempo'] = mido.bpm2tempo(state['bpm'])
         data.init_output_data(state)
+        self.model.reset()
         self.clock.notify_wait(False)
 
     def load_midi(self, name, barcount=None):
-        # self.reset()
-        # history = data.load_midi(self, name)
-        # for voice in history:
-        #   state['history'].append(voice.copy())
-        length = self.to_ticks(barcount, 'bars')
-        print(f'{barcount} bars = {length} ticks')
-        data.load_midi(self, name, length)
+        data.load_midi(self, name, barcount, 'bars')
 
         self.print('history')
 
