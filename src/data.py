@@ -84,13 +84,9 @@ def load_midi(host, filename, max_len=None, max_len_units=None):
       history.append([])
       # history[i].append(host.model.encode(msg))
       for msg in track:
-        max_ticks = host.to_ticks(max_len, max_len_units)
-        if max_ticks is not None and ticks_so_far >= max_ticks + offset:
+        max_ticks = host.to_ticks(max_len, max_len_units) + offset
+        if max_len is not None and ticks_so_far >= max_ticks:
           continue
-
-        if (ticks_so_far == 0 and msg.time > 0): offset = msg.time
-        ticks_so_far = ticks_so_far + msg.time
-
 
         host.state['output_data'].append(msg)
 
@@ -104,7 +100,9 @@ def load_midi(host, filename, max_len=None, max_len_units=None):
               host.set('time_signature_denominator', msg.denominator)
           continue
         
-        print(msg)
+        if (ticks_so_far == 0 and msg.time > 0): offset = msg.time
+        ticks_so_far = ticks_so_far + msg.time
+
         if msg.type in ['note_on']: history[i].append(host.model.encode(msg))
 
     host.set('history',[voice for voice in history if any(voice)])

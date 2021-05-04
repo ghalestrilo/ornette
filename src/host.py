@@ -6,6 +6,8 @@ import mido
 import data
 from os import environ
 
+units = ['measures', 'bars', 'seconds', 'ticks', 'beats']
+
 state = {
     # Basic Config
     'module': None,
@@ -139,8 +141,13 @@ class Host:
 
       # Generate sequence
       ticks = self.to_ticks(length, unit)
-      final_length = self.from_ticks(ticks, state['input_unit'])
-      seq = self.model.generate(state['history'], final_length)
+      final_length = self.from_ticks(ticks, self.get('input_unit'))
+      print(f'request: self.model.generate(history, {final_length})')
+
+      if final_length is None:
+        print(f'[server] error: trying to generate length {final_length}')
+        return
+      seq = self.model.generate(self.get('history'), final_length)
 
       # # (Batch Mode) Notify maximum requested length has been met
       # if (state['batch_mode'] and len(seq) >= max_len):
@@ -300,8 +307,7 @@ class Host:
 
     def load_midi(self, name, barcount=None):
         data.load_midi(self, name, barcount, 'bars')
-
-        self.print('history')
+        print(f' [server] loaded {len(self.get("history")[0])} tokens to history')
 
     def save_output(self, name):
         data.save_output(name, state['output_data'], state['ticks_per_beat'], self)
@@ -348,13 +354,15 @@ class Host:
         return None
 
     def from_ticks(self, length, unit):
+        if unit not in units:
+          print(f'[server] unknown unit: \'{unit}\'')
         if (length is None): return None
         if (unit == 'ticks'): return length
 
         if (unit == 'seconds'):
           return mido.tick2second(length,
-            state['ticks_per_beat'],
-            state['midi_tempo'])
+            self.get('ticks_per_beat'),
+            self.get('midi_tempo'))
 
         length = length / state['ticks_per_beat']
         if (unit == 'beats'):
@@ -367,8 +375,12 @@ class Host:
         return None
 
     def to_ticks(self, length, unit):
+        if unit not in units:
+          print(f'[server] unknown unit: \'{unit}\'')
         if (length is None): return None
-        if (unit == 'seconds'): return mido.second2tick(length, state['ticks_per_beat'], state['midi_tempo'])
+        if (unit == 'seconds'): return mido.second2tick(length,
+            self.get('ticks_per_beat'),
+            self.get('midi_tempo'))
 
         if (unit == 'ticks'): return length
 

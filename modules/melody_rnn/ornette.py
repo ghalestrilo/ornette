@@ -71,7 +71,8 @@ class OrnetteModule():
     def encode(self, message):
         ''' Receives a mido message, must return a model-compatible token '''
         last_end_time = self.host.get('last_end_time')
-        next_start_time = last_end_time + message.time
+        print(f'ticks in message: {message.time}')
+        next_start_time = last_end_time + self.host.from_ticks(message.time, 'seconds')
 
         note = NoteSequence.Note(
             instrument=0,
