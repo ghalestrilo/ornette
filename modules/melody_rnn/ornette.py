@@ -8,6 +8,7 @@ from note_seq import NoteSequence
 
 import os
 
+
 class OrnetteModule():
     def __init__(self, host, checkpoint='attention_rnn'):
         config = default_configs[checkpoint]
@@ -70,8 +71,7 @@ class OrnetteModule():
     def encode(self, message):
         ''' Receives a mido message, must return a model-compatible token '''
         last_end_time = self.host.get('last_end_time')
-        # print(f'ticks in message: {message.time}')
-        next_start_time = last_end_time + self.host.from_ticks(message.time, 'seconds')
+        next_start_time = last_end_time + self.host.from_ticks(message.time, 'beats')
 
         note = NoteSequence.Note(
             instrument=0,

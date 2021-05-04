@@ -13,7 +13,7 @@ from datetime import datetime
 
 from os.path import normpath, join
 from mido import MidiFile, MidiTrack, Message, MetaMessage
-from mido import bpm2tempo
+from mido import tempo2bpm
 
 
 def load_folder(name):
@@ -94,7 +94,8 @@ def load_midi(host, filename, max_len=None, max_len_units=None):
           if msg.type == 'track_name':
               host.set('track_name', msg.name)
           if msg.type == 'set_tempo':
-              host.set('bpm', msg.tempo)
+              host.set('midi_tempo', msg.tempo)
+              host.set('bpm', tempo2bpm(msg.tempo))
           if msg.type == 'time_signature':
               host.set('time_signature_numerator', msg.numerator)
               host.set('time_signature_denominator', msg.denominator)

@@ -71,24 +71,22 @@ def run_experiments():
 
   # EXPERIMENT BLOCK
   try:
+    client.set('batch_mode', True)
+    client.set('trigger_generate', 1)
+    client.set('batch_unit', 'measures')
+
     # EXPERIMENT 1: Free improv test
     if args.experiment in ['all', 'free']:
       expname = 'free'
       log(f'Running experiment with model: {args.modelname}')
-      client.set('batch_mode', True)
-      client.set('trigger_generate', 1)
-      client.set('batch_unit', 'measures')
-      
       if (args.skip_generation == False):
         for i in range(0,args.iterations):
             log(f'Iteration {i}')
             client.reset()
-            client.pause()
             client.set('buffer_length', (1 + i) * args.block_size)
 
             client.generate(1, 'measures')
             client.save(get_filename(expname,i))
-            # client.wait()
       
       for i in range(0, args.iterations):
         midi_filename = get_midi_filename(expname, i)
@@ -112,8 +110,8 @@ def run_experiments():
           for j in range(1,args.max_bars):
             bars_input = j # Vary input length
             client.reset()
-            client.load_bars(get_primer_filename(primer),bars_input)
-            for b in range(bars_output): client.generate(1, 'bars')
+            client.load_bars(get_primer_filename(primer), bars_input)
+            for b in range(bars_output): client.generate(1, 'measures')
             filename = get_filename(expname,i,f'{primer}-{j}-bars')
             log(f'save output to: {filename}')
             client.save(filename)
@@ -128,8 +126,8 @@ def run_experiments():
           for j in range(1,args.max_bars):
             bars_output = j # Vary output length
             client.reset()
-            client.load_bars(get_primer_filename(primer),bars_input)
-            for b in range(bars_output): client.generate(1, 'bars')
+            client.load_bars(get_primer_filename(primer), bars_input)
+            for b in range(bars_output): client.generate(1, 'measures')
             filename = get_filename(expname,i,f'{primer}-{j}-bars')
             log(f'save output to: {filename}')
             client.save(filename)

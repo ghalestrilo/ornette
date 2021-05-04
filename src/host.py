@@ -152,10 +152,7 @@ class Host:
         self.log(f'error: trying to generate length {final_length}')
         return
       seq = self.model.generate(self.get('history'), final_length)
-
-      # # (Batch Mode) Notify maximum requested length has been met
-      # if (state['batch_mode'] and len(seq) >= max_len):
-      #     self.notify_task_complete()
+      self.log(f'{len(seq)} tokens were generated')
 
       # Update Playhead
       self.rewind(max(0, len(seq) - max_len))
@@ -164,9 +161,6 @@ class Host:
       
       state['is_generating'] = False
       self.clock.notify_wait(False)
-      # if (self.is_debugging()):
-      #     print('history: {}'.format([self.model.decode(h) for h in hist]))
-
 
       if (respond):
         self.dump_history()
