@@ -23,7 +23,7 @@ class OrnetteModule():
         self.host = host
         self.host.set('history', [[]])
         self.host.set('generation_unit', 'seconds')
-        self.last_end_time = 0
+        self.host.set('last_end_time', 0)
 
         self.model = PerformanceRnnSequenceGenerator(
             model=PerformanceRnnModel(config),
@@ -68,31 +68,31 @@ class OrnetteModule():
     def decode(self, token):
         ''' Must return a mido message array (type (note_on), note, velocity, duration)'''
 
-        start = max(0, token.start_time - self.last_end_time)
+        start = max(0, token.start_time - self.host.get('last_end_time'))
         end   = max(0, token.end_time - token.start_time)
         decoded = [
             ('note_on', token.pitch, token.velocity, start),
             ('note_off', token.pitch, token.velocity, end)
         ]
 
-        self.last_end_time = max(0, token.end_time)
+        self.host.set('last_end_time', max(0, token.end_time))
         return decoded
 
     def encode(self, message):
         ''' Receives a mido message, must return a model-compatible token '''
-
-        next_start_time = self.last_end_time + self.host.from_ticks(message.time, 'beats')
+        last_end_time = self.host.get('last_end_time')
+        next_start_time = last_end_time + self.host.from_ticks(message.time, 'beats')
 
         note = NoteSequence.Note(
             instrument=0,
             program=0,
-            start_time=self.last_end_time,
+            start_time=last_end_time,
             end_time=next_start_time,
             velocity=message.velocity,
             pitch=message.note,
         )
 
-        self.last_end_time = next_start_time
+        self.host.set('last_end_time', next_start_time)
         return note
 
     def close(self):

@@ -31,6 +31,7 @@ state = {
     'input_unit': 'beats',
     'output_unit': 'beats',
     'instrument': [ 's', 'superpiano' ],
+    'last_end_time': 0,
     # 'instrument': [ 's', 'mc', 'midichan', 0 ],
 
     # MIDI  Output fields
@@ -78,9 +79,16 @@ class Host:
         state[field] = value
         print("[{0}] ~ {1}".format(field, value))
       except KeyError:
-          print("no such key ~ {0}".format(field))
+          print(f'no such key ~ {field}')
           pass
     
+    def get(self,field):
+      try:
+        return state[field]
+      except KeyError:
+          print(f'no such key ~ {field}')
+          pass
+
     def print(self, field=None, pretty=True):
       """ Print a key from the host state """
       
@@ -284,10 +292,10 @@ class Host:
 
     def reset(self):
         [voice.clear() for voice in state['history']]
-        state['playhead'] = 0
+        self.set('playhead', 0)
+        self.set('last_end_time', 0)
         if state['midi_tempo'] is None: state['midi_tempo'] = mido.bpm2tempo(state['bpm'])
         data.init_output_data(state)
-        self.model.reset()
         self.clock.notify_wait(False)
 
     def load_midi(self, name, barcount=None):
