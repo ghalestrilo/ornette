@@ -66,7 +66,10 @@ def add_message(state, message):
 
 
 def load_midi(host, filename, max_ticks=None):
-    print(f'loading file: {filename}')
+    """ Load midi from a file onto the host's history
+        optionally cropping it to a max_ticks length
+    """
+    print(f'loading file: {filename} ({max_ticks or "no"} tick limit)')
     mid = MidiFile(filename)
 
     host.reset()
@@ -75,14 +78,19 @@ def load_midi(host, filename, max_ticks=None):
 
     # This logic 'could' go into the host
     history = []
-    ticks_so_far = 0
+    
     for i, track in enumerate(mid.tracks):
+      ticks_so_far = 0
+      offset = 0
       history.append([])
       # history[i].append(host.model.encode(msg))
       for msg in track:
-        if max_ticks is not None and ticks_so_far >= max_ticks:
-          return
+        if max_ticks is not None and ticks_so_far >= max_ticks + offset:
+          continue
+
+        if (ticks_so_far == 0 and msg.time > 0): offset = msg.time
         ticks_so_far = ticks_so_far + msg.time
+
 
         host.state['output_data'].append(msg)
 

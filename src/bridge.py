@@ -23,12 +23,13 @@ class Bridge:
         dispatcher.map("/event", lambda _, ev: host.push_event(ev))  # event2word
         # dispatcher.map("/tfdebug", debug_tensorflow)
 
-        dispatcher.map("/set", lambda addr, k, v: host.set(k, v))
-        dispatcher.map("/debug", lambda addr, key: host.print() if key == 'all' else host.print(key))
+        dispatcher.map("/set",       lambda addr, k, v: host.set(k, v))
+        dispatcher.map("/debug",     lambda addr, key: host.print() if key == 'all' else host.print(key))
 
-        dispatcher.map("/generate", lambda addr, length, unit: host.generate(length, unit, True))
-        dispatcher.map("/load", lambda addr, name: host.load_midi(name))
-        dispatcher.map("/save", lambda addr, name: host.save_output(name))
+        dispatcher.map("/generate",  lambda addr, length, unit: host.generate(length, unit, True))
+        dispatcher.map("/load",      lambda addr, name: host.load_midi(name))
+        dispatcher.map("/load_bars", lambda addr, name, barcount: host.load_midi(name,barcount))
+        dispatcher.map("/save",      lambda addr, name: host.save_output(name))
 
         # if (self.host.model):
         #     dispatcher.map("/sample", sample_model, self.model)

@@ -289,13 +289,14 @@ class Host:
         data.init_output_data(state)
         self.clock.notify_wait(False)
 
-    def load_midi(self, name):
+    def load_midi(self, name, barcount=None):
         # self.reset()
         # history = data.load_midi(self, name)
         # for voice in history:
         #   state['history'].append(voice.copy())
-
-        data.load_midi(self, name)
+        length = self.to_ticks(barcount, 'bars')
+        print(f'{barcount} bars = {length} ticks')
+        data.load_midi(self, name, length)
 
         self.print('history')
 
@@ -357,7 +358,7 @@ class Host:
           return length
 
         length = length / (4 * state['time_signature_numerator'] / state['time_signature_denominator'])
-        if (unit == 'measures'): 
+        if (unit in ['measures', 'bars']): 
           return length
 
         return None
@@ -372,7 +373,7 @@ class Host:
         if (unit == 'beats'): return length
 
         length = length * 4 * state['time_signature_numerator'] / state['time_signature_denominator']
-        if (unit == 'measures'): return length
+        if (unit in ['measures', 'bars']): return length
         return None
 
     def ticks_per_token(self):

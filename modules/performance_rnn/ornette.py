@@ -11,6 +11,7 @@ from magenta.models.shared import sequence_generator_bundle
 
 import os
 
+class OrnetteModule():
     def __init__(self, host, checkpoint='performance_with_dynamics'):
         config = default_configs[checkpoint]
 
