@@ -34,6 +34,7 @@ state = {
     'output_unit': 'beats',
     'instrument': [ 's', 'superpiano' ],
     'last_end_time': 0,
+    'main_voice': 0,
     # 'instrument': [ 's', 'mc', 'midichan', 0 ],
 
     # MIDI  Output fields
@@ -133,11 +134,11 @@ class Host:
 
     def generate(self, length=state['missing_beats'], unit='beats', respond=False):
       state['is_generating'] = True
-      hist = self.state['history'][0]
-      threshold = self.state['trigger_generate']
-      playhead = self.state['playhead']
+      hist = self.get('history')[0]
+      threshold = self.get('trigger_generate')
+      playhead = self.get('playhead')
 
-      max_len = self.state['buffer_length'] 
+      max_len = self.get('buffer_length') 
 
       if (self.is_debugging()):
           self.log(f'generating tokens ({playhead}/{len(hist)} > {threshold})')
@@ -224,7 +225,7 @@ class Host:
       return hist[0][position]
     
     # Playback Methods
-    def get_action(self,message):
+    def get_action(self,message,voice=0):
         ''' Get Action
             Decode a midi message into a sequence of actions
         '''
@@ -235,7 +236,7 @@ class Host:
           velocity=velocity,
           time=int(round(mido.second2tick(time, state['ticks_per_beat'], state['midi_tempo'])))) 
           
-        data.add_message(state, msg)
+        data.add_message(state, msg, voice)
         return [('wait', time), ('play', note)]
 
     def perform(self,action):
@@ -305,8 +306,10 @@ class Host:
         self.clock.notify_wait(False)
 
     def load_midi(self, name, barcount=None):
+        self.log(f' loading {name}')
         data.load_midi(self, name, barcount, 'bars')
         if self.get('batch_mode'): self.notify_task_complete()
+        if not any(self.get('history')): self.set("history",[[]])
         self.log(f' loaded {len(self.get("history")[0])} tokens to history')
 
     def save_output(self, name):
