@@ -71,50 +71,139 @@ class OrnetteModule():
       model.load_state_dict(torch.load(f'/ckpt/{checkpoint}', map_location="cpu"), False)
       model = model.cpu()
       model.eval()
+      self.pitch2index = p2i
       self.model = model
+      self.host = host
+      self.host.set('generation_unit', 'beats')
+      self.host.set('history', [[] for x in range(3)])
+      # self.host.set('history', [[self.pitch2index['rest']] for x in range(3)])
+      # self.host.set('history', np.empty((3,0)))
+      
 
-    def generate(self, history=None, length_seconds=4):
-      own_voice = test_self[i]
-      partner = test_partner[i]
-      meta = test_meta_old[i]
-      start_pad = pitch2index['rest']
-      model = self.model
+    def generate(self, history=None, length_steps=4):
+      music = self.sample_(self.model,
+        np.array(history[0]),
+        np.array(history[1]),
+        np.array(history[2]),
+        self.pitch2index['rest'])
+      print(music)
+      return list(music[1])
 
-      if INIT_LEN < SEGMENT_LEN:
-          pad_length = SEGMENT_LEN - INIT_LEN
+
+
+
+
+    def sample_(self, model, own_voice, partner, meta, start_pad):
+      init_len = max(len(x) for x in [own_voice,partner])
+      if init_len < SEGMENT_LEN:
+          pad_length = SEGMENT_LEN - init_len
           pad = np.full((pad_length,), start_pad)
           own_voice = np.concatenate([pad, own_voice], 0)
           partner = np.concatenate([pad, partner], 0)
           meta_ = [0, 1, 2, 3]
           pad_meta = [meta_[(i - pad_length) % 4] for i in range(pad_length)]
           meta = np.concatenate([pad_meta, meta], 0)
+      
       own_voice = torch.from_numpy(own_voice).cpu().long()
       partner = torch.from_numpy(partner).cpu().long()
       meta = torch.from_numpy(meta).cpu().reshape(len(meta), -1).long()
       pred_ind = SEGMENT_LEN
       pred = own_voice[:pred_ind]
-      while pred_ind < len(partner):
+      while pred_ind < SEGMENT_LEN + 1:
+          print(f"Iteration {pred_ind-SEGMENT_LEN}")
           start = max(0, pred_ind-SEGMENT_LEN)
-          pitch = model(pred[start:pred_ind].unsqueeze(0),
-                        partner[start:pred_ind].unsqueeze(0),
-                        meta[start:pred_ind].unsqueeze(0),
-                        meta[pred_ind].unsqueeze(0))
+
+          # FIXME: Out of bounds here
+          pred_ = pred[start:pred_ind].unsqueeze(0)
+          partner_ = partner[start:pred_ind].unsqueeze(0)
+          meta_ = meta[start:pred_ind].unsqueeze(0)
+
+          meta_central = meta[INIT_LEN].unsqueeze(0)
+
+          pitch = model(pred_, partner_, meta_, meta_central)
           prob = F.softmax(pitch, dim=1)
           action = prob.multinomial(num_samples=1).data
           pred = torch.cat((pred, action.view(-1)))
           pred_ind += 1
-      if INIT_LEN < SEGMENT_LEN:
-          pad_len = SEGMENT_LEN - INIT_LEN
+
+      if init_len < SEGMENT_LEN:
+          pad_len = SEGMENT_LEN - init_len
           partner = partner[pad_len:]
           pred = pred[pad_len:]
       music = [partner.data.cpu().numpy(), pred.data.cpu().numpy()]
       return music
 
+
+    # def generate(self, history=None, length_steps=4):
+    #   rest = self.pitch2index['rest']
+    #   model = self.model
+    #   INIT_LEN = max(len(v) for v in history)
+    #   SEGMENT_LEN = INIT_LEN + int(length_steps)
+    #   # pred_ind = SEGMENT_LEN
+      
+
+    #   # 0. Equalize input sequence lengths
+    #   target_length = INIT_LEN + length_steps
+    #   localhistory = []
+    #   for voice in enumerate(history):
+    #       padlen = int(target_length - len(voice))
+    #       pad = np.full((padlen,), rest)
+    #       localhistory.append(np.concatenate([np.array(voice), pad], 0))
+
+    #   own_voice, partner, meta = localhistory
+
+    #   # 1. Pad input sequences
+    #   if INIT_LEN < SEGMENT_LEN:
+    #     pad_length = SEGMENT_LEN - INIT_LEN
+    #     pad = np.full((pad_length,), rest)
+    #     own_voice = np.concatenate([pad, own_voice], 0)
+    #     partner = np.concatenate([pad, partner], 0)
+    #     meta_ = [0, 1, 2, 3]
+    #     pad_meta = [meta_[(i - pad_length) % 4] for i in range(pad_length)]
+    #     meta = np.concatenate([pad_meta, meta], 0)
+
+    #   # if INIT_LEN < SEGMENT_LEN:
+    #   #     pad_length = SEGMENT_LEN - INIT_LEN
+    #   #     pad = np.full((pad_length,), start_pad)
+    #   #     own_voice = np.concatenate([pad, own_voice], 0)
+    #   #     partner = np.concatenate([pad, partner], 0)
+    #   #     meta_ = [0, 1, 2, 3]
+    #   #     pad_meta = [meta_[(i - pad_length) % 4] for i in range(pad_length)]
+    #   #     meta = np.concatenate([pad_meta, meta], 0)
+
+    #   pred = torch.from_numpy(own_voice).cpu().long()
+    #   partner = torch.from_numpy(partner).cpu().long()
+    #   meta = torch.from_numpy(meta).cpu().reshape(len(meta), -1).long()
+
+    #   meta = torch.from_numpy(np.array([i % 4 for i in target_length])).long()
+
+    #   for pred_ind in range(int(length_steps)):
+    #       log.info(f'Iteration {pred_ind}')
+    #       start = max(0, pred_ind-target_length)
+    #       pitch = model(pred[:start],
+    #                     partner[:start],
+    #                     meta[:start],
+    #                     meta[start])
+    #       prob = F.softmax(pitch, dim=1)
+    #       action = prob.multinomial(num_samples=1).data
+    #       pred = torch.cat((pred, action.view(-1)))
+
+    #   if INIT_LEN < SEGMENT_LEN:
+    #     pad_len = SEGMENT_LEN - INIT_LEN
+    #     partner = partner[pad_len:]
+    #     pred = pred[pad_len:]
+
+    #   music = [partner.data.cpu().numpy(), pred.data.cpu().numpy()]
+    #   print(music)
+    #   return list(pred.data.cpu().numpy())
+
     def decode(self, token):
-      return None
+      step_length = 1 / self.host.get('steps_per_quarter')
+      # print(token)
+      return [('note_on', token, 127, step_length)]
 
     def encode(self, message):
-      return None
+      return message.note
 
     def close(self):
       return None

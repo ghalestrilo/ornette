@@ -33,8 +33,8 @@ state = {
     'input_unit': 'beats',
     'output_unit': 'beats',
     'instrument': [ 's', 'superpiano' ],
-    'last_end_time': 0,
-    # 'instrument': [ 's', 'mc', 'midichan', 0 ],
+    # 'last_end_time': 0,
+    'instrument': [ 's', 'mc', 'midichan', 0 ],
 
     # MIDI  Output fields
     'output_data': [],
