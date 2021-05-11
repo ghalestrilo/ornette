@@ -1,8 +1,3 @@
 checkpoints:
-  pianoroll_rnn_nade: http://download.magenta.tensorflow.org/models/pianoroll_rnn_nade.mag
-  pianoroll_rnn_nade-bach: http://download.magenta.tensorflow.org/models/pianoroll_rnn_nade-bach.mag
-
-# * [pianoroll_rnn_nade](http://download.magenta.tensorflow.org/models/pianoroll_rnn_nade.mag): Trained
-#   on a large corpus of piano music scraped from the web.
-# * [pianoroll_rnn_nade-bach](http://download.magenta.tensorflow.org/models/pianoroll_rnn_nade-bach.mag):
-#   Trained on the [Bach Chorales](https://web.archive.org/web/20150503021418/http://www.jsbchorales.net/xml.shtml) dataset.
+  rnn-nade_attn: http://download.magenta.tensorflow.org/models/pianoroll_rnn_nade.mag
+  # pianoroll_rnn_nade-bach: http://download.magenta.tensorflow.org/models/pianoroll_rnn_nade-bach.mag
