@@ -51,59 +51,58 @@ class OrnetteModule():
 
     def generate(self, history=None, length_seconds=4):
         init_pitch = 55
+        step_length = 1 / self.host.get('steps_per_quarter')
 
         # Get first voice
         primer_sequence = history[0] if history and any(history[0]) else [(init_pitch,)] 
 
         # Get last end time
-        last_end_time = (len(primer_sequence) * (1/8) # TODO: steps_per_quarter
+        last_end_time = (len(primer_sequence) * step_length
           if primer_sequence != None and any(primer_sequence)
           else 0 )
 
-        # noteseq = NoteSequence(
-        #     notes=primer_sequence,
-        #     quantization_info={
-        #         'steps_per_quarter': self.server_state['steps_per_quarter']},
-        #     tempos=[{'time': 0, 'qpm': self.server_state['bpm']}],
-        #     total_quantized_steps=11,
-        # )
+        print(primer_sequence)
+        
         primer_pianoroll = note_seq.PianorollSequence(
-          events_list=history[0] if any(history[0]) else [(init_pitch,)],
-          steps_per_quarter=4,
+          events_list=primer_sequence,
+          steps_per_quarter=self.host.get('steps_per_quarter'),
           shift_range=True)
-        # primer_pianoroll = note_seq.PianoRoll()
+        primer_sequence = primer_pianoroll.to_sequence(qpm=self.host.get('bpm'))
 
         generator_options = generator_pb2.GeneratorOptions()
         generator_options.generate_sections.add(
             start_time=last_end_time,
             end_time=last_end_time + length_seconds)
 
-        primer_sequence = primer_pianoroll.to_sequence(qpm=self.host.get('bpm'))
+        
         seq = self.model.generate(primer_sequence, generator_options).notes
-        # def by_start_time(e): return e.start_time if e is not None else []
-        # seq.sort(key=by_start_time)
-        return seq
 
+        # return seq
+        return [(note.pitch,) for note in seq]
 
     def decode(self, token):
         ''' Must return a mido message array (type (note_on), note, velocity, duration)'''
 
-        start = max(0, token.start_time - self.host.get('last_end_time'))
-        decoded = [
-            ('note_on', token.pitch, token.velocity, start),
-            ('note_off', token.pitch, token.velocity, start + 1/8) # TODO: steps_per_quarter
-        ]
+        # start = max(0, token.start_time - self.host.get('last_end_time'))
+        # step_length = 1 / self.host.get('steps_per_quarter')
+        # decoded = [
+        #     ('note_on', token.pitch, token.velocity, start),
+        #     ('note_off', token.pitch, token.velocity, start + step_length)
+        # ]
 
-        self.host.set('last_end_time', max(0, token.end_time))
-        return decoded
+        # self.host.set('last_end_time', max(0, token.end_time))
+        # return decoded
+        step_length = 1 / self.host.get('steps_per_quarter')
+        return [('note_on', token[0], 127, step_length)]
 
     def encode(self, message):
         ''' Receives a mido message, must return a model-compatible token '''
         last_end_time = self.host.get('last_end_time')
+        step_length = 1 / self.host.get('steps_per_quarter')
 
         note = (message.note,)
 
-        self.host.set('last_end_time', last_end_time + 1/8) # TODO: steps_per_quarter
+        self.host.set('last_end_time', last_end_time + step_length)
         return note
 
     def close(self):
