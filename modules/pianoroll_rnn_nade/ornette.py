@@ -61,8 +61,6 @@ class OrnetteModule():
           if primer_sequence != None and any(primer_sequence)
           else 0 )
 
-        print(primer_sequence)
-        
         primer_pianoroll = note_seq.PianorollSequence(
           events_list=primer_sequence,
           steps_per_quarter=self.host.get('steps_per_quarter'),
