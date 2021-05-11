@@ -1,5 +1,7 @@
 # Ornette
-An OSC server to interact with different music-generating ML models
+An OSC server to interact with different music-generating ML models. This is **very** work-in-progress at the moment and will probably break.
+
+## Concept
 
 ## Dependencies
 
@@ -42,7 +44,7 @@ Currently, you can serve specific modules with the following syntax:
 ./start.sh <module_name> <checkpoint_name>
 ```
 
-Modules are listed on the `modules` folder, and their checkpoints can be found on the `.ornette.yml` file. These are the currently implemented modules, with their checkpoint options listed as subitems:
+Modules are listed on the `modules` folder, and their checkpoints can be found on the `.ornette.yml` file. Most of the models were developed by [Magenta Research](https://github.com/magenta/magenta/tree/master/magenta/models). These are the currently implemented modules, with their checkpoint options listed as subitems:
 
 - melody_rnn
   - basic_rnn
