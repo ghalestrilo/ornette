@@ -33,7 +33,7 @@ state = {
     'input_unit': 'beats',
     'output_unit': 'beats',
     'last_end_time': 0,
-    'main_voice': 0,
+    'voices': [0],
     # 'instrument': [ 's', 'mc', 'midichan', 0 ],
     'instrument': [ 's', 'superpiano', 'velocity', '0.4' ],
 
@@ -152,14 +152,27 @@ class Host:
       if final_length is None:
         self.log(f'error: trying to generate length {final_length}')
         return
-      seq = self.model.generate(self.get('history'), final_length)
-      self.log(f'{len(seq)} tokens were generated')
+
+      output = self.model.generate(self.get('history'), final_length)
+      # self.log(f'{len(seq)} tokens were generated')
+
+      # Polyphonic model: Output is 2D
+      if (len(state['voices']) > 1):
+        generated_length = len(output[0]) - max_len
+        # Update generated voices
+        for v in self.get('voices'):
+          state['history'][v] = output[v][-max_len:]
+      # Monophonic model: Output is 1D
+      else:
+        generated_length = len(output) - max_len
+        state['history'][0] = output[-max_len:]
+
 
       # Update Playhead
-      self.rewind(max(0, len(seq) - max_len))
+      self.rewind(max(0, generated_length))
 
-      state['history'][0] = seq[-max_len:]
       
+
       state['is_generating'] = False
       self.clock.notify_wait(False)
 

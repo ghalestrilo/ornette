@@ -37,7 +37,7 @@ class OrnetteModule():
         self.host.set('history', [[],[]])
         self.host.set('generation_unit', 'seconds')
         self.host.set('last_end_time', 0.125)
-        self.host.set('generate_voices', [0, 1])
+        self.host.set('voices', [0, 1])
 
         self.model = PianorollRnnNadeSequenceGenerator(
           model=PianorollRnnNadeModel(config),
@@ -49,13 +49,7 @@ class OrnetteModule():
         init_pitch = 55
         step_length = 1 / self.host.get('steps_per_quarter')
 
-        # Get first voice
-        # primer_sequence = history[0] if history and any(history[0]) else [(init_pitch,)] 
-
         # Get voices
-        # print('voices')
-        # print(voices)
-        print([history[i] for i in voices])
         voices_ = [history[i] for i in voices]
 
         # Pad Partner sequence
@@ -68,9 +62,6 @@ class OrnetteModule():
           primer_sequence.append((own_note.pitch, partner_note) if partner_note else (own_note.pitch,))
 
         if not any(primer_sequence): primer_sequence = [(init_pitch,)]
-
-        print('primer_sequence')
-        print(primer_sequence)
 
         # Get last end time
         last_end_time = (len(primer_sequence) * step_length
@@ -88,17 +79,10 @@ class OrnetteModule():
             start_time=last_end_time,
             end_time=last_end_time + length_seconds)
 
-        
         seq = self.model.generate(primer_sequence, generator_options)
-        # print('seq')
-        # print(seq)
         seq = seq.notes
-        # print('seq')
-        # print(seq)
 
-        return seq
-        # return [history]
-        # return [(note.pitch,) for note in seq]
+        return [seq, []] # TODO: Split voices
 
     def decode(self, token):
         step_length = 1 / self.host.get('steps_per_quarter')

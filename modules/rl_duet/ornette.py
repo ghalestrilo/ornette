@@ -75,7 +75,7 @@ class OrnetteModule():
       self.host.set('generation_unit', 'beats')
       self.host.set('missing_beats', 16)
       self.host.set('steps_per_quarter', 4)
-      self.host.set('generate_voices', [0])
+      self.host.set('voices', [0,1,2])
       self.host.set('history', [[] for x in range(3)])
 
     def generate(self, history=None, length_steps=4, voices=[]):
@@ -86,14 +86,9 @@ class OrnetteModule():
         self.pitch2index['rest'],length_steps)
 
       music = [list(v) for v in music]
-      # sig = self.host.get('time_signature_numerator')
       sig = 4
-      self.host.set('history', [
-        music[1],
-        music[0],
-        [i % sig for i in range(len(music[0]))]
-      ], silent=True)
-      return music[1]
+      meta = [i % sig for i in range(len(music[0]))]
+      return [*music, meta]
 
 
     def sample_(self, model, own_voice, partner, meta, start_pad, length=16):
@@ -141,6 +136,7 @@ class OrnetteModule():
       return music
 
     def decode(self, token):
+      print(token)
       step_length = 1 / self.host.get('steps_per_quarter')
       if token == self.pitch2index['rest']:
         return [('note_off', 92, 127, step_length)]
