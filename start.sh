@@ -22,8 +22,15 @@ if [ $NOT_INTERACTIVE ]; then DOCKER_START="docker run -t"; fi
 # Definitions
 function build_image(){
   docker image remove "$imagename" --force
-  [ ! -e "${modeldir}/Dockerfile" ] && echo "Image $imagename not found and $modelname has no Dockerfile" && exit
-  docker build -t "$imagename" "$modeldir"
+  [ ! -e "${modeldir}/Dockerfile" ] && [ ! -e "${modeldir}/Dockerfile.complete" ] && echo "Image $imagename not found and $modelname has no Dockerfile" && exit
+  if [ -e "${modeldir}/Dockerfile.complete" ]
+  then
+    cp "${modeldir}/Dockerfile.complete" .
+    docker build -t "$imagename" -f "Dockerfile.complete" .
+    rm "Dockerfile.complete"
+  else
+    docker build -t "$imagename" "$modeldir"
+  fi
 }
 
 function build_base_image(){

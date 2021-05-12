@@ -32,10 +32,10 @@ state = {
     'missing_beats': 4,  # How many beats should the generator generate?
     'input_unit': 'beats',
     'output_unit': 'beats',
-    'instrument': [ 's', 'superpiano' ],
     'last_end_time': 0,
     'main_voice': 0,
-    # 'instrument': [ 's', 'mc', 'midichan', 0 ],
+    'instrument': [ 's', 'mc', 'midichan', 0 ],
+    # 'instrument': [ 's', 'superpiano' ],
 
     # MIDI  Output fields
     'output_data': [],
@@ -77,12 +77,12 @@ class Host:
           return
       self.close()
 
-    def set(self,field,value):
+    def set(self,field,value,silent=False):
       try:
         state[field] = value
-        self.log("[{0}] ~ {1}".format(field, value))
+        if not silent: self.log("[{0}] ~ {1}".format(field, value))
       except KeyError:
-          self.log(f'no such key ~ {field}')
+          if not silent: self.log(f'no such key ~ {field}')
           pass
     
     def get(self,field):
@@ -234,10 +234,10 @@ class Host:
           note=note,
           channel=1,
           velocity=velocity,
-          time=int(round(mido.second2tick(time, state['ticks_per_beat'], state['midi_tempo'])))) 
+          time=int(round(mido.second2tick(time, state['ticks_per_beat'], state['midi_tempo']))))
           
-        data.add_message(state, msg, voice)
-        return [('wait', time), ('play', note)]
+        data.add_message(state, msg)
+        return [('wait', time), ('play', note)] if name is not 'note_off' else [('wait', time)]
 
     def perform(self,action):
       ''' Performs a musical action described by a tuple (name, value)
