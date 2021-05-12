@@ -12,6 +12,8 @@ class Clock(Thread):
       self.stopped = Event()
       self.should_wait = False
       # self.start_metronome()
+      # TODO: Set delays
+      # host.set('delays', [0 for voice in host.get('voices')])
 
     def bind(self,server_state):
       self.state = server_state
@@ -30,7 +32,8 @@ class Clock(Thread):
       # self.generate_in_background()
       while not self.stopped.wait(self.state['until_next_event']):
         if (host.is_running() == True and self.should_wait == False):
-          self.host.process_next_token()
+          i = 0
+          self.host.process_next_token(i)
 
           if (host.must_generate()):
             self.generate_in_background()

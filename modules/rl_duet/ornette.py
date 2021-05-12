@@ -73,35 +73,22 @@ class OrnetteModule():
       self.model = model
       self.host = host
       self.host.set('generation_unit', 'beats')
-      self.host.set('missing_beats', 8)
+      self.host.set('missing_beats', 16)
+      self.host.set('steps_per_quarter', 4)
+      self.host.set('voices', [0,1,2])
       self.host.set('history', [[] for x in range(3)])
 
-    def generate(self, history=None, length_steps=4):
-      # Option: try to make the loop here
-      # log.info('history')
-      # log.info(history)
-      
+    def generate(self, history=None, length_steps=4, voices=[]):
       music = self.sample_(self.model,
         np.array(history[0]),
         np.array(history[1]),
         np.array(history[2]),
         self.pitch2index['rest'],length_steps)
 
-      # FIXME: Once multi-part history is implemented properly, map voices properly here
-      # music = self.sample_(self.model,
-      #   np.array(history[0]),
-      #   np.array(history[0]),
-      #   np.array([i % 4 for i in range(len(history[0]))]),
-      #   self.pitch2index['rest'],
-      #   length_steps)
       music = [list(v) for v in music]
-      print(music)
-      self.host.set('history', [
-        music[1],
-        music[0],
-        [i % 4 for i in range(len(music[0]))]
-      ])
-      return music[1]
+      sig = 4
+      meta = [i % sig for i in range(len(music[0]))]
+      return [*music, meta]
 
 
     def sample_(self, model, own_voice, partner, meta, start_pad, length=16):
@@ -149,6 +136,7 @@ class OrnetteModule():
       return music
 
     def decode(self, token):
+      print(token)
       step_length = 1 / self.host.get('steps_per_quarter')
       if token == self.pitch2index['rest']:
         return [('note_off', 92, 127, step_length)]

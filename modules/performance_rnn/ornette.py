@@ -24,6 +24,7 @@ class OrnetteModule():
         self.host.set('history', [[]])
         self.host.set('generation_unit', 'seconds')
         self.host.set('last_end_time', 0)
+        self.host.set('generate_voices', [0])
 
         self.model = PerformanceRnnSequenceGenerator(
             model=PerformanceRnnModel(config),

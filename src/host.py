@@ -32,9 +32,10 @@ state = {
     'missing_beats': 4,  # How many beats should the generator generate?
     'input_unit': 'beats',
     'output_unit': 'beats',
-    'instrument': [ 's', 'superpiano' ],
-    # 'last_end_time': 0,
-    'instrument': [ 's', 'mc', 'midichan', 0 ],
+    'last_end_time': 0,
+    'voices': [0],
+    # 'instrument': [ 's', 'mc', 'midichan', 0 ],
+    'instrument': [ 's', 'superpiano', 'velocity', '0.4' ],
 
     # MIDI  Output fields
     'output_data': [],
@@ -45,7 +46,7 @@ state = {
     'time_signature_numerator': 4, 
     'time_signature_denominator': 4,
     'ticks_per_beat': 960, # TODO: How do I determine that?
-    'steps_per_quarter': 8,
+    'steps_per_quarter': 4,
 
     # Batch execution control
     'batch_mode': False,
@@ -76,12 +77,12 @@ class Host:
           return
       self.close()
 
-    def set(self,field,value):
+    def set(self,field,value,silent=False):
       try:
         state[field] = value
-        self.log("[{0}] ~ {1}".format(field, value))
+        if not silent: self.log("[{0}] ~ {1}".format(field, value))
       except KeyError:
-          self.log(f'no such key ~ {field}')
+          if not silent: self.log(f'no such key ~ {field}')
           pass
     
     def get(self,field):
@@ -133,11 +134,11 @@ class Host:
 
     def generate(self, length=state['missing_beats'], unit='beats', respond=False):
       state['is_generating'] = True
-      hist = self.state['history'][0]
-      threshold = self.state['trigger_generate']
-      playhead = self.state['playhead']
+      hist = self.get('history')[0]
+      threshold = self.get('trigger_generate')
+      playhead = self.get('playhead')
 
-      max_len = self.state['buffer_length'] 
+      max_len = self.get('buffer_length') 
 
       if (self.is_debugging()):
           self.log(f'generating tokens ({playhead}/{len(hist)} > {threshold})')
@@ -151,14 +152,27 @@ class Host:
       if final_length is None:
         self.log(f'error: trying to generate length {final_length}')
         return
-      seq = self.model.generate(self.get('history'), final_length)
-      self.log(f'{len(seq)} tokens were generated')
+
+      output = self.model.generate(self.get('history'), final_length)
+      # self.log(f'{len(seq)} tokens were generated')
+
+      # Polyphonic model: Output is 2D
+      if (len(state['voices']) > 1):
+        generated_length = len(output[0]) - max_len
+        # Update generated voices
+        for v in self.get('voices'):
+          state['history'][v] = output[v][-max_len:]
+      # Monophonic model: Output is 1D
+      else:
+        generated_length = len(output) - max_len
+        state['history'][0] = output[-max_len:]
+
 
       # Update Playhead
-      self.rewind(max(0, len(seq) - max_len))
+      self.rewind(max(0, generated_length))
 
-      state['history'][0] = seq[-max_len:]
       
+
       state['is_generating'] = False
       self.clock.notify_wait(False)
 
@@ -224,18 +238,18 @@ class Host:
       return hist[0][position]
     
     # Playback Methods
-    def get_action(self,message):
+    def get_action(self,message,voice=0):
         ''' Get Action
             Decode a midi message into a sequence of actions
         '''
         name, note, velocity, time = message
         msg = mido.Message(name,
           note=note,
-          channel=1,
+          channel=voice,
           velocity=velocity,
           time=int(round(mido.second2tick(time, state['ticks_per_beat'], state['midi_tempo']))))
           
-        data.add_message(state, msg)
+        data.add_message(state, msg, voice)
         return [('wait', time), ('play', note)] if name is not 'note_off' else [('wait', time)]
 
     def perform(self,action):
@@ -262,7 +276,7 @@ class Host:
           state['until_next_event'] = value
       
 
-    def process_next_token(self):
+    def process_next_token(self, voice=0):
       ''' Reads the next token from the history
           Decodes the token onto a mido messagee
           Saves the message to the output
@@ -280,7 +294,7 @@ class Host:
         return
 
       for message in self.model.decode(e):
-        for action in self.get_action(message):
+        for action in self.get_action(message,voice):
           self.perform(action)
 
       self.state['playhead'] = self.state['playhead'] + 1
@@ -305,8 +319,10 @@ class Host:
         self.clock.notify_wait(False)
 
     def load_midi(self, name, barcount=None):
+        self.log(f' loading {name}')
         data.load_midi(self, name, barcount, 'bars')
         if self.get('batch_mode'): self.notify_task_complete()
+        if not any(self.get('history')): self.set("history",[[]])
         self.log(f' loaded {len(self.get("history")[0])} tokens to history')
 
     def save_output(self, name):
