@@ -33,8 +33,8 @@ state = {
     'input_unit': 'beats',
     'output_unit': 'beats',
     'instrument': [ 's', 'superpiano' ],
-    'last_end_time': 0,
-    # 'instrument': [ 's', 'mc', 'midichan', 0 ],
+    # 'last_end_time': 0,
+    'instrument': [ 's', 'mc', 'midichan', 0 ],
 
     # MIDI  Output fields
     'output_data': [],
@@ -233,10 +233,10 @@ class Host:
           note=note,
           channel=1,
           velocity=velocity,
-          time=int(round(mido.second2tick(time, state['ticks_per_beat'], state['midi_tempo'])))) 
+          time=int(round(mido.second2tick(time, state['ticks_per_beat'], state['midi_tempo']))))
           
         data.add_message(state, msg)
-        return [('wait', time), ('play', note)]
+        return [('wait', time), ('play', note)] if name is not 'note_off' else [('wait', time)]
 
     def perform(self,action):
       ''' Performs a musical action described by a tuple (name, value)

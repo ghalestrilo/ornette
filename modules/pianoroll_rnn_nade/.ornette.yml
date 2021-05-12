@@ -1,0 +1,3 @@
+checkpoints:
+  rnn-nade_attn: http://download.magenta.tensorflow.org/models/pianoroll_rnn_nade.mag
+  # pianoroll_rnn_nade-bach: http://download.magenta.tensorflow.org/models/pianoroll_rnn_nade-bach.mag
