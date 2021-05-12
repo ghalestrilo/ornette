@@ -34,8 +34,8 @@ state = {
     'output_unit': 'beats',
     'last_end_time': 0,
     'main_voice': 0,
-    'instrument': [ 's', 'mc', 'midichan', 0 ],
-    # 'instrument': [ 's', 'superpiano' ],
+    # 'instrument': [ 's', 'mc', 'midichan', 0 ],
+    'instrument': [ 's', 'superpiano', 'velocity', '0.4' ],
 
     # MIDI  Output fields
     'output_data': [],
@@ -46,7 +46,7 @@ state = {
     'time_signature_numerator': 4, 
     'time_signature_denominator': 4,
     'ticks_per_beat': 960, # TODO: How do I determine that?
-    'steps_per_quarter': 8,
+    'steps_per_quarter': 4,
 
     # Batch execution control
     'batch_mode': False,

@@ -34,9 +34,10 @@ class OrnetteModule():
 
         self.server_state = host.state
         self.host = host
-        self.host.set('history', [[]])
+        self.host.set('history', [[],[]])
         self.host.set('generation_unit', 'seconds')
         self.host.set('last_end_time', 0.125)
+        self.host.set('generate_voices', [0, 1])
 
         self.model = PianorollRnnNadeSequenceGenerator(
           model=PianorollRnnNadeModel(config),
@@ -44,12 +45,32 @@ class OrnetteModule():
           steps_per_quarter=config.steps_per_quarter,
           bundle=bundle_file)
 
-    def generate(self, history=None, length_seconds=4):
+    def generate(self, history=None, length_seconds=4, voices=[0, 1]):
         init_pitch = 55
         step_length = 1 / self.host.get('steps_per_quarter')
 
         # Get first voice
-        primer_sequence = history[0] if history and any(history[0]) else [(init_pitch,)] 
+        # primer_sequence = history[0] if history and any(history[0]) else [(init_pitch,)] 
+
+        # Get voices
+        # print('voices')
+        # print(voices)
+        print([history[i] for i in voices])
+        voices_ = [history[i] for i in voices]
+
+        # Pad Partner sequence
+        voices_[1] = voices_[1] + list(None for i in range(len(voices_[0]) - len(voices_[1])))
+
+        # Build Primer
+        primer_sequence = []
+        for i, own_note in enumerate(voices_[0]):
+          partner_note = voices_[1][i]
+          primer_sequence.append((own_note.pitch, partner_note) if partner_note else (own_note.pitch,))
+
+        if not any(primer_sequence): primer_sequence = [(init_pitch,)]
+
+        print('primer_sequence')
+        print(primer_sequence)
 
         # Get last end time
         last_end_time = (len(primer_sequence) * step_length
@@ -68,14 +89,22 @@ class OrnetteModule():
             end_time=last_end_time + length_seconds)
 
         
-        seq = self.model.generate(primer_sequence, generator_options).notes
+        seq = self.model.generate(primer_sequence, generator_options)
+        # print('seq')
+        # print(seq)
+        seq = seq.notes
+        # print('seq')
+        # print(seq)
 
-        # return seq
-        return [(note.pitch,) for note in seq]
+        return seq
+        # return [history]
+        # return [(note.pitch,) for note in seq]
 
     def decode(self, token):
         step_length = 1 / self.host.get('steps_per_quarter')
-        return [('note_on', token[0], 127, step_length)]
+        # return [('note_on', token[0], 127, step_length)]
+        # TODO: if not self.host.get('buffer'): history(voices[1]).append(None)
+        return [('note_on', token.pitch, 127, step_length)]
 
     def encode(self, message):
         ''' Receives a mido message, must return a model-compatible token '''
