@@ -84,6 +84,7 @@ def load_midi(host, filename, max_len=None, max_len_units=None):
       track = MidiTrack()
 
       for msg in file_track:
+        print(f'host.to_ticks({max_len}, {max_len_units}) = {host.to_ticks(max_len, max_len_units)}')
         max_ticks = host.to_ticks(max_len, max_len_units) + offset
         if max_len is not None and ticks_so_far >= max_ticks:
           continue

@@ -245,11 +245,11 @@ class Host:
         name, note, velocity, time = message
         msg = mido.Message(name,
           note=note,
-          channel=1,
+          channel=voice,
           velocity=velocity,
           time=int(round(mido.second2tick(time, state['ticks_per_beat'], state['midi_tempo']))))
           
-        data.add_message(state, msg)
+        data.add_message(state, msg, voice)
         return [('wait', time), ('play', note)] if name is not 'note_off' else [('wait', time)]
 
     def perform(self,action):
@@ -276,7 +276,7 @@ class Host:
           state['until_next_event'] = value
       
 
-    def process_next_token(self):
+    def process_next_token(self, voice=0):
       ''' Reads the next token from the history
           Decodes the token onto a mido messagee
           Saves the message to the output
@@ -294,7 +294,7 @@ class Host:
         return
 
       for message in self.model.decode(e):
-        for action in self.get_action(message):
+        for action in self.get_action(message,voice):
           self.perform(action)
 
       self.state['playhead'] = self.state['playhead'] + 1
