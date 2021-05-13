@@ -76,7 +76,7 @@ def run_experiments():
     client.set('batch_unit', 'measures')
 
     # EXPERIMENT 1: Free improv test
-    if args.experiment in ['all', 'free']:
+    if args.experiment in ['all', 'free'] and False: # FIXME
       expname = 'free'
       log(f'Running experiment with model: {args.modelname}')
       if (args.skip_generation == False):
@@ -104,6 +104,7 @@ def run_experiments():
     if args.experiment in ['all', 'cond-primer']:
       expname = 'cond-primer'
       bars_output = 4  # vary output length
+      client.set('voices', [0, 1])
       for primer in primers:
         for i in range(args.iterations):
           log(f'iteration: {i}')

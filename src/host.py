@@ -80,7 +80,8 @@ class Host:
     def set(self,field,value,silent=False):
       try:
         state[field] = value
-        if not silent: self.log("[{0}] ~ {1}".format(field, value))
+        if silent or field == 'last_end_time': return
+        self.log("[{0}] ~ {1}".format(field, value))
       except KeyError:
           if not silent: self.log(f'no such key ~ {field}')
           pass
@@ -153,7 +154,7 @@ class Host:
         self.log(f'error: trying to generate length {final_length}')
         return
 
-      output = self.model.generate(self.get('history'), final_length)
+      output = self.model.generate(self.get('history'), final_length, self.get('voices'))
       # self.log(f'{len(seq)} tokens were generated')
 
       # Polyphonic model: Output is 2D
@@ -250,7 +251,7 @@ class Host:
           time=int(round(mido.second2tick(time, state['ticks_per_beat'], state['midi_tempo']))))
           
         data.add_message(state, msg, voice)
-        return [('wait', time), ('play', note)] if name is not 'note_off' else [('wait', time)]
+        return [('wait', time), ('play', note)] if name != 'note_off' else [('wait', time)]
 
     def perform(self,action):
       ''' Performs a musical action described by a tuple (name, value)

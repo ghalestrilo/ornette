@@ -47,7 +47,7 @@ class OrnetteModule():
       self.last_end_time = 0
       self.host.set('generate_voices', [0])
 
-  def generate(self, history=None, length_seconds=4):
+  def generate(self, history=None, length_seconds=4, voices=[0]):
     last_end_time = 0
 
     # Get first voice

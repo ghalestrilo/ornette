@@ -72,19 +72,25 @@ def load_midi(host, filename, max_len=None, max_len_units=None):
     host.reset()
     host.set('ticks_per_beat', mid.ticks_per_beat)
 
-    init_output_data(host.state)
 
+    # init_output_data(host.state)
+    # output_data = host.state['output_data']
+    output_data = MidiFile(ticks_per_beat=host.state['ticks_per_beat'])
     history = []
-    output_data = host.state['output_data']
+
     
     for i, file_track in enumerate(mid.tracks):
+    # for file_track in mid.tracks:
       ticks_so_far = 0
       offset = 0
       history.append([])
+      
+      # is_new_track = i >= len(output_data.tracks)
+      # track = MidiTrack() if is_new_track else output_data.tracks[i]
       track = MidiTrack()
 
       for msg in file_track:
-        print(f'host.to_ticks({max_len}, {max_len_units}) = {host.to_ticks(max_len, max_len_units)}')
+        # print(f'host.to_ticks({max_len}, {max_len_units}) = {host.to_ticks(max_len, max_len_units)}')
         max_ticks = host.to_ticks(max_len, max_len_units) + offset
         if max_len is not None and ticks_so_far >= max_ticks:
           continue
@@ -107,9 +113,10 @@ def load_midi(host, filename, max_len=None, max_len_units=None):
 
         if msg.type in ['note_on']: history[i].append(host.model.encode(msg))
       
+      # if is_new_track: output_data.tracks.append(track)
       output_data.tracks.append(track)
 
-    host.set('history',[voice for voice in history if any(voice)])
+    host.set('history',[voice for voice in history if any(voice)], silent=True)
     return history
 
 
@@ -148,14 +155,13 @@ def init_output_data(state):
     # if state['output_data']: state['output_data'].clear()
     output = MidiFile(ticks_per_beat=state['ticks_per_beat'])
 
-    track = MidiTrack()
-
-    track.append(MetaMessage('track_name', name=state['track_name']))
-    track.append(MetaMessage('set_tempo', tempo=state['midi_tempo']))
-    track.append(MetaMessage('time_signature',
-          numerator=state['time_signature_numerator'],
+    for i in state['history']:
+      track = MidiTrack()
+      track.append(MetaMessage('track_name', name=state['track_name']))
+      track.append(MetaMessage('set_tempo', tempo=state['midi_tempo']))
+      track.append(MetaMessage('time_signature',
+            numerator=state['time_signature_numerator'],
           denominator=state['time_signature_denominator']))
-
-    output.tracks.append(track)
+      output.tracks.append(track)
 
     state['output_data'] = output

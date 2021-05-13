@@ -28,32 +28,36 @@ class OrnetteModule():
         self.host.set('last_end_time', 0)
         self.host.set('generate_voices', [0])
 
-    def generate(self, history=None, length_seconds=4):
+    def generate(self, history=None, length_seconds=4, voices=[0]):
         last_end_time = 0
 
-        # Get first voice
-        primer_sequence = [] if history is None else history[0]
+        output = []
+        
+        for voice in voices:
+          # Get first voice
+          primer_sequence = [] if history is None else history[voice]
 
-        # Get last end time
-        if (primer_sequence != None and any(primer_sequence)):
-            last_end_time = max(n.end_time for n in primer_sequence)
+          # Get last end time
+          if (primer_sequence != None and any(primer_sequence)):
+              last_end_time = max(n.end_time for n in primer_sequence)
 
-        # TODO: Abstract this code
-        generator_options = generator_pb2.GeneratorOptions()
-        generator_options.generate_sections.add(
-            start_time=last_end_time,
-            end_time=last_end_time + length_seconds)
+          # TODO: Abstract this code
+          generator_options = generator_pb2.GeneratorOptions()
+          generator_options.generate_sections.add(
+              start_time=last_end_time,
+              end_time=last_end_time + length_seconds)
 
-        noteseq = NoteSequence(
-            notes=primer_sequence,
-            quantization_info={
-                'steps_per_quarter': self.host.get('steps_per_quarter')},
-            tempos=[{'time': 0, 'qpm': self.host.get('bpm')}],
-            total_quantized_steps=11,
-        )
+          noteseq = NoteSequence(
+              notes=primer_sequence,
+              quantization_info={
+                  'steps_per_quarter': self.host.get('steps_per_quarter')},
+              tempos=[{'time': 0, 'qpm': self.host.get('bpm')}],
+              total_quantized_steps=11,
+          )
 
-        notes = self.model.generate(noteseq, generator_options).notes
-        return notes
+          notes = self.model.generate(noteseq, generator_options).notes
+          output.append(notes)
+        return output[0] if len(voices) < 2 else output
 
     def decode(self, token):
         ''' Must return a mido message (type (note_on), note, velocity, duration)'''

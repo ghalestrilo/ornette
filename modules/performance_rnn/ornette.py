@@ -38,7 +38,7 @@ class OrnetteModule():
             note_performance=config.note_performance)
 
     # update Module#generate to receive only number of tokens
-    def generate(self, history=None, length_seconds=4):
+    def generate(self, history=None, length_seconds=4, voices=[0]):
         last_end_time = 0
 
         # Get first voice
