@@ -21,7 +21,7 @@ state = {
     'buffer_length': 64,     # read from .ornette.yml
     'trigger_generate': 0.5, # read from .ornette.yml
 
-    # Operation/Playback Variables
+    # Engine (Operation/Playback Variables)
     'history': [[]],
     'is_running': False,
     'is_generating': False,
