@@ -77,8 +77,9 @@ def load_model(host, checkpoint=None):
 # TODO: Track module
 def add_message(state, message, voice = 0):
     ''' Adds a Mido message to a voice in the state's 'output_data' '''
-    if (state['output_data'] is None): init_output_data(state)
-
+    if (state['output_data'] is None): init_output_data(state, True)
+    print(f'voice: {voice}')
+    print(f'len(tracks {len(state["output_data"].tracks)}')
     state['output_data'].tracks[voice].append(message)
 
 
@@ -107,10 +108,11 @@ def load_midi(host, filename, max_len=None, max_len_units=None):
       track = MidiTrack()
 
       for msg in file_track:
-        # print(f'host.to_ticks({max_len}, {max_len_units}) = {host.to_ticks(max_len, max_len_units)}')
-        max_ticks = host.to_ticks(max_len, max_len_units) + offset
-        if max_len is not None and ticks_so_far >= max_ticks:
-          continue
+        print(f'host.to_ticks({max_len}, {max_len_units}) = {host.to_ticks(max_len, max_len_units)}')
+        if max_len is not None: 
+          max_ticks = host.to_ticks(max_len, max_len_units) + offset
+          if ticks_so_far >= max_ticks:
+            continue
 
         track.append(msg)
 
