@@ -15,8 +15,8 @@ class BatchClient(udp_client.SimpleUDPClient):
   def stop(self):
     self.send_message('/stop', [])
 
-  def set(self,key,value):
-    self.send_message('/set', [key, value])
+  def set(self,*args):
+    self.send_message('/set', args)
 
   def debug(self,key):
     self.send_message('/debug', [key])

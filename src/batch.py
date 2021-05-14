@@ -104,7 +104,7 @@ def run_experiments():
     if args.experiment in ['all', 'cond-primer']:
       expname = 'cond-primer'
       bars_output = 4  # vary output length
-      client.set('voices', [0, 1])
+      client.set('voices', 1, 2)
       for primer in primers:
         for i in range(args.iterations):
           log(f'iteration: {i}')

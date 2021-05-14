@@ -32,10 +32,12 @@ class Clock(Thread):
       # self.generate_in_background()
       while not self.stopped.wait(self.state['until_next_event']):
         if (host.is_running() == True and self.should_wait == False):
-          i = 0
-          self.host.process_next_token(i)
+          
+          for voice in host.get('voices'):
+            self.host.process_next_token(voice)
 
-          if (host.must_generate()):
+          voice = host.get('voices')[0]
+          if (host.must_generate(voice)):
             self.generate_in_background()
 
     def start_metronome(self):

@@ -1,3 +1,5 @@
+# TODO: Rename: 'Loader'
+
 # import tensorflow as tf
 import yaml
 import urllib.request as req
@@ -57,6 +59,22 @@ def load_model(host, checkpoint=None):
     return OrnetteModule(host, checkpoint=checkpoint)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# TODO: Track module
 def add_message(state, message, voice = 0):
     ''' Adds a Mido message to a voice in the state's 'output_data' '''
     if (state['output_data'] is None): init_output_data(state)
@@ -115,7 +133,8 @@ def load_midi(host, filename, max_len=None, max_len_units=None):
       # if is_new_track: output_data.tracks.append(track)
       output_data.tracks.append(track)
 
-    host.set('history',[voice for voice in history if any(voice)], silent=True)
+    # host.set('history',[voice for voice in history if any(voice)], silent=True)
+    host.set('history', history, silent=True)
     return history
 
 
@@ -165,3 +184,4 @@ def init_output_data(state,conductor=True):
         output.tracks.append(track)
 
     state['output_data'] = output
+#/ TODO: Track module

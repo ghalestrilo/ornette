@@ -38,7 +38,7 @@ state = {
     'instrument': [ 's', 'superpiano', 'velocity', '0.4' ],
 
     # MIDI  Output fields
-    'output_data': [],
+    'output_data': mido.MidiFile(),
     'save_output': True,
     'track_name': 'Acoustic Grand Piano',
     'bpm': 120,
@@ -77,8 +77,35 @@ class Host:
           return
       self.close()
 
+    def close(self):
+        self.clock.stop()
+        self.model.close()
+        self.bridge.stop()
+
+    def play(self,pitch,instr=None):
+      if (instr == None): self.bridge.play(pitch)
+      else: self.bridge.play(pitch, instr)
+
+
+
+
+
+
+
+    # TODO: State
     def set(self,field,value,silent=False):
       try:
+
+        # Move to TrackData
+        if (field == 'voices'):
+          try: value = list(value)
+          except TypeError: value = [value]
+          for i in value:
+            while i + 1 > len(self.get('history')): self.set('history', self.get('history') + [[]])
+            print(f'i + 1 = {i + 1} | len(out) = {len(self.get("output_data").tracks)}')
+            while i + 1 > len(self.get('output_data').tracks): state['output_data'].tracks.append(mido.MidiTrack())
+            print(f'i + 1 = {i + 1} | len(out) = {len(self.get("output_data").tracks)}')
+          
         state[field] = value
         if silent or field == 'last_end_time': return
         self.log("[{0}] ~ {1}".format(field, value))
@@ -93,6 +120,107 @@ class Host:
           self.log(f'no such key ~ {field}')
           pass
 
+    # /TODO: State
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # TODO:  Engine
+
+
+    def generate(self, length=state['missing_beats'], unit='beats', respond=False):
+      state['is_generating'] = True
+      hist = self.get('history')[0]
+      threshold = self.get('trigger_generate')
+      playhead = self.get('playhead')
+
+      max_len = self.get('buffer_length') 
+
+      if (self.is_debugging()):
+          self.log(f'generating tokens ({playhead}/{len(hist)} > {threshold})')
+          self.log(f'requested length: {length} {unit} ({self.to_ticks(length, unit)} ticks)')
+
+      # Generate sequence
+      ticks = self.to_ticks(length, unit)
+      final_length = self.from_ticks(ticks, self.get('input_unit'))
+      self.log(f'request: self.model.generate(history, {final_length})')
+
+      if final_length is None:
+        self.log(f'error: trying to generate length {final_length}')
+        return
+
+      output = self.model.generate(self.get('history'), final_length, self.get('voices'))
+      # self.log(f'{len(seq)} tokens were generated')
+
+      self.log(output)
+      self.log(f'len(output): {len(output)}')
+      self.log(f'len(hist): {len(self.get("history"))}')
+
+      # Polyphonic model: Output is 2D
+      if (len(state['voices']) > 1):
+        generated_length = len(output[0]) - max_len
+        # Update generated voices
+        for i, v in enumerate(self.get('voices')):
+          state['history'][v] = output[i][-max_len:]
+          
+          
+          for event in output[i][-generated_length:]:
+            for message in self.decode(event, v):
+                state['output_data'].tracks[v].append(message)
+
+      # Monophonic model: Output is 1D
+      else:
+        generated_length = len(output) - max_len
+        v = self.get('voices')[0]
+        state['history'][v] = output[-max_len:]
+
+        for event in output[-generated_length:]:
+            for message in self.decode(event, v):
+                state['output_data'].tracks[v].append(message)
+
+
+      # Update Playhead
+      self.rewind(max(0, generated_length))
+
+      
+
+      state['is_generating'] = False
+      self.clock.notify_wait(False)
+
+      if (respond):
+        # self.dump_history()
+        self.notify_task_complete()
+
+    def rewind(self, number):
+      playhead = self.state['playhead']
+      target_playhead = playhead - number
+      new_playhead = max(target_playhead, 0)
+      if (self.is_debugging()):
+          # print(f' max_len: {max_len} | generator_overflow: {generator_overflow} | len(seq): {len(seq)} | len(hist): {len(hist)}')
+          # print(f' target playhead: {target_playhead}')
+          self.log(f'Rewinding Playhead ({playhead} -> {new_playhead})')
+
+      self.state['playhead'] = new_playhead
+
+    #/ TODO: Engine
+
+
+
+
+
+
+
+    # TODO: IO
     def log(self, msg):
       # if self.is_debugging(): print(f"[server] {msg}")
       print(f"[server:{self.get('module')}] {msg}")
@@ -123,109 +251,54 @@ class Host:
       except KeyError:
           self.log("no such key ~ {0}".format(field))
           pass
-
-    def close(self):
-        self.clock.stop()
-        self.model.close()
-        self.bridge.stop()
-
-    def play(self,pitch,instr=None):
-      if (instr == None): self.bridge.play(pitch)
-      else: self.bridge.play(pitch, instr)
-
-    def generate(self, length=state['missing_beats'], unit='beats', respond=False):
-      state['is_generating'] = True
-      hist = self.get('history')[0]
-      threshold = self.get('trigger_generate')
-      playhead = self.get('playhead')
-
-      max_len = self.get('buffer_length') 
-
-      if (self.is_debugging()):
-          self.log(f'generating tokens ({playhead}/{len(hist)} > {threshold})')
-          self.log(f'requested length: {length} {unit} ({self.to_ticks(length, unit)} ticks)')
-
-      # Generate sequence
-      ticks = self.to_ticks(length, unit)
-      final_length = self.from_ticks(ticks, self.get('input_unit'))
-      self.log(f'request: self.model.generate(history, {final_length})')
-
-      if final_length is None:
-        self.log(f'error: trying to generate length {final_length}')
-        return
-
-      output = self.model.generate(self.get('history'), final_length, self.get('voices'))
-      # self.log(f'{len(seq)} tokens were generated')
-
-      # Polyphonic model: Output is 2D
-      if (len(state['voices']) > 1):
-        generated_length = len(output[0]) - max_len
-        # Update generated voices
-        for v in self.get('voices'):
-          state['history'][v] = output[v][-max_len:]
-      # Monophonic model: Output is 1D
-      else:
-        generated_length = len(output) - max_len
-        state['history'][0] = output[-max_len:]
+      #/ TODO: IO
 
 
-      # Update Playhead
-      self.rewind(max(0, generated_length))
 
-      
 
-      state['is_generating'] = False
-      self.clock.notify_wait(False)
 
-      if (respond):
-        self.dump_history()
-        self.notify_task_complete()
 
-    def rewind(self, number):
-      playhead = self.state['playhead']
-      target_playhead = playhead - number
-      new_playhead = max(target_playhead, 0)
-      if (self.is_debugging()):
-          # print(f' max_len: {max_len} | generator_overflow: {generator_overflow} | len(seq): {len(seq)} | len(hist): {len(hist)}')
-          # print(f' target playhead: {target_playhead}')
-          self.log(f'Rewinding Playhead ({playhead} -> {new_playhead})')
-
-      self.state['playhead'] = new_playhead
-
-    
     # Query Methods
-    def has_history(self):
-      hist = self.state['history']
+
+    def get_voice(self, voice_index=state['voices'][0]):
+      print(f'voice_index: {voice_index}')
+      return state['history'][voice_index]
+
+    # TODO: get_voice(idx): return self.get('history')[voices[idx]] if idx < len(voices) && voices[idx] < len(self.get('history')) else None
+    def has_history(self, voice_id=state['voices'][0]):
+      hist = self.get_voice(voice_id)
       # return np.any(hist) and np.any(hist[0])
-      return any(hist) and any(hist[0]) and (len(hist[0]) > 0)
+      print(f'hist({state["voices"][0]}): {True if hist and any(hist) else False}')
+      print(hist)
+      return True if hist and any(hist) else False
 
     def task_ended(self):
       # if len(state['history']) == 0 or len(state['history'][0]): return False
-      did_it_end = len(state['history'][0]) >= state['buffer_length']
+      did_it_end = len(self.get_voice()) >= state['buffer_length']
       # if (did_it_end): self.notify_task_complete()
       return did_it_end
 
-    def must_generate(self):
+    def must_generate(self, voice):
       if (state['is_generating'] == True): return False
-      elif (self.has_history() == False): return True
+      elif (self.has_history(voice) == False): return True
       # print(f'{self.state["playhead"]} / {len(self.state["history"][0])} >= {self.state["trigger_generate"]}')
       if (state['batch_mode'] and self.task_ended()): return False
-      return self.state['playhead'] / len(self.state['history'][0]) >= self.state['trigger_generate']
+      return self.state['playhead'] / len(self.get_voice(voice)) >= self.state['trigger_generate']
 
     def is_debugging(self):
       return self.state['debug_output'] == True
 
-    def get_next_token(self):
-      return self.peek(0)
+    def get_next_token(self,voice):
+      return self.peek(voice,0)
 
-    def peek(self,offset=1):
+    def peek(self,voice=1,offset=1):
       """ Check next event in history """
       hist = self.state['history']
       playhead = self.state['playhead']
 
       if (self.has_history() == False): return None
 
-      no_more_tokens = playhead >= len(hist[0])
+      no_more_tokens = playhead >= len(hist[voice])
       position = playhead + offset
 
       if (no_more_tokens):
@@ -236,8 +309,17 @@ class Host:
         self.log(f'Warning: trying to read a negative position in history ({playhead} + {offset} = {position})')
         return None
 
-      return hist[0][position]
+      return hist[voice][position]
     
+    def decode(self, event, voice):
+      return [mido.Message(name,
+        note=note,
+        channel=voice,
+        velocity=velocity,
+        time=int(round(mido.second2tick(time, state['ticks_per_beat'], state['midi_tempo']))))
+        for (name, note, velocity, time)
+        in self.model.decode(event)]
+
     # Playback Methods
     def get_action(self,message,voice=0):
         ''' Get Action
@@ -277,7 +359,7 @@ class Host:
           state['until_next_event'] = value
       
 
-    def process_next_token(self, voice=0):
+    def process_next_token(self, voice=1):
       ''' Reads the next token from the history
           Decodes the token onto a mido messagee
           Saves the message to the output
@@ -285,10 +367,10 @@ class Host:
           Performs the required actions
           Increments playhead
       '''
-      e = self.get_next_token()
+      e = self.get_next_token(voice)
 
       if (e == None):
-        if (self.is_debugging()): print("No event / history is empty")
+        if (self.is_debugging()): self.log(f'No event / voice {voice} is empty')
         if (state['batch_mode'] and self.task_ended()):
             self.set('is_running', False)
             self.save_output(state['output_filename'])
@@ -300,24 +382,15 @@ class Host:
 
       self.state['playhead'] = self.state['playhead'] + 1
 
-    def is_running(self):
-      return state['is_running']
-
-    def clock_running(self):
-      return state['clock_running']
-
-    def push_event(self,event):
-        self.log("[event] ~ {0}".format(event))
-        state['history'][0].append(event)
-    # /TODO
 
     def reset(self):
         [voice.clear() for voice in state['history']]
         self.set('playhead', 0)
         self.set('last_end_time', 0)
         if state['midi_tempo'] is None: state['midi_tempo'] = mido.bpm2tempo(state['bpm'])
-        data.init_output_data(state)
+        # data.init_output_data(state)
         self.clock.notify_wait(False)
+
 
     def load_midi(self, name, barcount=None):
         self.log(f' loading {name}')
@@ -325,6 +398,22 @@ class Host:
         if self.get('batch_mode'): self.notify_task_complete()
         if not any(self.get('history')): self.set("history",[[]])
         self.log(f' loaded {len(self.get("history")[0])} tokens to history')
+
+    #/ TODO: Engine
+
+
+
+
+    def is_running(self):
+      return state['is_running']
+
+    def clock_running(self):
+      return state['clock_running']
+
+    def push_event(self,event,voice=1):
+        self.log("[event] ~ {0}".format(event))
+        state['history'][voice].append(event)
+    # /TODO
 
     def save_output(self, name):
         data.save_output(name, state['output_data'], state['ticks_per_beat'], self)
@@ -427,19 +516,9 @@ class Host:
       self.log(f'   tempo: {tempo} | bpm: {bpm} | tpb: {tpb}')
       self.log(f'   missing beats: {state["missing_beats"]} | unit: {state["input_unit"]}')
 
-    # Analysis Methods
-    def get_decoded_history(self):
-        return []
-
-    def dump_history(self):
-      for e in state['history'][0]:
-          for message in self.model.decode(e):
-            self.get_action(message)
-
-    def get_bars(self):
-        return []
 
 
+# TODO: State
 
 def init_state(args):
     state['module'] = args.module
