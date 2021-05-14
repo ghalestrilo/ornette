@@ -172,7 +172,7 @@ class Host:
       self.log(f'len(hist): {len(self.get("history"))}')
 
       for i, v in enumerate(voices):
-        output_ = output if len(voices) <= 2 else output[i]
+        output_ = output if len(voices) < 2 else output[i]
         hist = self.get('history')[v]
         
         generated_length = len(output_) - len(hist)
@@ -182,34 +182,8 @@ class Host:
               data.add_message(state, message, v)
               # state['output_data'].tracks[v].append(message)
 
-      # # Polyphonic model: Output is 2D
-      # if (len(state['voices']) > 1):
-      #   generated_length = len(output[0]) - len(hist)
-      #   # Update generated voices
-      #   for i, v in enumerate(self.get('voices')):
-      #     # output_ = output if 
-      #     state['history'][v] = output[i][-max_len:]
-          
-          
-      #     for event in output[i][-generated_length:]:
-      #       for message in self.decode(event, v):
-      #           state['output_data'].tracks[v].append(message)
-
-      # # Monophonic model: Output is 1D
-      # else:
-      #   generated_length = len(output) - len(hist)
-      #   v = self.get('voices')[0]
-      #   state['history'][v] = output[-max_len:]
-
-      #   for event in output[-generated_length:]:
-      #       for message in self.decode(event, v):
-      #           state['output_data'].tracks[v].append(message)
-
-
       # Update Playhead
       self.rewind(max(0, generated_length))
-
-      
 
       self.set('is_generating',False)
       self.clock.notify_wait(False)
@@ -223,8 +197,6 @@ class Host:
       target_playhead = playhead - number
       new_playhead = max(target_playhead, 0)
       if (self.is_debugging()):
-          # print(f' max_len: {max_len} | generator_overflow: {generator_overflow} | len(seq): {len(seq)} | len(hist): {len(hist)}')
-          # print(f' target playhead: {target_playhead}')
           self.log(f'Rewinding Playhead ({playhead} -> {new_playhead})')
 
       self.state['playhead'] = new_playhead
