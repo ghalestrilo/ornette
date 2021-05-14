@@ -75,7 +75,7 @@ class OrnetteModule():
       self.host.set('generation_unit', 'beats')
       self.host.set('missing_beats', 16)
       self.host.set('steps_per_quarter', 4)
-      self.host.set('voices', [0,1,2])
+      self.host.set('voices', [1,2,3])
       self.host.set('history', [[] for x in range(3)])
 
     def generate(self, history=None, length_steps=4, voices=[]):

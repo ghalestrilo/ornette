@@ -15,6 +15,14 @@ class Bridge:
         # print("Serving {} on {}".format(state['module'], state['server'].server_address))
         self.server.serve_forever()
 
+    def set(self, *args):
+      args = args[1:]
+      key = args[0]
+      value = list(args[1:])
+      if len(value) == 1: value = value[0]
+      self.host.set(key, value)
+
+
     def bind_dispatcher(self, dispatcher):
         host = self.host
         dispatcher.map("/start", lambda _: host.set('is_running', True))
@@ -23,7 +31,7 @@ class Bridge:
         dispatcher.map("/event", lambda _, ev: host.push_event(ev))  # event2word
         # dispatcher.map("/tfdebug", debug_tensorflow)
 
-        dispatcher.map("/set",       lambda addr, k, v: host.set(k, v))
+        dispatcher.map("/set",       self.set)
         dispatcher.map("/debug",     lambda addr, key: host.print() if key == 'all' else host.print(key))
 
         dispatcher.map("/generate",  lambda addr, length, unit: host.generate(length, unit, True))

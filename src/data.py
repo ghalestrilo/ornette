@@ -72,13 +72,12 @@ def load_midi(host, filename, max_len=None, max_len_units=None):
     host.reset()
     host.set('ticks_per_beat', mid.ticks_per_beat)
 
-
-    # init_output_data(host.state)
     # output_data = host.state['output_data']
-    output_data = MidiFile(ticks_per_beat=host.state['ticks_per_beat'])
+    # output_data = MidiFile(ticks_per_beat=host.state['ticks_per_beat'])
+    init_output_data(host.state, conductor=False)
+    output_data = host.state['output_data']
     history = []
 
-    
     for i, file_track in enumerate(mid.tracks):
     # for file_track in mid.tracks:
       ticks_so_far = 0
@@ -151,17 +150,18 @@ def save_output(filename=None, data=None, tpb=960, host=None):
     if host is not None: host.notify_task_complete()
 
 
-def init_output_data(state):
+def init_output_data(state,conductor=True):
     # if state['output_data']: state['output_data'].clear()
     output = MidiFile(ticks_per_beat=state['ticks_per_beat'])
 
-    for i in state['history']:
-      track = MidiTrack()
-      track.append(MetaMessage('track_name', name=state['track_name']))
-      track.append(MetaMessage('set_tempo', tempo=state['midi_tempo']))
-      track.append(MetaMessage('time_signature',
-            numerator=state['time_signature_numerator'],
-          denominator=state['time_signature_denominator']))
-      output.tracks.append(track)
+    # Create Conductor Track
+    if conductor:
+        track = MidiTrack()
+        track.append(MetaMessage('track_name', name=state['track_name']))
+        track.append(MetaMessage('set_tempo', tempo=state['midi_tempo']))
+        track.append(MetaMessage('time_signature',
+              numerator=state['time_signature_numerator'],
+            denominator=state['time_signature_denominator']))
+        output.tracks.append(track)
 
     state['output_data'] = output

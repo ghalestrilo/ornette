@@ -37,7 +37,7 @@ class OrnetteModule():
         self.host.set('history', [[],[]])
         self.host.set('generation_unit', 'seconds')
         self.host.set('last_end_time', 0.125)
-        self.host.set('voices', [0, 1])
+        self.host.set('voices', [1,2])
 
         self.model = PianorollRnnNadeSequenceGenerator(
           model=PianorollRnnNadeModel(config),
