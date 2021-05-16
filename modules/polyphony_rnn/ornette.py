@@ -50,30 +50,35 @@ class OrnetteModule():
   def generate(self, history=None, length_seconds=4, voices=[0]):
     last_end_time = 0
 
-    # Get first voice
-    primer_sequence = [] if history is None else history[0]
-    
-    # Get last end time
-    if (primer_sequence != None and any(primer_sequence)):
-        last_end_time = max(n.end_time for n in primer_sequence)
+    output = []
+    for voice in voices:
+      # Get first voice
+      primer_sequence = [] if history is None else history[voice]
+      
+      # Get last end time
+      if (primer_sequence != None and any(primer_sequence)):
+          last_end_time = max(n.end_time for n in primer_sequence)
 
-    noteseq = NoteSequence(
-        notes=primer_sequence,
-        quantization_info={ 'steps_per_quarter': self.server_state['steps_per_quarter'] },
-        tempos=[ { 'time': 0, 'qpm': self.server_state['bpm'] } ],
-        total_quantized_steps=11,
-      )
+      noteseq = NoteSequence(
+          notes=primer_sequence,
+          quantization_info={ 'steps_per_quarter': self.server_state['steps_per_quarter'] },
+          tempos=[ { 'time': 0, 'qpm': self.server_state['bpm'] } ],
+          total_quantized_steps=11,
+        )
 
-    self.generator_options = generator_pb2.GeneratorOptions()
-    self.generator_options.args['temperature'].float_value = self.host.state['temperature']
-    self.generator_options.generate_sections.add(
-        start_time= last_end_time + 0,
-        end_time= last_end_time + length_seconds)
+      self.generator_options = generator_pb2.GeneratorOptions()
+      self.generator_options.args['temperature'].float_value = self.host.state['temperature']
+      self.generator_options.generate_sections.add(
+          start_time= last_end_time + 0,
+          end_time= last_end_time + length_seconds)
 
-    notes = self.model.generate(noteseq, self.generator_options).notes
-    return notes
+      notes = self.model.generate(noteseq, self.generator_options).notes
+      output.append(notes)
+    return output
 
   def decode(self, token):
+    print(token)
+    print('<3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 ')
     ''' Must return a mido message (type (note_on), note, velocity, duration)'''
     last_end_time = max(0, token.start_time - self.host.get('last_end_time'))
     decoded = [

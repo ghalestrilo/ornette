@@ -76,7 +76,6 @@ class OrnetteModule():
       self.host.set('missing_beats', 16)
       self.host.set('steps_per_quarter', 4)
       self.host.set('voices', [1,2,3])
-      self.host.set('history', [[] for x in range(3)])
 
     def generate(self, history=None, length_steps=4, voices=[]):
       music = self.sample_(self.model,
@@ -136,7 +135,6 @@ class OrnetteModule():
       return music
 
     def decode(self, token):
-      print(token)
       step_length = 1 / self.host.get('steps_per_quarter')
       if token == self.pitch2index['rest']:
         return [('note_off', 92, 127, step_length)]

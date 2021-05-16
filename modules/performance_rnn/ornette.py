@@ -41,30 +41,33 @@ class OrnetteModule():
     def generate(self, history=None, length_seconds=4, voices=[0]):
         last_end_time = 0
 
-        # Get first voice
-        primer_sequence = [] if history is None else history[0]
+        output = []
+        for voice in voices:
+            # Get first voice
+            primer_sequence = [] if history is None else history[voice]
 
-        # Get last end time
-        if (primer_sequence != None and any(primer_sequence)):
-            last_end_time = max(n.end_time for n in primer_sequence)
+            # Get last end time
+            if (primer_sequence != None and any(primer_sequence)):
+                last_end_time = max(n.end_time for n in primer_sequence)
 
-        generator_options = generator_pb2.GeneratorOptions()
-        generator_options.generate_sections.add(
-            start_time=last_end_time,
-            end_time=last_end_time + length_seconds)
+            generator_options = generator_pb2.GeneratorOptions()
+            generator_options.generate_sections.add(
+                start_time=last_end_time,
+                end_time=last_end_time + length_seconds)
 
-        noteseq = NoteSequence(
-            notes=primer_sequence,
-            quantization_info={
-                'steps_per_quarter': self.server_state['steps_per_quarter']},
-            tempos=[{'time': 0, 'qpm': self.server_state['bpm']}],
-            total_quantized_steps=11,
-        )
+            noteseq = NoteSequence(
+                notes=primer_sequence,
+                quantization_info={
+                    'steps_per_quarter': self.server_state['steps_per_quarter']},
+                tempos=[{'time': 0, 'qpm': self.server_state['bpm']}],
+                total_quantized_steps=11,
+            )
 
-        seq = self.model.generate(noteseq, generator_options).notes
-        def by_start_time(e): return e.start_time if e is not None else []
-        seq.sort(key=by_start_time)
-        return seq
+            seq = self.model.generate(noteseq, generator_options).notes
+            def by_start_time(e): return e.start_time if e is not None else []
+            seq.sort(key=by_start_time)
+            output.append(seq)
+        return output
 
     def decode(self, token):
         ''' Must return a mido message array (type (note_on), note, velocity, duration)'''

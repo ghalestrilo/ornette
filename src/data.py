@@ -78,8 +78,8 @@ def load_model(host, checkpoint=None):
 def add_message(state, message, voice = 0):
     ''' Adds a Mido message to a voice in the state's 'output_data' '''
     if (state['output_data'] is None): init_output_data(state, True)
-    print(f'voice: {voice}')
-    print(f'len(tracks {len(state["output_data"].tracks)}')
+    # print(f'voice: {voice}')
+    # print(f'len(tracks) {len(state["output_data"].tracks)}')
     state['output_data'].tracks[voice].append(message)
 
 

@@ -46,7 +46,7 @@ state = {
     'time_signature_numerator': 4, 
     'time_signature_denominator': 4,
     'ticks_per_beat': 960, # TODO: How do I determine that?
-    'steps_per_quarter': 4,
+    'steps_per_quarter': 8,
 
     # Batch execution control
     'batch_mode': False,
@@ -60,17 +60,17 @@ class Host:
       self.state = state
       init_state(args)
       self.bridge = Bridge(self,args)
-      self.model = data.load_model(self,args.checkpoint)
       self.clock = Clock(self)
+      self.reset()
+      self.set('voices', [1])
+      self.model = data.load_model(self,args.checkpoint)
 
       # Notify startup for batch runner
       pass
 
     def start(self):
       try:
-        self.reset()
         self.clock.start()
-        self.set('voices', [1])
         if (self.state['batch_mode']): self.notify_task_complete()
         self.bridge.start()
       except KeyboardInterrupt:
@@ -103,9 +103,8 @@ class Host:
           except TypeError: value = [value]
           for i in value:
             while i + 1 > len(self.get('history')): self.set('history', self.get('history') + [[]])
-            print(f'i + 1 = {i + 1} | len(out) = {len(self.get("output_data").tracks)}')
             while i + 1 > len(self.get('output_data').tracks): state['output_data'].tracks.append(mido.MidiTrack())
-            print(f'i + 1 = {i + 1} | len(out) = {len(self.get("output_data").tracks)}')
+            self.log(f'output_data: {self.get("output_data")}')
           
         state[field] = value
         if silent or field == 'last_end_time': return
@@ -141,7 +140,8 @@ class Host:
 
     def generate(self, length=state['missing_beats'], unit='beats', respond=False):
       self.set('is_generating',True)
-      hist = self.get('history')[0]
+      history = self.get('history')
+      hist_ = history[0]
       threshold = self.get('trigger_generate')
       playhead = self.get('playhead')
       voices = self.get('voices')
@@ -152,7 +152,7 @@ class Host:
           # data.init_output_data(state)
 
       if (self.is_debugging()):
-          self.log(f'generating tokens ({playhead}/{len(hist)} > {threshold})')
+          self.log(f'generating tokens ({playhead}/{len(hist_)} > {threshold})')
           self.log(f'requested length: {length} {unit} ({self.to_ticks(length, unit)} ticks)')
 
       # Generate sequence
@@ -164,18 +164,18 @@ class Host:
         self.log(f'error: trying to generate length {final_length}')
         return
 
-      output = self.model.generate(self.get('history'), final_length, voices)
+      output = self.model.generate(history, final_length, voices)
       # self.log(f'{len(seq)} tokens were generated')
 
       self.log(output)
       self.log(f'len(output): {len(output)}')
-      self.log(f'len(hist): {len(self.get("history"))}')
+      self.log(f'len(hist): {len(history)}')
 
       for i, v in enumerate(voices):
-        output_ = output if len(voices) < 2 else output[i]
-        hist = self.get('history')[v]
+        output_ = output[i]
+        hist_ = history[v]
         
-        generated_length = len(output_) - len(hist)
+        generated_length = len(output_) - len(hist_)
         state['history'][v] = output_[-max_len:]
         for event in output_[-generated_length:]:
           for message in self.decode(event, v):

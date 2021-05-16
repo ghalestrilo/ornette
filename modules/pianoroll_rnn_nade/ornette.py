@@ -37,6 +37,7 @@ class OrnetteModule():
         self.host.set('history', [[],[]])
         self.host.set('generation_unit', 'seconds')
         self.host.set('last_end_time', 0.125)
+        self.host.set('steps_per_quarter', 4)
         self.host.set('voices', [1,2])
 
         self.model = PianorollRnnNadeSequenceGenerator(
@@ -59,7 +60,7 @@ class OrnetteModule():
         primer_sequence = []
         for i, own_note in enumerate(voices_[0]):
           partner_note = voices_[1][i]
-          primer_sequence.append((own_note.pitch, partner_note) if partner_note else (own_note.pitch,))
+          primer_sequence.append((own_note, partner_note) if partner_note else (own_note,))
 
         if not any(primer_sequence): primer_sequence = [(init_pitch,)]
 
@@ -80,22 +81,21 @@ class OrnetteModule():
             end_time=last_end_time + length_seconds)
 
         seq = self.model.generate(primer_sequence, generator_options)
-        seq = seq.notes
 
-        return [seq, []] # TODO: Split voices
+        return [[n.pitch for n in seq.notes], []] # TODO: Split voices
 
     def decode(self, token):
         step_length = 1 / self.host.get('steps_per_quarter')
-        # return [('note_on', token[0], 127, step_length)]
-        # TODO: if not self.host.get('buffer'): history(voices[1]).append(None)
-        return [('note_on', token.pitch, 127, step_length)]
+        return [('note_on', token, 127, 0), ('note_off', token, 127, step_length)]
 
     def encode(self, message):
         ''' Receives a mido message, must return a model-compatible token '''
         last_end_time = self.host.get('last_end_time')
         step_length = 1 / self.host.get('steps_per_quarter')
 
-        note = (message.note,)
+        # note = (message.note,)
+        note = message.note
+        # note = NoteSequence.Note(pitch=message.note)
 
         self.host.set('last_end_time', last_end_time + step_length)
         return note

@@ -32,9 +32,8 @@ class OrnetteModule():
         last_end_time = 0
 
         output = []
-        
         for voice in voices:
-          self.host.log(voices)
+          # self.host.log(voices)
           # Get first voice
           primer_sequence = [] if history is None else history[voice]
 
@@ -58,7 +57,7 @@ class OrnetteModule():
 
           notes = self.model.generate(noteseq, generator_options).notes
           output.append(notes)
-        return output[0] if len(voices) < 2 else output
+        return output
 
     def decode(self, token):
         ''' Must return a mido message (type (note_on), note, velocity, duration)'''
