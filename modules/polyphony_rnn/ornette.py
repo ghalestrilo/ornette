@@ -77,8 +77,6 @@ class OrnetteModule():
     return output
 
   def decode(self, token):
-    print(token)
-    print('<3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 <3 ')
     ''' Must return a mido message (type (note_on), note, velocity, duration)'''
     last_end_time = max(0, token.start_time - self.host.get('last_end_time'))
     decoded = [

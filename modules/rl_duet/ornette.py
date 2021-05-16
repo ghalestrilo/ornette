@@ -79,9 +79,9 @@ class OrnetteModule():
 
     def generate(self, history=None, length_steps=4, voices=[]):
       music = self.sample_(self.model,
-        np.array(history[0]),
-        np.array(history[1]),
-        np.array(history[2]),
+        np.array(history[voices[0]]),
+        np.array(history[voices[1]]),
+        np.array(history[voices[2]]),
         self.pitch2index['rest'],length_steps)
 
       music = [list(v) for v in music]
