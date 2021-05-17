@@ -8,7 +8,7 @@ data
 *.idea
 
 bin/
-dataset/
+dataset/*
 output/
 # models/
 
