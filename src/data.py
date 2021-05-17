@@ -141,13 +141,8 @@ def load_midi(host, filename, max_len=None, max_len_units=None):
       # if is_new_track: output_data.tracks.append(track)
       output_data.tracks.append(track)
 
-    # host.set('voices', host.get('voices'))
-    for v in host.get('voices'):
-      while v > len(history): history.append([])
-      while v > len(output_data.tracks): output_data.tracks.append(MidiTrack())
-
-    # host.set('history',[voice for voice in history if any(voice)], silent=True)
     host.set('history', history, silent=True)
+    host.set('voices', host.get('voices'))
     return history
 
 

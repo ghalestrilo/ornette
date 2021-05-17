@@ -102,6 +102,7 @@ class Host:
           try: value = list(value)
           except TypeError: value = [value]
           for i in value:
+            # print("padding history for")
             while i + 1 > len(self.get('history')): self.set('history', self.get('history') + [[]])
             while i + 1 > len(self.get('output_data').tracks): state['output_data'].tracks.append(mido.MidiTrack())
             self.log(f'output_data: {self.get("output_data")}')
