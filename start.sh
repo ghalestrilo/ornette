@@ -113,7 +113,7 @@ fi
 # Start Server
 
 ornette_start_command="python /ornette --module=$modelname --checkpoint=$checkpoint_name"
-[ $NOT_INTERACTIVE ] && ornette_start_command="$ornette_start_command --batch-mode=True"
+[ $3 = 'batch' ] && ornette_start_command="$ornette_start_command --batch-mode=True"
 
 [ $DEV ] && ornette_start_command="alias start=\"$ornette_start_command\"; bash"
 

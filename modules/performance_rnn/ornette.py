@@ -21,7 +21,6 @@ class OrnetteModule():
 
         self.server_state = host.state
         self.host = host
-        self.host.set('history', [[]])
         self.host.set('generation_unit', 'seconds')
         self.host.set('last_end_time', 0)
         self.host.set('voices', [1])
