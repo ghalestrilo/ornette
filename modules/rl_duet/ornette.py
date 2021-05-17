@@ -91,7 +91,8 @@ class OrnetteModule():
 
 
     def sample_(self, model, own_voice, partner, meta, start_pad, length=16):
-      init_len = max(len(x) for x in [own_voice,partner])
+      init_len = min(len(x) for x in [own_voice,partner])
+
       if init_len < SEGMENT_LEN:
           pad_length = SEGMENT_LEN - init_len
           pad = np.full((pad_length,), start_pad)
@@ -100,7 +101,7 @@ class OrnetteModule():
           meta_ = [0, 1, 2, 3]
           pad_meta = [meta_[(i - pad_length) % 4] for i in range(pad_length)]
           meta = np.concatenate([pad_meta, meta], 0)
-      
+
       own_voice = torch.from_numpy(own_voice).cpu().long()
       partner = torch.from_numpy(partner).cpu().long()
       meta = torch.from_numpy(meta).cpu().reshape(len(meta), -1).long()
