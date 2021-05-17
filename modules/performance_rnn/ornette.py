@@ -91,7 +91,7 @@ class OrnetteModule():
             program=0,
             start_time=last_end_time,
             end_time=next_start_time,
-            velocity=message.velocity,
+            velocity=message.velocity or 1,
             pitch=message.note,
         )
 
