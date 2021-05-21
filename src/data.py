@@ -97,8 +97,14 @@ def load_midi(host, filename, max_len=None, max_len_units=None):
     output_data = host.state['output_data']
     history = []
 
+    # Add Conductor Track if not present
+    if len(mid.tracks) < 2:
+      output_data.tracks.append(MidiTrack())
+      history.append([])
+
     for i, file_track in enumerate(mid.tracks):
     # for file_track in mid.tracks:
+      index = i + 1 if len(mid.tracks) < 2 else i
       ticks_so_far = 0
       offset = 0
       history.append([])
@@ -108,7 +114,7 @@ def load_midi(host, filename, max_len=None, max_len_units=None):
       track = MidiTrack()
 
       for msg in file_track:
-        print(f'host.to_ticks({max_len}, {max_len_units}) = {host.to_ticks(max_len, max_len_units)}')
+        # print(f'host.to_ticks({max_len}, {max_len_units}) = {host.to_ticks(max_len, max_len_units)}')
         if max_len is not None: 
           max_ticks = host.to_ticks(max_len, max_len_units) + offset
           if ticks_so_far >= max_ticks:
@@ -130,13 +136,13 @@ def load_midi(host, filename, max_len=None, max_len_units=None):
         if (ticks_so_far == 0 and msg.time > 0): offset = msg.time
         ticks_so_far = ticks_so_far + msg.time
 
-        if msg.type in ['note_on']: history[i].append(host.model.encode(msg))
+        if msg.type in ['note_on']: history[index].append(host.model.encode(msg))
       
       # if is_new_track: output_data.tracks.append(track)
       output_data.tracks.append(track)
 
-    # host.set('history',[voice for voice in history if any(voice)], silent=True)
     host.set('history', history, silent=True)
+    host.set('voices', host.get('voices'))
     return history
 
 

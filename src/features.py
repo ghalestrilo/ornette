@@ -14,6 +14,12 @@ def flog(msg):
 
 units = ['bars', 'seconds', 'notes', 'events']
 
+def get_features_from_file(filename=None):
+  if (filename is None):
+      flog("no data passed to get_features")
+      return
+  return get_features(mido.MidiFile(filename))
+
 def get_features(midi_data=None):
   if (midi_data is None):
       flog("no data passed to get_features")

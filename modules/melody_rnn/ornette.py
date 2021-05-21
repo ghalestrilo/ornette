@@ -22,7 +22,6 @@ class OrnetteModule():
         self.server_state = host.state
         self.host = host
         self.host.set('steps_per_quarter', config.steps_per_quarter)
-        self.host.set('history', [[]])
         self.host.set('generation_unit', 'seconds')
         self.last_end_time = 0
         self.host.set('last_end_time', 0)
