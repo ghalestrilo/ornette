@@ -45,6 +45,7 @@ class OrnetteModule():
       self.host.set('generation_unit', 'seconds')
       self.last_end_time = 0
       self.host.set('voices', [1])
+      self.host.set('steps_per_quarter', 4)
 
   def generate(self, history=None, length_seconds=4, voices=[0]):
     last_end_time = 0
