@@ -113,9 +113,9 @@ fi
 # Start Server
 
 ornette_start_command="python /ornette --module=$modelname --checkpoint=$checkpoint_name"
-[ $3 = 'batch' ] && ornette_start_command="$ornette_start_command --batch-mode=True"
+[[ $3 == 'batch' ]] && ornette_start_command="$ornette_start_command --batch-mode=True"
 
-[ $DEV ] && ornette_start_command="alias start=\"$ornette_start_command\"; bash"
+[[ $DEV == 1 ]] && ornette_start_command="alias start=\"$ornette_start_command\"; bash"
 
 $DOCKER_START \
   --hostname server \

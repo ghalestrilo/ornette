@@ -75,19 +75,27 @@ class OrnetteModule():
       self.host.set('generation_unit', 'beats')
       self.host.set('missing_beats', 16)
       self.host.set('steps_per_quarter', 4)
-      self.host.set('voices', [1,2,3])
+      self.host.set('voices', [1,2])
+      self.meta = []
 
     def generate(self, history=None, length_steps=4, voices=[]):
+      maxlen = max(len(history[v]) for v in voices)
+      sig = 4
+
+      # Continue the Meta array
+      next_meta = [x + 1 for x in self.meta]
+      next_meta = next_meta[-1] if any(next_meta) else 1
+      self.meta = [(i + next_meta) % sig for i in range(maxlen)]
+
       music = self.sample_(self.model,
         np.array(history[voices[0]]),
         np.array(history[voices[1]]),
-        np.array(history[voices[2]]),
+        self.meta,
         self.pitch2index['rest'],length_steps)
 
       music = [list(v) for v in music]
-      sig = 4
-      meta = [i % sig for i in range(len(music[0]))]
-      return [*music, meta]
+
+      return music
 
 
     def sample_(self, model, own_voice, partner, meta, start_pad, length=16):
@@ -112,7 +120,6 @@ class OrnetteModule():
       while pred_ind < SEGMENT_LEN + length:
           start = max(0, pred_ind-SEGMENT_LEN)
 
-          # FIXME: Out of bounds here
           pred_ = pred[start:pred_ind].unsqueeze(0)
           partner_ = partner[start:pred_ind].unsqueeze(0)
 
