@@ -310,6 +310,8 @@ class Host:
         for (name, note, velocity, time)
         in self.model.decode(event)]
 
+    
+
     # Playback Methods
     def get_action(self,message,voice=0):
         ''' Get Action
@@ -320,7 +322,7 @@ class Host:
           note=note,
           channel=voice,
           velocity=velocity,
-          time=int(round(mido.second2tick(time, state['ticks_per_beat'], state['midi_tempo']))))
+          time=self.to_ticks(time * self.get('steps_per_quarter'),'beat'))
           
         data.add_message(state, msg, voice)
         return [('wait', time), ('play', note)] if name != 'note_off' else [('wait', time)]
