@@ -4,6 +4,8 @@ from threading import Thread, Event
 import math
 
 
+import mido # FIXME: Remove this once #decode() / #getaction() have been updated
+
 
 
 
@@ -39,7 +41,7 @@ class Engine(Thread):
       # if not any(state['output_data'].tracks):
           # data.init_output_data(state)
 
-      if (host.is_debugging()):
+      if (self.is_debugging()):
           host.log(f'generating tokens ({playhead}/{len(hist_)} > {threshold})')
           host.log(f'requested length: {length} {unit} ({song.to_ticks(length, unit)} ticks)')
 
@@ -66,7 +68,7 @@ class Engine(Thread):
         generated_length = len(output_) - len(hist_)
         host.state['history'][v] = output_[-max_len:]
         for event in output_[-generated_length:]:
-          for message in host.decode(event, v):
+          for message in host.model.decode(event, v):
               # song.add_message(host.state, message, v)
               host.song.add_message(host.state, message, v)
               # state['output_data'].tracks[v].append(message)
@@ -86,7 +88,7 @@ class Engine(Thread):
       playhead = host.state['playhead']
       target_playhead = playhead - number
       new_playhead = max(target_playhead, 0)
-      if (host.is_debugging()):
+      if (self.is_debugging()):
           host.log(f'Rewinding Playhead ({playhead} -> {new_playhead})')
 
       host.state['playhead'] = new_playhead
@@ -95,12 +97,15 @@ class Engine(Thread):
       Thread(target=self.host.generate).start()
       # self.should_wait = False
 
+
+
+    # Core
     def run(self):
       host = self.host
 
-      # self.generate_in_background()
+      # for msg in host.file.play()
       while not self.stopped.wait(self.state['until_next_event']):
-        if (host.is_running() == True and self.should_wait == False):
+        if (self.is_running() == True and self.should_wait == False):
           
           for voice in host.get('voices'):
             self.host.process_next_token(voice)
@@ -108,6 +113,8 @@ class Engine(Thread):
           voice = host.get('voices')[0]
           if (host.must_generate(voice)):
             self.generate_in_background()
+
+
 
 
     # def start_metronome(self):
@@ -128,53 +135,141 @@ class Engine(Thread):
 
 
 
-# TODO: Extract stateful code to host
-# class Clock(Thread):
-#     def __init__(self, host):
-#       Thread.__init__(self)
-#       self.state = host.state
-#       self.host = host
-#       self.stopped = Event()
-#       self.should_wait = False
-#       # self.start_metronome()
-#       # TODO: Set delays
-#       # host.set('delays', [0 for voice in host.get('voices')])
 
-#     # def bind(self,server_state):
-#     #   self.state = server_state
-#     #   self.state['playhead'] = 0
 
-#     def stop(self):
-#       self.stopped.set()
+    def is_generating(self):
+      return self.host.get('is_generating') == True
 
-#     def generate_in_background(self):
-#       Thread(target=self.host.generate).start()
-#       # self.should_wait = False
+    def is_debugging(self):
+      return self.state['debug_output'] == True
 
-#     def run(self):
-#       host = self.host
+    def must_generate(self, voice):
+      host = self.host
+      if self.is_generating(): return False
+      elif (host.has_history(voice) == False): return True
+      # print(f'{self.state["playhead"]} / {len(self.state["history"][0])} >= {self.state["trigger_generate"]}')
+      if (host.get('batch_mode') and host.task_ended()): return False
+      return host.get('playhead') / len(host.get_voice(voice)) >= host.get('trigger_generate')
 
-#       # self.generate_in_background()
-#       while not self.stopped.wait(self.state['until_next_event']):
-#         if (host.is_running() == True and self.should_wait == False):
+
+
+    # Engine (update to mido) | Put side by side with run (core functions)
+    def perform(self,action):
+      ''' Performs a musical action described by a tuple (name, value)
+          Name can be:
           
-#           for voice in host.get('voices'):
-#             self.host.process_next_token(voice)
+          'wait': waits value miliseconds until next action is performed
+          'play': sends an osc message to play the desired note (value)
+      '''
+      name, value = action
+      host = self.host
+      if (self.is_debugging()):
+        host.log(f'({host.get("playhead")}/{len(host.get("history")[0])}): {name} {value}')
 
-#           voice = host.get('voices')[0]
-#           if (host.must_generate(voice)):
-#             self.generate_in_background()
+      if (host.set('batch_mode')):
+        self.state['until_next_event'] = 0
+        return
+
+      # Deprecate this
+      if (name == 'play'): host.play(int(value))
+      
+      # FIXME: Calculate seconds from incoming value unit (melody_rnn: beats)
+      if (name == 'wait'):
+          # ticks = self.to_ticks(value, state['output_unit'])
+          # secs = self.from_ticks(ticks, 'seconds')
+          self.state['until_next_event'] = value
 
 
-#     def start_metronome(self):
-#       pass
-#       # Thread(target=self.run_metronome).start()
+
+    # Engine
+    def is_running(self):
+      return self.host.get('is_running') == True
+
+    # Engine / Song
+    def push_event(self, event, voice=1):
+        self.host.log("[event] ~ {0}".format(event))
+        self.state['history'][voice].append(event)
+
+
+
+### Deprecate (Destroy, Erase, Improve)
+
+
+    # Engine (depr)
+
+    # TODO: Deprecate
+    def get_next_token(self,voice):
+      return self.peek(voice,0)
+
+    # Engine (depr)
+    def peek(self,voice=1,offset=1):
+      """ Check next event in history """
+      host = self.host
+      hist = host.get('history')
+      playhead = host.get('playhead')
+
+      if (host.has_history() == False): return None
+
+      no_more_tokens = playhead >= len(hist[voice])
+      position = playhead + offset
+
+      if (no_more_tokens):
+          self.notify_wait()
+          return None
+
+      if (position < 0):
+        host.log(f'Warning: trying to read a negative position in history ({playhead} + {offset} = {position})')
+        return None
+
+      return hist[voice][position]
     
-#     def run_metronome(self):
-#       # TODO: step to time is host logic
-#       while not self.stopped.wait(60/self.state['bpm']/4):
-#         if (self.state['is_running'] == True):
-#           self.host.play(0,'hh')
+    # Engine (depr)
+    def decode(self, event, voice):
+      return [mido.Message(name,
+        note=note,
+        channel=voice,
+        velocity=velocity,
+        time=int(round(mido.second2tick(time, self.host.get('ticks_per_beat'), self.host.get('midi_tempo')))))
+        for (name, note, velocity, time)
+        in self.host.model.decode(event)]
 
-#     def notify_wait(self,should=True):
-#       self.should_wait = should
+    # Engine (depr)
+    def get_action(self,message,voice=0):
+        ''' Get Action
+            Decode a midi message into a sequence of actions
+        '''
+        name, note, velocity, time = message
+        msg = mido.Message(name,
+          note=note,
+          channel=voice,
+          velocity=velocity,
+          time=self.host.song.to_ticks(time * self.host.get('steps_per_quarter'),'beat'))
+          
+        self.host.song.add_message(self.state, msg, voice)
+        return [('wait', time), ('play', note)] if name != 'note_off' else [('wait', time)]
+
+
+    # Engine (depr)
+    def process_next_token(self, voice=1):
+      ''' Reads the next token from the history
+          Decodes the token onto a mido messagee
+          Saves the message to the output
+          Decodes each message into actions
+          Performs the required actions
+          Increments playhead
+      '''
+      e = self.get_next_token(voice)
+
+      if (e == None):
+        if (self.is_debugging()): self.host.log(f'No event / voice {voice} is empty')
+        if (self.host.get('batch_mode') and self.host.task_ended()):
+            self.host.set('is_running', False)
+            self.host.save_output(self.host.get('output_filename'))
+        return
+
+      for message in self.host.model.decode(e):
+        for action in self.get_action(message,voice):
+          self.perform(action)
+
+      self.state['playhead'] = self.state['playhead'] + 1
+    # TODO: Deprecate
