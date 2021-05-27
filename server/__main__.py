@@ -2,10 +2,10 @@ import os
 import sys
 
 # Move to utils.py?
-def load_folder(name):
-  sys.path.append(os.path.join(sys.path[0], name))
+# def load_folder(name):
+#  sys.path.append(os.path.join(sys.path[0], name))
 
-load_folder('src')
+# load_folder('src')
 
 from args import get_args
 from host import Host
