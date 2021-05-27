@@ -1,5 +1,5 @@
 from bridge import Bridge
-from clock import Clock
+from engine import Engine
 
 import pprint
 import mido
@@ -58,9 +58,10 @@ state = {
 class Host:
     def __init__(self,args):
       self.state = state
+      self.data = data
       init_state(args)
       self.bridge = Bridge(self,args)
-      self.clock = Clock(self)
+      self.engine = Engine(self)
       self.reset()
       self.set('voices', [1])
       self.model = data.load_model(self,args.checkpoint)
@@ -70,7 +71,7 @@ class Host:
 
     def start(self):
       try:
-        self.clock.start()
+        self.engine.start()
         if (self.state['batch_mode']): self.notify_task_complete()
         self.bridge.start()
       except KeyboardInterrupt:
@@ -79,7 +80,7 @@ class Host:
       self.close()
 
     def close(self):
-        self.clock.stop()
+        self.engine.stop()
         self.model.close()
         self.bridge.stop()
 
@@ -134,75 +135,6 @@ class Host:
 
 
 
-
-
-    # TODO:  Engine
-
-
-    def generate(self, length=state['missing_beats'], unit='beats', respond=False):
-      self.set('is_generating',True)
-      history = self.get('history')
-      hist_ = history[0]
-      threshold = self.get('trigger_generate')
-      playhead = self.get('playhead')
-      voices = self.get('voices')
-
-      max_len = self.get('buffer_length') 
-
-      # if not any(state['output_data'].tracks):
-          # data.init_output_data(state)
-
-      if (self.is_debugging()):
-          self.log(f'generating tokens ({playhead}/{len(hist_)} > {threshold})')
-          self.log(f'requested length: {length} {unit} ({self.to_ticks(length, unit)} ticks)')
-
-      # Generate sequence
-      ticks = self.to_ticks(length, unit)
-      final_length = self.from_ticks(ticks, self.get('input_unit'))
-      self.log(f'request: self.model.generate(history, {final_length})')
-
-      if final_length is None:
-        self.log(f'error: trying to generate length {final_length}')
-        return
-
-      output = self.model.generate(history, final_length, voices)
-      # self.log(f'{len(seq)} tokens were generated')
-
-      self.log(output)
-      self.log(f'len(output): {len(output)}')
-      self.log(f'len(hist): {len(history)}')
-
-      for i, v in enumerate(voices):
-        output_ = output[i]
-        hist_ = history[v]
-        
-        generated_length = len(output_) - len(hist_)
-        state['history'][v] = output_[-max_len:]
-        for event in output_[-generated_length:]:
-          for message in self.decode(event, v):
-              data.add_message(state, message, v)
-              # state['output_data'].tracks[v].append(message)
-
-      # Update Playhead
-      self.rewind(max(0, generated_length))
-
-      self.set('is_generating',False)
-      self.clock.notify_wait(False)
-
-      if (respond):
-        # self.dump_history()
-        self.notify_task_complete()
-
-    def rewind(self, number):
-      playhead = self.state['playhead']
-      target_playhead = playhead - number
-      new_playhead = max(target_playhead, 0)
-      if (self.is_debugging()):
-          self.log(f'Rewinding Playhead ({playhead} -> {new_playhead})')
-
-      self.state['playhead'] = new_playhead
-
-    #/ TODO: Engine
 
 
 
@@ -292,7 +224,7 @@ class Host:
       position = playhead + offset
 
       if (no_more_tokens):
-          self.clock.notify_wait()
+          self.engine.notify_wait()
           return None
 
       if (position < 0):
@@ -381,7 +313,7 @@ class Host:
         self.set('last_end_time', 0)
         if state['midi_tempo'] is None: state['midi_tempo'] = mido.bpm2tempo(state['bpm'])
         data.init_output_data(state,conductor=False)
-        self.clock.notify_wait(False)
+        self.engine.notify_wait(False)
 
 
     def load_midi(self, name, barcount=None):
@@ -399,8 +331,8 @@ class Host:
     def is_running(self):
       return state['is_running']
 
-    def clock_running(self):
-      return state['clock_running']
+    def engine_running(self):
+      return state['engine_running']
 
     def push_event(self,event,voice=1):
         self.log("[event] ~ {0}".format(event))

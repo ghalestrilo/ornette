@@ -154,7 +154,7 @@ def save_output(filename=None, data=None, tpb=960, host=None):
     if (filename is None):
         filename = f'session-{datetime.now()}.mid'
 
-    filename = join(os.path.curdir, 'output',f'{filename}.mid')
+    filename = join(os.path.curdir, '/output',f'{filename}.mid')
 
     if (data is None or (max(len(track) for track in data.tracks)) < 1):
         host.log(f'[error] No data to write in file: {filename}')

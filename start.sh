@@ -124,6 +124,7 @@ $DOCKER_START \
   --device /dev/nvidiactl:/dev/nvidiactl \
   --device /dev/nvidia-uvm:/dev/nvidia-uvm \
   -v "$(pwd)/server":/ornette \
+  -v "$(pwd)/output":/output \
   -v "$modeldir":/model \
   -v "$HOME/.ornette/checkpoints/$modelname":/ckpt \
   $imagename bash -c \
