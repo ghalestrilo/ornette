@@ -22,6 +22,7 @@ class Engine(Thread):
 
     def generate(self, length=None, unit='beats', respond=False):
       host = self.host
+      song = host.song
       # song = self.song
       if length is None:
         length = host.get('missing_beats')
@@ -40,11 +41,11 @@ class Engine(Thread):
 
       if (host.is_debugging()):
           host.log(f'generating tokens ({playhead}/{len(hist_)} > {threshold})')
-          host.log(f'requested length: {length} {unit} ({host.to_ticks(length, unit)} ticks)')
+          host.log(f'requested length: {length} {unit} ({song.to_ticks(length, unit)} ticks)')
 
       # Generate sequence
-      ticks = host.to_ticks(length, unit)
-      final_length = host.from_ticks(ticks, host.get('input_unit'))
+      ticks = song.to_ticks(length, unit)
+      final_length = song.from_ticks(ticks, host.get('input_unit'))
       host.log(f'request: host.model.generate(history, {final_length})')
 
       if final_length is None:
@@ -67,7 +68,7 @@ class Engine(Thread):
         for event in output_[-generated_length:]:
           for message in host.decode(event, v):
               # song.add_message(host.state, message, v)
-              host.data.add_message(host.state, message, v)
+              host.song.add_message(host.state, message, v)
               # state['output_data'].tracks[v].append(message)
 
       # Update Playhead

@@ -1,27 +1,29 @@
 from bridge import Bridge
 from engine import Engine
+from song import Song
 
 import pprint
 import mido
 import data
 from os import environ
 
-units = ['measures', 'bars', 'seconds', 'ticks', 'beats']
 
+
+# TODO: State
 state = {
     # Basic Config
     'module': None,
     'scclient': None,
     'debug_output': True,
 
-    'temperature': 1.2,
-    'until_next_event': 0.25,
+    'until_next_event': 0.25, # TODO: Remove after MIDI-based refactor
 
     # Controls
+    'temperature': 1.2,      # read from .ornette.yml
     'buffer_length': 64,     # read from .ornette.yml
     'trigger_generate': 0.5, # read from .ornette.yml
 
-    # Engine (Operation/Playback Variables)
+    # TODO: Move to Engine (Operation/Playback Variables)
     'history': [[]],
     'is_running': False,
     'is_generating': False,
@@ -33,11 +35,12 @@ state = {
     'input_unit': 'beats',
     'output_unit': 'beats',
     'last_end_time': 0,
-    'voices': [1],
-    # 'instrument': [ 's', 'mc', 'midichan', 0 ],
-    'instrument': [ 's', 'superpiano', 'velocity', '0.4' ],
 
-    # MIDI  Output fields
+    # TODO: move to channel
+    'voices': [1],
+    'instrument': [ 's', 'superpiano', 'velocity', '0.4' ], 
+
+    # TODO: move to track
     'output_data': mido.MidiFile(),
     'save_output': True,
     'track_name': 'Acoustic Grand Piano',
@@ -51,14 +54,15 @@ state = {
     # Batch execution control
     'batch_mode': False,
     # 'batch_max_buffer': False,
-    'data_frame': None,
+    'data_frame': None, # TODO: Remove
 }
-
+# /TODO: State
 
 class Host:
     def __init__(self,args):
       self.state = state
       self.data = data
+      self.song = Song(self)
       init_state(args)
       self.bridge = Bridge(self,args)
       self.engine = Engine(self)
@@ -155,7 +159,7 @@ class Host:
         return
       try:
           if (field == 'time'):
-            self.time_debug()
+            self.song.time_debug()
             return
 
           data = state[field]
@@ -254,9 +258,9 @@ class Host:
           note=note,
           channel=voice,
           velocity=velocity,
-          time=self.to_ticks(time * self.get('steps_per_quarter'),'beat'))
+          time=self.song.to_ticks(time * self.get('steps_per_quarter'),'beat'))
           
-        data.add_message(state, msg, voice)
+        self.song.add_message(state, msg, voice)
         return [('wait', time), ('play', note)] if name != 'note_off' else [('wait', time)]
 
     def perform(self,action):
@@ -312,13 +316,13 @@ class Host:
         self.set('playhead', 0)
         self.set('last_end_time', 0)
         if state['midi_tempo'] is None: state['midi_tempo'] = mido.bpm2tempo(state['bpm'])
-        data.init_output_data(state,conductor=False)
+        self.song.init_output_data(state,conductor=False)
         self.engine.notify_wait(False)
 
 
     def load_midi(self, name, barcount=None):
         self.log(f' loading {name}')
-        data.load_midi(self, name, barcount, 'bars')
+        self.song.load_midi(self, name, barcount, 'bars')
         if self.get('batch_mode'): self.notify_task_complete()
         if not any(self.get('history')): self.set("history",[[]])
         self.log(f' loaded {sum([len(v) for v in self.get("history")])} tokens to history')
@@ -346,8 +350,7 @@ class Host:
     def notify_task_complete(self):
         self.bridge.notify_task_complete()
 
-    def get_instrument(self):
-        return state['instrument']
+
 
 #     def debug_tensorflow():
 #       tf.config.list_physical_devices("GPU")
@@ -360,90 +363,7 @@ class Host:
 
 
 
-    # def steps_to_seconds(self,steps):
-    #     return (state['ticks_per_beat'] * steps
-    #       / state['bpm']
-    #       / state['steps_per_quarter'])
-
-    def get_measure_length(self, unit):
-        length = 1
-        if (unit == 'measures'): return length
-        return self.get_beat_length(length, unit)
-
-    def get_beat_length(self, length, unit):
-        length = length * 4 * state['time_signature_numerator'] / state['time_signature_denominator']
-        if (unit == 'beats'): return length
-
-        length = length * state['ticks_per_beat']
-        if (unit == 'ticks'): return length
-        
-        if (unit == 'seconds'):
-          return mido.tick2second(length,
-            state['ticks_per_beat'],
-            state['midi_tempo'])
-        return None
-
-    def from_ticks(self, length, unit):
-        if unit not in units:
-          self.log(f'unknown unit: \'{unit}\'')
-        if (length is None): return None
-        if (unit == 'ticks'): return length
-
-        if (unit == 'seconds'):
-          return mido.tick2second(length,
-            self.get('ticks_per_beat'),
-            self.get('midi_tempo'))
-
-        length = length / state['ticks_per_beat']
-        if (unit == 'beats'):
-          return length
-
-        length = length / (4 * state['time_signature_numerator'] / state['time_signature_denominator'])
-        if (unit in ['measures', 'bars']): 
-          return length
-
-        return None
-
-    def to_ticks(self, length, unit):
-        if unit not in units:
-          self.log(f'unknown unit: \'{unit}\'')
-        if (length is None): return None
-        if (unit == 'seconds'): return mido.second2tick(length,
-            self.get('ticks_per_beat'),
-            self.get('midi_tempo'))
-
-        if (unit == 'ticks'): return length
-
-        length = length * state['ticks_per_beat']
-        if (unit == 'beats'): return length
-
-        length = length * 4 * state['time_signature_numerator'] / state['time_signature_denominator']
-        if (unit in ['measures', 'bars']): return length
-        return None
-
-    def ticks_per_token(self):
-      return sum([0 for x in state['history']]) / len(state['history']) if self.has_history() else None
-
-    def time_debug(self, measures=1):
-      ticks = self.to_ticks(measures, 'measures')
-      beats = self.from_ticks(ticks, 'beats')
-      ticks = self.from_ticks(ticks, 'ticks')
-      seconds = self.from_ticks(ticks, 'seconds')
-      tokens = self.from_ticks(ticks, 'tokens')
-      tempo = state['midi_tempo']
-      bpm = state['bpm']
-      tpb = state['ticks_per_beat']
-      gtf = self.to_ticks
-      self.log('Time info:')
-      self.log(f'   {measures} measure = {beats} beats = {ticks} ticks = {seconds} seconds ~ {tokens} tokens')
-      self.log(f'   {gtf(1, "measures")} == {gtf(beats, "beats")} == {gtf(ticks, "ticks")} == {gtf(seconds, "seconds")} ~ {gtf(tokens, "tokens")}')
-      self.log(f'   tempo: {tempo} | bpm: {bpm} | tpb: {tpb}')
-      self.log(f'   missing beats: {state["missing_beats"]} | unit: {state["input_unit"]}')
-
-
-
 # TODO: State
-
 def init_state(args):
     state['module'] = args.module
     state['playback'] = args.playback
