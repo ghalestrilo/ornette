@@ -26,8 +26,6 @@ pretty_errors.configure(
     display_locals      = True
 )
 
-pretty_errors.replace_stderr()
-
 CODE_REBOOT=2222
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -35,6 +33,9 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 # Main
 if __name__ == "__main__":
     args = get_args()
+
+    if not args.batch_mode:
+      pretty_errors.replace_stderr()
 
     prep_module()
 
