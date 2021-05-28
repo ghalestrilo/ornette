@@ -189,10 +189,23 @@ class Engine(Thread):
     def is_running(self):
       return self.host.get('is_running') == True
 
-    # Engine / Song
+    # Song
     def push_event(self, event, voice=1):
         self.host.io.log("[event] ~ {0}".format(event))
         self.state['history'][voice].append(event)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
