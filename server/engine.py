@@ -239,7 +239,6 @@ class Engine(Thread):
         return None
 
       return hist[voice][position]
-    
 
 
 
