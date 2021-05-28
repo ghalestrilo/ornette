@@ -96,6 +96,10 @@ class Engine(Thread):
     def generate_in_background(self):
       Thread(target=self.host.generate).start()
       # self.should_wait = False
+    
+
+    def reset(self):
+      self.notify_wait(False)
 
 
 
@@ -108,10 +112,10 @@ class Engine(Thread):
         if (self.is_running() == True and self.should_wait == False):
           
           for voice in host.get('voices'):
-            self.host.process_next_token(voice)
+            self.process_next_token(voice)
 
           voice = host.get('voices')[0]
-          if (host.must_generate(voice)):
+          if (self.must_generate(voice)):
             self.generate_in_background()
 
 
@@ -149,7 +153,7 @@ class Engine(Thread):
       elif (host.song.has_history(voice) == False): return True
       # print(f'{self.state["playhead"]} / {len(self.state["history"][0])} >= {self.state["trigger_generate"]}')
       if (host.get('batch_mode') and host.task_ended()): return False
-      return host.get('playhead') / len(host.get_voice(voice)) >= host.get('trigger_generate')
+      return host.get('playhead') / len(host.song.get_voice(voice)) >= host.get('trigger_generate')
 
 
 

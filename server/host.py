@@ -40,15 +40,8 @@ class Host:
 
     # Host, Song, Engine
     def reset(self):
-        # TODO: Song
-        [voice.clear() for voice in self.get('history')]
-        self.set('playhead', 0)
-        self.set('last_end_time', 0)
-        if self.get('midi_tempo') is None: self.set('midi_tempo', mido.bpm2tempo(self.get('bpm'))) 
-        self.song.init_output_data(self.state, conductor=False) # .reset
-
-        # TODO: Engine
-        self.engine.notify_wait(False)
+        self.song.reset()
+        self.engine.reset()
 
 
     def set(self,field,value,silent=False):

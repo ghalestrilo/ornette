@@ -128,6 +128,7 @@ class Song():
             pass
         if host is not None: host.bridge.notify_task_complete()
 
+    # Depr: move relevant code to reset
     def init_output_data(self, state, conductor=True):
         # if state['output_data']: state['output_data'].clear()
         output = MidiFile(ticks_per_beat=state['ticks_per_beat'])
@@ -143,6 +144,14 @@ class Song():
             output.tracks.append(track)
 
         state['output_data'] = output
+
+    def reset(self):
+        host = self.host
+        [voice.clear() for voice in host.get('history')]
+        host.set('playhead', 0)
+        host.set('last_end_time', 0)
+        if host.get('midi_tempo') is None: host.set('midi_tempo', mido.bpm2tempo(host.get('bpm'))) 
+        self.init_output_data(host.state, conductor=False)
 
 
 
