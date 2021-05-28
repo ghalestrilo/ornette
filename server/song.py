@@ -126,7 +126,7 @@ class Song():
         while not os.path.exists(filename):
             # print(f'{filename} does not exist')
             pass
-        if host is not None: host.notify_task_complete()
+        if host is not None: host.bridge.notify_task_complete()
 
     def init_output_data(self, state, conductor=True):
         # if state['output_data']: state['output_data'].clear()
