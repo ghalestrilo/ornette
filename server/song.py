@@ -140,8 +140,11 @@ class Song():
         self.data.tracks.append(track)
 
     def buffer(self, ticks):
+        """ Returns the last messages of each track
+            within a limit of <ticks>
+        """
+
         # TODO: take conductor into acccount
-        # return [:1] + [crop(t, ticks) for t in self.data.tracks[1:]]
         out = []
 
         for track in self.data.tracks:
@@ -153,10 +156,8 @@ class Song():
             curticks += msg.time
             out[-1].append(msg)
 
-        return out
-        # return [ticks_from_end(t, ticks) for t in self.data.tracks]
-
-
+        # return out
+        return [list(self.data.tracks[0])] + out[1:]
 
 
 
