@@ -68,7 +68,7 @@ class Engine(Thread):
         generated_length = len(output_) - len(hist_)
         host.state['history'][v] = output_[-max_len:]
         for event in output_[-generated_length:]:
-          for message in host.model.decode(event, v):
+          for message in self.decode(event, v):
               # song.add_message(host.state, message, v)
               host.song.add_message(host.state, message, v)
               # state['output_data'].tracks[v].append(message)
@@ -81,7 +81,7 @@ class Engine(Thread):
 
       if (respond):
         # host.dump_history()
-        host.notify_task_complete()
+        host.bridge.notify_task_complete()
 
     def rewind(self, number):
       host = self.host
@@ -146,7 +146,7 @@ class Engine(Thread):
     def must_generate(self, voice):
       host = self.host
       if self.is_generating(): return False
-      elif (host.has_history(voice) == False): return True
+      elif (host.song.has_history(voice) == False): return True
       # print(f'{self.state["playhead"]} / {len(self.state["history"][0])} >= {self.state["trigger_generate"]}')
       if (host.get('batch_mode') and host.task_ended()): return False
       return host.get('playhead') / len(host.get_voice(voice)) >= host.get('trigger_generate')
@@ -208,7 +208,7 @@ class Engine(Thread):
       hist = host.get('history')
       playhead = host.get('playhead')
 
-      if (host.has_history() == False): return None
+      if (host.song.has_history() == False): return None
 
       no_more_tokens = playhead >= len(hist[voice])
       position = playhead + offset
@@ -223,6 +223,10 @@ class Engine(Thread):
 
       return hist[voice][position]
     
+
+
+
+
     # Engine (depr)
     def decode(self, event, voice):
       return [mido.Message(name,

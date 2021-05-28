@@ -26,6 +26,14 @@ class Song():
         """ Load midi from a file onto the host's history
             optionally cropping it to a max_ticks length
         """
+        
+        # self.host.log(f' loading {name}')
+        # self.host.song.load_midi(self, name, barcount, 'bars')
+
+        if self.host.get('batch_mode'): self.host.bridge.notify_task_complete()
+        if not any(self.host.get('history')): self.host.set("history",[[]])
+        # self.host.log(f' loaded {sum([len(v) for v in self.host.get("history")])} tokens to history')
+
         mid = MidiFile(filename)
         host.reset()
         host.set('ticks_per_beat', mid.ticks_per_beat)
@@ -224,3 +232,24 @@ class Song():
       host.log(f'   tempo: {host.get("midi_tempo")} | bpm: {host.get("bpm")} | tpb: {host.get("ticks_per_beat")}')
       host.log(f'   missing beats: {host.get("missing_beats")} | unit: {host.get("input_unit")}')
 
+
+
+    # Query Methods
+
+    # Song (rename: get_channel)
+    def get_voice(self, voice_index=None):
+      if voice_index is None:
+        voice_index = self.host.get('voices')[0]
+      # print(f'voice_index: {voice_index}')
+      return self.host.get('voices')[voice_index]
+
+    # Song
+    # TODO: get_voice(idx): return self.get('history')[voices[idx]] if idx < len(voices) && voices[idx] < len(self.get('history')) else None
+    def has_history(self, voice_id=None):
+      if voice_id is None:
+        voice_id = self.host.get('voices')[0]
+      hist = self.get_voice(voice_id)
+      # return np.any(hist) and np.any(hist[0])
+      # print(f'hist({self.host.get("voices")[0]}): {True if hist and any(hist) else False}')
+      # print(hist)
+      return True if hist and any(hist) else False

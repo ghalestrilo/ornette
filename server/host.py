@@ -9,13 +9,25 @@ from os import environ
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 # TODO: State
 state = {
     # Basic Config
     'module': None,
     'scclient': None,
     'debug_output': True,
-
     'until_next_event': 0.25, # TODO: Remove after MIDI-based refactor
 
     # Controls
@@ -58,6 +70,24 @@ state = {
 }
 # /TODO: State
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class Host:
     def __init__(self,args):
       self.state = state
@@ -76,7 +106,7 @@ class Host:
     def start(self):
       try:
         self.engine.start()
-        if (self.state['batch_mode']): self.notify_task_complete()
+        if (self.state['batch_mode']): self.bridgenotify_task_complete()
         self.bridge.start()
       except KeyboardInterrupt:
           self.close()
@@ -100,6 +130,22 @@ class Host:
         if state['midi_tempo'] is None: state['midi_tempo'] = mido.bpm2tempo(state['bpm'])
         self.song.init_output_data(state,conductor=False)
         self.engine.notify_wait(False)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -191,54 +237,18 @@ class Host:
 
 
 
-    # Query Methods
 
-    # Song
-    def get_voice(self, voice_index=state['voices'][0]):
-      print(f'voice_index: {voice_index}')
-      return state['history'][voice_index]
-
-    # Song
-    # TODO: get_voice(idx): return self.get('history')[voices[idx]] if idx < len(voices) && voices[idx] < len(self.get('history')) else None
-    def has_history(self, voice_id=state['voices'][0]):
-      hist = self.get_voice(voice_id)
-      # return np.any(hist) and np.any(hist[0])
-      print(f'hist({state["voices"][0]}): {True if hist and any(hist) else False}')
-      print(hist)
-      return True if hist and any(hist) else False
-
-
-
-
-
-
-
-    # Batch
+    # Batch (depr)
     def task_ended(self):
       # if len(state['history']) == 0 or len(state['history'][0]): return False
-      did_it_end = len(self.get_voice()) >= state['buffer_length']
+      did_it_end = len(self.song.get_voice()) >= state['buffer_length']
       # if (did_it_end): self.notify_task_complete()
       return did_it_end
-
-    # Batch
-    def notify_task_complete(self):
-        self.bridge.notify_task_complete()
-
 
 
 #     def debug_tensorflow():
 #       tf.config.list_physical_devices("GPU")
 #       self.log('tf.test.is_gpu_available() = {}'.format(tf.test.is_gpu_available()))
-
-
-    # Song
-    def load_midi(self, name, barcount=None):
-        self.log(f' loading {name}')
-        self.song.load_midi(self, name, barcount, 'bars')
-        if self.get('batch_mode'): self.notify_task_complete()
-        if not any(self.get('history')): self.set("history",[[]])
-        self.log(f' loaded {sum([len(v) for v in self.get("history")])} tokens to history')
-
 
 
 
