@@ -40,6 +40,10 @@ class Song():
         self.channels = []
         self.reset()
 
+
+    def play(self):
+      return self.data.play()
+
     def reset(self):
         if self.data is not None:
           for t in self.data.tracks: t.clear()

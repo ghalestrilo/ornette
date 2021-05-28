@@ -10,17 +10,66 @@ import mido # FIXME: Remove this once #decode() / #getaction() have been updated
 
 
 
-class Engine(Thread):
+class Engine():
     def __init__(self, host):
-      Thread.__init__(self)
       self.host = host
-      # self.song = host.song
       self.state = host.state
       self.stopped = Event()
       self.should_wait = False
 
+
+    # Controls
+    def start(self):
+        Thread(target=self.playback).start()
+
+    def reset(self):
+      # self.stopped = Event()
+      self.notify_wait(False)
+
     def stop(self):
       self.stopped.set()
+
+
+      # while not self.stopped.wait(self.state['until_next_event']):
+      #   if (self.is_running() == True and self.should_wait == False):
+          
+      #     for voice in host.get('voices'):
+      #       self.process_next_token(voice)
+
+      #     voice = host.get('voices')[0]
+      #     if (self.must_generate(voice)):
+      #       self.generate_in_background()
+
+
+    # Core
+    def playback(self):
+      if self.host.get('is_running') == True: return
+      
+      self.host.set('is_running', True)
+      for msg in self.host.song.play():
+        if self.stopped: break          
+        self.host.io.log(msg)
+
+      self.host.set('is_running', False)
+
+        # if (self.must_generate):
+        #     self.generate_in_background()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def generate(self, length=None, unit='beats', respond=False):
       host = self.host
@@ -83,6 +132,24 @@ class Engine(Thread):
         # host.dump_history()
         host.bridge.notify_task_complete()
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     def rewind(self, number):
       host = self.host
       playhead = host.state['playhead']
@@ -94,30 +161,15 @@ class Engine(Thread):
       host.state['playhead'] = new_playhead
 
     def generate_in_background(self):
-      Thread(target=self.host.generate).start()
+      Thread(target=self.generate).start()
       # self.should_wait = False
     
 
-    def reset(self):
-      self.notify_wait(False)
 
 
 
-    # Core
-    def run(self):
-      host = self.host
-
-      # for msg in host.file.play()
-      while not self.stopped.wait(self.state['until_next_event']):
-        if (self.is_running() == True and self.should_wait == False):
-          
-          for voice in host.get('voices'):
-            self.process_next_token(voice)
-
-          voice = host.get('voices')[0]
-          if (self.must_generate(voice)):
-            self.generate_in_background()
-
+    def notify_wait(self,should=True):
+      self.should_wait = should
 
 
 
@@ -131,8 +183,6 @@ class Engine(Thread):
     #     if (self.state['is_running'] == True):
     #       self.host.play(0,'hh')
 
-    def notify_wait(self,should=True):
-      self.should_wait = should
 
 
 
