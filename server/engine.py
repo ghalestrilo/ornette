@@ -16,18 +16,40 @@ class Engine():
       self.state = host.state
       self.stopped = Event()
       self.should_wait = False
+      self.curtick = 0
 
 
     # Controls
     def start(self):
         Thread(target=self.playback).start()
 
+    def pause(self):
+      self.stopped.set()
+
     def reset(self):
       # self.stopped = Event()
       self.notify_wait(False)
+      self.curtick = 0
 
     def stop(self):
-      self.stopped.set()
+      self.pause()
+      self.reset()
+
+
+    # Core
+    def playback(self):
+      if self.host.get('is_running') == True: return
+      
+      self.host.set('is_running', True)
+      for msg in self.host.song.play():
+        if self.stopped: break          
+
+        self.host.io.log(msg)
+
+        if (self.must_generate):
+            self.generate_in_background() # self.treshold_met
+
+      self.host.set('is_running', False)
 
 
       # while not self.stopped.wait(self.state['until_next_event']):
@@ -41,19 +63,19 @@ class Engine():
       #       self.generate_in_background()
 
 
-    # Core
-    def playback(self):
-      if self.host.get('is_running') == True: return
-      
-      self.host.set('is_running', True)
-      for msg in self.host.song.play():
-        if self.stopped: break          
-        self.host.io.log(msg)
+    @property
+    def must_generate(self):
+      host = self.host
+      if self.is_generating(): return False
+      elif host.song.empty(): return True
 
-      self.host.set('is_running', False)
+      # TODO: wtf is this
+      if (host.get('batch_mode') and host.task_ended()): return False
 
-        # if (self.must_generate):
-        #     self.generate_in_background()
+      remaining_ticks = host.song.to_ticks(host.song.data.length, '') - self.curtick
+
+      # TODO: Test
+      return remaining_ticks / host.get('buffer_length') < host.get('trigger_generate')
 
 
 
@@ -190,20 +212,14 @@ class Engine():
 
 
 
-
+    # TODO: Prop
     def is_generating(self):
       return self.host.get('is_generating') == True
 
     def is_debugging(self):
       return self.state['debug_output'] == True
 
-    def must_generate(self, voice):
-      host = self.host
-      if self.is_generating(): return False
-      elif (host.song.has_history(voice) == False): return True
-      # print(f'{self.state["playhead"]} / {len(self.state["history"][0])} >= {self.state["trigger_generate"]}')
-      if (host.get('batch_mode') and host.task_ended()): return False
-      return host.get('playhead') / len(host.song.get_voice(voice)) >= host.get('trigger_generate')
+
 
 
 
