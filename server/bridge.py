@@ -43,6 +43,7 @@ class Bridge:
             args[3] if len(args) > 3 else 'bars',
           ))
         dispatcher.map("/save",      lambda addr, name: host.song.save(name))
+        dispatcher.map("/buffer",      lambda addr, num: host.io.log(host.song.buffer(num)))
 
         # if (self.host.model):
         #     dispatcher.map("/sample", sample_model, self.model)

@@ -9,8 +9,6 @@ from datetime import datetime
 # TODO: Make FastEnum
 units = ['measures', 'bars', 'seconds', 'ticks', 'beats']
 
-# Sets
-# - playhead
 # - last_end_time
 # - history
 # - ticks_per_beat
@@ -33,7 +31,6 @@ units = ['measures', 'bars', 'seconds', 'ticks', 'beats']
 # - missing_beats
 # - input_unit
 # - voices
-
 
 class Song():
     def __init__(self, host, data=None):
@@ -142,27 +139,22 @@ class Song():
             denominator=host.get('time_signature_denominator')))
         self.data.tracks.append(track)
 
+    def buffer(self, ticks):
+        # TODO: take conductor into acccount
+        # return [:1] + [crop(t, ticks) for t in self.data.tracks[1:]]
+        out = []
 
+        for track in self.data.tracks:
+          curticks = 0
+          out.append([])
 
+          for msg in reversed(list(track)):
+            if curticks > ticks: break
+            curticks += msg.time
+            out[-1].append(msg)
 
-
-
-
-
-
-
-
-
-
-    def get_buffer(self, ticks):
-        # TODO:
-        # self.data.messages
-        # reverse
-        # takewhile < ticks
-        # reverse
-        # filter
-        # if msg.type in ['note_on']: buffer[index].append(host.model.encode(msg))
-        pass
+        return out
+        # return [ticks_from_end(t, ticks) for t in self.data.tracks]
 
 
 
