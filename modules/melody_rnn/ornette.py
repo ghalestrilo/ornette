@@ -32,7 +32,7 @@ class OrnetteModule():
 
         output = []
         for voice in voices:
-          # self.host.log(voices)
+          # self.host.io.log(voices)
           # Get first voice
           primer_sequence = [] if history is None else history[voice]
 

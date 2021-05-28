@@ -54,7 +54,6 @@ class Bridge:
         dispatcher.map("/end",   lambda _: host.close())
 
     # TODO: Set sound
-
     def play(self,pitch):
         self.client.send_message('/play2',
           [ 'note', pitch - NOTE_OFFSET

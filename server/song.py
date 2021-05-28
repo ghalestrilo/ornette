@@ -27,12 +27,12 @@ class Song():
             optionally cropping it to a max_ticks length
         """
         
-        # self.host.log(f' loading {name}')
+        # self.host.io.log(f' loading {name}')
         # self.host.song.load_midi(self, name, barcount, 'bars')
 
         if self.host.get('batch_mode'): self.host.bridge.notify_task_complete()
         if not any(self.host.get('history')): self.host.set("history",[[]])
-        # self.host.log(f' loaded {sum([len(v) for v in self.host.get("history")])} tokens to history')
+        # self.host.io.log(f' loaded {sum([len(v) for v in self.host.get("history")])} tokens to history')
 
         mid = MidiFile(filename)
         host.reset()
@@ -109,10 +109,10 @@ class Song():
         filename = join(os.path.curdir, '/output',f'{filename}.mid')
 
         if (data is None or (max(len(track) for track in data.tracks)) < 1):
-            host.log(f'[error] No data to write in file: {filename}')
+            host.io.log(f'[error] No data to write in file: {filename}')
             return
 
-        host.log(f'Saving data to: {filename}')
+        host.io.log(f'Saving data to: {filename}')
 
         # mid = MidiFile(ticks_per_beat=tpb)
         # for output_track in data:
@@ -182,7 +182,7 @@ class Song():
     def from_ticks(self, length, unit):
         host = self.host
         if unit not in units:
-          host.log(f'unknown unit: \'{unit}\'')
+          host.io.log(f'unknown unit: \'{unit}\'')
         if (length is None): return None
         if (unit == 'ticks'): return length
 
@@ -204,7 +204,7 @@ class Song():
     def to_ticks(self, length, unit):
         host = self.host
         if unit not in units:
-          host.log(f'unknown unit: \'{unit}\'')
+          host.io.log(f'unknown unit: \'{unit}\'')
         if (length is None): return None
         if (unit == 'seconds'): return mido.second2tick(length,
             host.get('ticks_per_beat'),
@@ -226,11 +226,11 @@ class Song():
       ticks = self.from_ticks(ticks, "ticks")
       seconds = self.from_ticks(ticks, "seconds")
       gtf = self.to_ticks
-      host.log('Time info:')
-      host.log(f'   {measures} measure = {beats} beats = {ticks} ticks = {seconds} seconds')
-      host.log(f'   {gtf(1, "measures")} == {gtf(beats, "beats")} == {gtf(ticks, "ticks")} == {gtf(seconds, "seconds")}')
-      host.log(f'   tempo: {host.get("midi_tempo")} | bpm: {host.get("bpm")} | tpb: {host.get("ticks_per_beat")}')
-      host.log(f'   missing beats: {host.get("missing_beats")} | unit: {host.get("input_unit")}')
+      host.io.log('Time info:')
+      host.io.log(f'   {measures} measure = {beats} beats = {ticks} ticks = {seconds} seconds')
+      host.io.log(f'   {gtf(1, "measures")} == {gtf(beats, "beats")} == {gtf(ticks, "ticks")} == {gtf(seconds, "seconds")}')
+      host.io.log(f'   tempo: {host.get("midi_tempo")} | bpm: {host.get("bpm")} | tpb: {host.get("ticks_per_beat")}')
+      host.io.log(f'   missing beats: {host.get("missing_beats")} | unit: {host.get("input_unit")}')
 
 
 

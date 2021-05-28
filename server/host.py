@@ -1,8 +1,7 @@
 from bridge import Bridge
 from engine import Engine
 from song import Song
-
-import pprint
+from logger import Logger
 import mido
 import data
 from os import environ
@@ -54,9 +53,9 @@ state = {
 
     # TODO: move to track
     'output_data': mido.MidiFile(),
-    'save_output': True,
-    'track_name': 'Acoustic Grand Piano',
-    'bpm': 120,
+    'save_output': True, # depr
+    'track_name': 'Acoustic Grand Piano', # depr
+    'bpm': 120, # 
     'midi_tempo': None,
     'time_signature_numerator': 4, 
     'time_signature_denominator': 4,
@@ -93,6 +92,7 @@ class Host:
       self.state = state
       self.data = data
       self.song = Song(self)
+      self.io = Logger(self)
       init_state(args)
       self.bridge = Bridge(self,args)
       self.engine = Engine(self)
@@ -106,7 +106,7 @@ class Host:
     def start(self):
       try:
         self.engine.start()
-        if (self.state['batch_mode']): self.bridgenotify_task_complete()
+        if (self.state['batch_mode']): self.bridge.notify_task_complete()
         self.bridge.start()
       except KeyboardInterrupt:
           self.close()
@@ -128,7 +128,7 @@ class Host:
         self.set('playhead', 0)
         self.set('last_end_time', 0)
         if state['midi_tempo'] is None: state['midi_tempo'] = mido.bpm2tempo(state['bpm'])
-        self.song.init_output_data(state,conductor=False)
+        self.song.init_output_data(state,conductor=False) # .reset
         self.engine.notify_wait(False)
 
 
@@ -163,20 +163,20 @@ class Host:
             # print("padding history for")
             while i + 1 > len(self.get('history')): self.set('history', self.get('history') + [[]])
             while i + 1 > len(self.get('output_data').tracks): state['output_data'].tracks.append(mido.MidiTrack())
-            self.log(f'output_data: {self.get("output_data")}')
+            self.io.log(f'output_data: {self.get("output_data")}')
           
         state[field] = value
         if silent or field == 'last_end_time': return
-        self.log("[{0}] ~ {1}".format(field, value))
+        self.io.log("[{0}] ~ {1}".format(field, value))
       except KeyError:
-          if not silent: self.log(f'no such key ~ {field}')
+          if not silent: self.io.log(f'no such key ~ {field}')
           pass
     
     def get(self,field):
       try:
         return state[field]
       except KeyError:
-          self.log(f'no such key ~ {field}')
+          self.io.log(f'no such key ~ {field}')
           pass
 
     # /TODO: State
@@ -199,45 +199,6 @@ class Host:
 
 
 
-    # TODO: IO
-    def log(self, msg):
-      # if self.is_debugging(): print(f"[server] {msg}")
-      print(f"[server:{self.get('module')}] {msg}")
-
-    def print(self, field=None, pretty=True):
-      """ Print a key from the host state """
-      
-      if (field == None):
-        pprint.pprint(state)
-        return
-      try:
-          if (field == 'time'):
-            self.song.time_debug()
-            return
-
-          data = state[field]
-          if (pretty == True and field == 'history'):
-            for voice in data:
-              pprint.pprint([self.model.decode(e) for e in voice])
-            self.log(f'{len(data)} voices total')
-            return
-          if (pretty == True and field == 'output_data'):
-            pprint.pprint(data)
-            return
-
-          self.log("[{0}] ~ {1}".format(field, data))
-
-      except KeyError:
-          self.log("no such key ~ {0}".format(field))
-          pass
-      #/ TODO: IO
-
-
-
-
-
-
-
     # Batch (depr)
     def task_ended(self):
       # if len(state['history']) == 0 or len(state['history'][0]): return False
@@ -248,7 +209,7 @@ class Host:
 
 #     def debug_tensorflow():
 #       tf.config.list_physical_devices("GPU")
-#       self.log('tf.test.is_gpu_available() = {}'.format(tf.test.is_gpu_available()))
+#       self.io.log('tf.test.is_gpu_available() = {}'.format(tf.test.is_gpu_available()))
 
 
 

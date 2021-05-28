@@ -46,7 +46,7 @@ def prep_module():
 
 def load_model(host, checkpoint=None):
     if checkpoint is None:
-        host.log("Please provide a checkpoint for the model to load")
+        host.io.log("Please provide a checkpoint for the model to load")
         exit(-1)
 
     model_path = '/model'

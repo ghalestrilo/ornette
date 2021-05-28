@@ -42,24 +42,24 @@ class Engine(Thread):
           # data.init_output_data(state)
 
       if (self.is_debugging()):
-          host.log(f'generating tokens ({playhead}/{len(hist_)} > {threshold})')
-          host.log(f'requested length: {length} {unit} ({song.to_ticks(length, unit)} ticks)')
+          host.io.log(f'generating tokens ({playhead}/{len(hist_)} > {threshold})')
+          host.io.log(f'requested length: {length} {unit} ({song.to_ticks(length, unit)} ticks)')
 
       # Generate sequence
       ticks = song.to_ticks(length, unit)
       final_length = song.from_ticks(ticks, host.get('input_unit'))
-      host.log(f'request: host.model.generate(history, {final_length})')
+      host.io.log(f'request: host.model.generate(history, {final_length})')
 
       if final_length is None:
-        host.log(f'error: trying to generate length {final_length}')
+        host.io.log(f'error: trying to generate length {final_length}')
         return
 
       output = host.model.generate(history, final_length, voices)
-      # host.log(f'{len(seq)} tokens were generated')
+      # host.io.log(f'{len(seq)} tokens were generated')
 
-      host.log(output)
-      host.log(f'len(output): {len(output)}')
-      host.log(f'len(hist): {len(history)}')
+      host.io.log(output)
+      host.io.log(f'len(output): {len(output)}')
+      host.io.log(f'len(hist): {len(history)}')
 
       for i, v in enumerate(voices):
         output_ = output[i]
@@ -89,7 +89,7 @@ class Engine(Thread):
       target_playhead = playhead - number
       new_playhead = max(target_playhead, 0)
       if (self.is_debugging()):
-          host.log(f'Rewinding Playhead ({playhead} -> {new_playhead})')
+          host.io.log(f'Rewinding Playhead ({playhead} -> {new_playhead})')
 
       host.state['playhead'] = new_playhead
 
@@ -164,7 +164,7 @@ class Engine(Thread):
       name, value = action
       host = self.host
       if (self.is_debugging()):
-        host.log(f'({host.get("playhead")}/{len(host.get("history")[0])}): {name} {value}')
+        host.io.log(f'({host.get("playhead")}/{len(host.get("history")[0])}): {name} {value}')
 
       if (host.set('batch_mode')):
         self.state['until_next_event'] = 0
@@ -187,7 +187,7 @@ class Engine(Thread):
 
     # Engine / Song
     def push_event(self, event, voice=1):
-        self.host.log("[event] ~ {0}".format(event))
+        self.host.io.log("[event] ~ {0}".format(event))
         self.state['history'][voice].append(event)
 
 
@@ -218,7 +218,7 @@ class Engine(Thread):
           return None
 
       if (position < 0):
-        host.log(f'Warning: trying to read a negative position in history ({playhead} + {offset} = {position})')
+        host.io.log(f'Warning: trying to read a negative position in history ({playhead} + {offset} = {position})')
         return None
 
       return hist[voice][position]
@@ -265,7 +265,7 @@ class Engine(Thread):
       e = self.get_next_token(voice)
 
       if (e == None):
-        if (self.is_debugging()): self.host.log(f'No event / voice {voice} is empty')
+        if (self.is_debugging()): self.host.io.log(f'No event / voice {voice} is empty')
         if (self.host.get('batch_mode') and self.host.task_ended()):
             self.host.set('is_running', False)
             self.host.save_output(self.host.get('output_filename'))
