@@ -38,8 +38,10 @@ class Bridge:
         dispatcher.map("/generate",  lambda addr, length, unit: host.engine.generate(length, unit, True))
 
         # Song
-        dispatcher.map("/load",      lambda addr, name: host.song.load_midi(name, host.get('missing_bars')))
-        dispatcher.map("/load_bars", lambda addr, name, barcount: host.song.load_midi(name,barcount))
+        dispatcher.map("/load",      lambda *args: host.song.load(args[1],
+            args[2] if len(args) > 2 else host.get('missing_bars'),
+            args[3] if len(args) > 3 else 'bars',
+          ))
         dispatcher.map("/save",      lambda addr, name: host.song.save(name))
 
         # if (self.host.model):

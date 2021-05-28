@@ -11,9 +11,9 @@ class Host:
     def __init__(self,args):
       self.store = Store(self, args)
       self.state = self.store.get_state()
+      self.io = Logger(self)
       self.data = data
       self.song = Song(self)
-      self.io = Logger(self)
       self.bridge = Bridge(self,args)
       self.engine = Engine(self)
       self.reset()

@@ -70,7 +70,7 @@ class Engine(Thread):
         for event in output_[-generated_length:]:
           for message in self.decode(event, v):
               # song.add_message(host.state, message, v)
-              host.song.add_message(host.state, message, v)
+              host.song.append(message, v)
               # state['output_data'].tracks[v].append(message)
 
       # Update Playhead
@@ -266,7 +266,7 @@ class Engine(Thread):
           velocity=velocity,
           time=self.host.song.to_ticks(time * self.host.get('steps_per_quarter'),'beat'))
           
-        self.host.song.add_message(self.state, msg, voice)
+        self.host.song.append(msg, voice)
         return [('wait', time), ('play', note)] if name != 'note_off' else [('wait', time)]
 
 
