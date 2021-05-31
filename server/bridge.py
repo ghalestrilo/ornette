@@ -61,6 +61,8 @@ class Bridge:
         dispatcher.map("/end",   lambda _: host.close())
 
     def play(self, msg):
+        # self.host.io.log("Sending message: ")
+        # self.host.io.log(msg)
         self.client.send_message('/play2', msg)
 
     def stop(self):

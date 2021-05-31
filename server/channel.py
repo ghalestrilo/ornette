@@ -21,7 +21,7 @@ class Channel():
       return self._instrument
 
     def set_instrument(self, new_instrument):
-      return self._instrument = new_instrument
+      self._instrument = new_instrument
 
     # TODO: 
     def play(self, note):

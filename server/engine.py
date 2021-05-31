@@ -45,14 +45,10 @@ class Engine():
       self.host.set('is_running', True)
       for msg in self.host.song.play():
         with self.lock:
-            if self.stopped: break          
-            self.host.io.log(msg)
+            # if self.stopped: break
             
             # TODO: Event: play note
-            # self.host.bridge.play(msg)
-            # chan = self.host.song.get_channel(msg.channel)
-            # if chan:  chan.play(msg.note)
-            
+            self.host.song.perform(msg)
 
         if (self.must_generate()):
             self.generate_in_background() # self.treshold_met

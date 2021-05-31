@@ -6,6 +6,8 @@ from os.path import normpath, join
 from mido import MidiFile, MidiTrack, Message, MetaMessage, tempo2bpm
 from datetime import datetime
 
+from channel import Channel
+
 # TODO: Make FastEnum
 units = ['measures', 'bars', 'seconds', 'ticks', 'beats']
 
@@ -164,13 +166,18 @@ class Song():
         return [list(self.data.tracks[0])] + out[1:]
 
 
-
     def get_channel(self, idx):
-      pass
+      default_instrument = [ 's', 'superpiano', 'velocity', '0.4' ]
+      while idx >= len(self.channels):
+        self.host.io.log(f'Adding new channel: {len(self.channels)}')
+        self.channels.append(Channel(len(self.channels), default_instrument, self.host))
+      return self.channels[idx]
 
 
-
-
+    def perform(self, message):
+      if message.type == 'note_on':
+        chan = self.host.song.get_channel(message.channel)
+        if chan: chan.play(message.note)
 
 
 
