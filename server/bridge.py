@@ -44,9 +44,10 @@ class Bridge:
             args[2] if len(args) > 2 else None,
             args[3] if len(args) > 3 else 'bars',
           ))
-        dispatcher.map("/save",    lambda addr, name: host.song.save(name))
-        dispatcher.map("/buffer",  lambda addr, num: host.io.log(host.song.buffer(num)))
-        dispatcher.map("/event",   lambda _, ev: host.push_event(ev))  # event2word
+        dispatcher.map("/save",       lambda addr, name: host.song.save(name))
+        dispatcher.map("/buffer",     lambda addr, num: host.io.log(host.song.buffer(num)))
+        dispatcher.map("/event",      lambda _, ev: host.push_event(ev))
+        dispatcher.map("/instrument", lambda addr, index, *inst: host.song.get_voice(index).set_instrument(inst))
 
         # if (self.host.model):
         #     dispatcher.map("/sample", sample_model, self.model)
@@ -59,24 +60,8 @@ class Bridge:
         dispatcher.map("/kill",  lambda _: host.close())
         dispatcher.map("/end",   lambda _: host.close())
 
-    # TODO: Set sound
-    def play(self,pitch):
-        self.client.send_message('/play2',
-          [ 'note', pitch - NOTE_OFFSET
-          , 'cut', pitch - NOTE_OFFSET
-          , 'gain', 1
-          ]
-          +
-          self.host.get_instrument())
-    
-    def kill_note(self,pitch):
-        self.client.send_message('/play2',
-          [ 'note', pitch - NOTE_OFFSET
-          , 'cut', pitch - NOTE_OFFSET
-          , 'gain', 0
-          ]
-          +
-          self.host.get_instrument())
+    def play(self, msg):
+        self.client.send_message('/play2', msg)
 
     def stop(self):
         self.server.shutdown()

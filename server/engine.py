@@ -1,4 +1,4 @@
-from threading import Thread, Event
+from threading import Thread, Event, Lock
 
 # import numpy as np
 import math
@@ -17,6 +17,8 @@ class Engine():
       self.stopped = Event()
       self.should_wait = False
       self.curtick = 0
+      
+      self.lock = Lock()
 
 
     # Controls
@@ -42,11 +44,17 @@ class Engine():
       
       self.host.set('is_running', True)
       for msg in self.host.song.play():
-        if self.stopped: break          
+        with self.lock:
+            if self.stopped: break          
+            self.host.io.log(msg)
+            
+            # TODO: Event: play note
+            # self.host.bridge.play(msg)
+            # chan = self.host.song.get_channel(msg.channel)
+            # if chan:  chan.play(msg.note)
+            
 
-        self.host.io.log(msg)
-
-        if (self.must_generate):
+        if (self.must_generate()):
             self.generate_in_background() # self.treshold_met
 
       self.host.set('is_running', False)
@@ -63,7 +71,6 @@ class Engine():
       #       self.generate_in_background()
 
 
-    @property
     def must_generate(self):
       host = self.host
       if self.is_generating(): return False
@@ -72,7 +79,7 @@ class Engine():
       # TODO: wtf is this
       if (host.get('batch_mode') and host.task_ended()): return False
 
-      remaining_ticks = host.song.to_ticks(host.song.data.length, '') - self.curtick
+      remaining_ticks = host.song.to_ticks(host.song.data.length, 'seconds') - self.curtick
 
       # TODO: Test
       return remaining_ticks / host.get('buffer_length') < host.get('trigger_generate')
@@ -81,7 +88,15 @@ class Engine():
 
 
 
-
+    # TODO:
+    # 1. Fix start/run (why is it not printing?)
+    # 2. Make OSC great again! (send it to sclang)
+    # 3. Test must_generate
+    # 4. Refactor Generate:
+    #   - call get_buffer
+    #   - erase 'history'
+    #   - refactor encoding/decoding
+    #   - stretch: make filters?
 
 
 
