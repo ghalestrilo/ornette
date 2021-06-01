@@ -13,31 +13,33 @@ state = {
     'trigger_generate': 0.5, # read from .ornette.yml
 
     # TODO: Move to Engine (Operation/Playback Variables)
-    'history': [[]],
-    'is_running': False,
-    'is_generating': False,
-    'playback': True,
-    'playhead': 0,
-    'return': 0,
+    'is_generating': False, # Keep
     'time_shift_denominator': 100,
-    'missing_beats': 4,  # How many beats should the generator generate?
-    'input_unit': 'beats',
-    'output_unit': 'beats',
-    'last_end_time': 0,
+    'is_running': False,  # Deprecate?
+    'playback': True,     # Deprecate?
+    'return': 0,          # Deprecate?
+    'history': [[]],      # Deprecate
+    'playhead': 0,        # Deprecate
+    'missing_beats': 4,   # Deprecate
+    'last_end_time': 0,   # Deprecate
+    'input_unit': 'beats',  # read from .ornette.yml
+    'input_length': 4,      # read from .ornette.yml
+    'output_unit': 'beats', # read from .ornette.yml
+    'output_length': 4,     # read from .ornette.yml
 
     # TODO: move to channel
-    'voices': [1],
-    'instrument': [ 's', 'superpiano', 'velocity', '0.4' ], 
+    'voices': [1], # Deprecate
+    'instrument': [ 's', 'superpiano', 'velocity', '0.4' ], # Deprecate
 
     # TODO: move to track
-    'output_data': mido.MidiFile(),
-    'save_output': True, # depr
-    'track_name': 'Acoustic Grand Piano', # depr
-    'bpm': 120, # 
+    'output_data': mido.MidiFile(), # Deprecate
+    'save_output': True, # Deprecate
+    'track_name': 'Acoustic Grand Piano', # Deprecate
+    'bpm': 120,
     'midi_tempo': None,
     'time_signature_numerator': 4, 
     'time_signature_denominator': 4,
-    'ticks_per_beat': 960, # TODO: How do I determine that?
+    'ticks_per_beat': 961, # TODO: How do I determine that?
     'steps_per_quarter': 8,
 
     # Batch execution control
@@ -52,14 +54,14 @@ class Store():
     def __init__(self, host, args):
       self.host = host
       self.state = state
-      state['module'] = args.module
-      state['playback'] = args.playback
-      state['max_seq'] = args.max_seq
-      state['output'] = None
-      state['batch_mode'] = args.batch_mode
+      self.state['module'] = args.module
+      self.state['playback'] = args.playback
+      self.state['max_seq'] = args.max_seq
+      self.state['output'] = None
+      self.state['batch_mode'] = args.batch_mode
 
     # TODO: State
-    def set(self,field,value,silent=False):
+    def set(self, field, value, silent=False):
       try:
 
         # Move to TrackData
@@ -67,12 +69,11 @@ class Store():
           try: value = list(value)
           except TypeError: value = [value]
           for i in value:
-            # print("padding history for")
             while i + 1 > len(self.get('history')): self.set('history', self.get('history') + [[]])
-            while i + 1 > len(self.get('output_data').tracks): state['output_data'].tracks.append(mido.MidiTrack())
+            while i + 1 > len(self.host.song.data.tracks): self.host.song.data.tracks.append(mido.MidiTrack())
             self.host.io.log(f'output_data: {self.get("output_data")}')
           
-        state[field] = value
+        self.state[field] = value
         if silent or field == 'last_end_time': return
         self.host.io.log("[{0}] ~ {1}".format(field, value))
       except KeyError:
@@ -82,7 +83,7 @@ class Store():
     def get(self,field):
       if field is None: return self.get_state()
       try:
-        return state[field]
+        return self.state[field]
       except KeyError:
           self.host.io.log(f'no such key ~ {field}')
           pass

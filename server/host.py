@@ -17,7 +17,7 @@ class Host:
       self.bridge = Bridge(self,args)
       self.engine = Engine(self)
       self.reset()
-      self.set('voices', [1])
+      # self.set('voices', [1])
       self.model = data.load_model(self,args.checkpoint)
 
       # Notify startup for batch runner

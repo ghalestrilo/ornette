@@ -19,6 +19,17 @@ class Logger:
         pprint(state)
         return
       try:
+          if (field == 'song'):
+            data = self.host.song.data
+            self.host.io.log(data)
+            for track in data.tracks:
+              self.host.io.log(track)
+
+              for msg in track:
+                self.host.io.log(f'  {msg}')
+
+            return
+
           if (field == 'time'):
             host.song.time_debug()
             return

@@ -32,7 +32,7 @@ class Bridge:
         # dispatcher.map("/tfdebug", debug_tensorflow)
 
         dispatcher.map("/set",       self.set)
-        dispatcher.map("/debug",     lambda addr, key: host.print() if key == 'all' else host.print(key))
+        dispatcher.map("/debug",     lambda addr, key: host.io.print() if key == 'all' else host.io.print(key))
 
         # Engine
         dispatcher.map("/generate",  lambda addr, length, unit: host.engine.generate(length, unit, True))

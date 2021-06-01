@@ -99,16 +99,18 @@ class Song():
         """
         mid = MidiFile(filename) # This checks if the file exists, before anything
 
-        self.reset()
+        self.host.io.log(f'ticks_per_beat: {mid.ticks_per_beat}')
         self.host.set('ticks_per_beat', mid.ticks_per_beat) # TODO: Set self
+        self.host.io.log(f'ticks_per_beat: {self.host.get("ticks_per_beat")}')
+        self.reset()
         # if self.host.get('batch_mode'): self.host.bridge.notify_task_complete()
 
         for i, file_track in enumerate(mid.tracks):
-          # index = i + 1 if len(mid.tracks) < 2 else i
+          # index = i + 1 if len(mid.tracks) < 2 else ifss
           ticks_so_far = 0
           offset = 0
           
-          track = MidiTrack()
+          track = MidiTrack(ticks_per_beat=mid.ticks_per_beat)
 
           for msg in file_track:
             if max_len is not None: 
@@ -137,7 +139,7 @@ class Song():
     def init_conductor(self):
         host = self.host
         if len(self.data.tracks): return
-        track = MidiTrack()
+        track = MidiTrack('Conductor')
         track.append(MetaMessage('track_name', name=host.get('track_name')))
         track.append(MetaMessage('set_tempo', tempo=host.get('midi_tempo')))
         track.append(MetaMessage('time_signature',
@@ -192,16 +194,21 @@ class Song():
         length = length * 4 * host.get('time_signature_numerator') / host.get('time_signature_denominator')
         if (unit == 'beats'): return length
 
-        length = length * host.state('ticks_per_beat')
+        length = length * host.get('ticks_per_beat')
         if (unit == 'ticks'): return length
         
         if (unit == 'seconds'):
           return mido.tick2second(length,
-            host.state('ticks_per_beat'),
-            host.state('midi_tempo'))
+            host.get('ticks_per_beat'),
+            host.get('midi_tempo'))
         return None
 
     # Time Conversion
+    def convert(self, length, _from, _to):
+      ticks = self.to_ticks(length, _from)
+      final_length = self.from_ticks(ticks, _to)
+      return final_length
+
     def from_ticks(self, length, unit):
         host = self.host
         if unit not in units:

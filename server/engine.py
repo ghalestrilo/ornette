@@ -7,8 +7,8 @@ import math
 import mido # FIXME: Remove this once #decode() / #getaction() have been updated
 
 
-
-
+# FIXME: This should come from the module
+from filters import midotrack2noteseq, noteseq2midotrack
 
 class Engine():
     def __init__(self, host):
@@ -17,8 +17,11 @@ class Engine():
       self.stopped = Event()
       self.should_wait = False
       self.curtick = 0
-      
       self.lock = Lock()
+
+      self.input_filters = [midotrack2noteseq]
+      self.output_filters = [noteseq2midotrack]
+
 
 
     # Controls
@@ -45,11 +48,11 @@ class Engine():
       self.host.set('is_running', True)
       for msg in self.host.song.play():
         with self.lock:
-            # if self.stopped: break
             
             # TODO: Event: play note
             self.host.song.perform(msg)
 
+        self.curtick += msg.time
         if (self.must_generate()):
             self.generate_in_background() # self.treshold_met
 
@@ -93,18 +96,52 @@ class Engine():
     #   - erase 'history'
     #   - refactor encoding/decoding
     #   - stretch: make filters?
-
-
-
-
-
-
-
-
-
+    # 5. Rename 'voices' to 'output_channels'
+    #   - Check if 'output_channels' > model.output_channels (.yml)
+    # 
 
 
     def generate(self, length=None, unit='beats', respond=False):
+      host = self.host
+      host.set('is_generating', True)
+
+      # Assert Song State
+      host.song.init_conductor()
+      print(host.song.data.tracks)
+
+      # Prepare Input Buffer
+      buflen = host.get('input_length')
+      buflen = host.song.to_ticks(length, 'beats')
+      buffer = host.song.buffer(buflen)
+      for _filter in self.input_filters: buffer = _filter(buffer, host)
+
+      # Generate sequence
+      voices = host.get('voices')
+      final_length = host.song.convert(length, unit, host.get('input_unit'))
+      if final_length is None:
+        host.io.log(f'error: trying to generate length {final_length} ({length} {unit} to {host.get("input_unit")})')
+        return
+
+      # Generate Output
+      output = host.model.generate(buffer, final_length, voices)
+      for _filter in self.output_filters: output = _filter(output, host)
+
+      # Save Output to track
+      for i, track in enumerate(output):
+          for msg in track:
+            host.song.append(msg, i)
+
+      host.set('is_generating', False)
+      return
+
+
+
+
+
+
+
+
+    def _generate(self, length=None, unit='beats', respond=False):
       host = self.host
       song = host.song
       # song = self.song
@@ -183,6 +220,18 @@ class Engine():
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+  
     def rewind(self, number):
       host = self.host
       playhead = host.state['playhead']
@@ -222,19 +271,17 @@ class Engine():
 
 
 
-
-    # TODO: Prop
     def is_generating(self):
       return self.host.get('is_generating') == True
 
     def is_debugging(self):
-      return self.state['debug_output'] == True
+      return self.host.get('debug_output') == True
 
 
 
 
 
-    # Engine (update to mido) | Put side by side with run (core functions)
+    # TODO: DEPRECATE  Engine (update to mido) | Put side by side with run (core functions)
     def perform(self,action):
       ''' Performs a musical action described by a tuple (name, value)
           Name can be:
@@ -286,6 +333,23 @@ class Engine():
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ### Deprecate (Destroy, Erase, Improve)
 
 
@@ -316,8 +380,6 @@ class Engine():
         return None
 
       return hist[voice][position]
-
-
 
 
     # Engine (depr)
