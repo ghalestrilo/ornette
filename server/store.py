@@ -39,7 +39,7 @@ state = {
     'midi_tempo': None,
     'time_signature_numerator': 4, 
     'time_signature_denominator': 4,
-    'ticks_per_beat': 961, # TODO: How do I determine that?
+    'ticks_per_beat': 960, # TODO: How do I determine that?
     'steps_per_quarter': 8,
 
     # Batch execution control

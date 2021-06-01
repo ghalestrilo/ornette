@@ -39,92 +39,74 @@ def midotrack2noteseq(tracks, host):
 
 # WIP
 def noteseq2midotrack(noteseqs, host):
-    def by_start_time(e): return e.start_time if e is not None else []
-    def by_end_time(e): return e.end_time if e is not None else []
+    # def by_start_time(e): return e.start_time if e is not None else []
+    # def by_end_time(e): return e.end_time if e is not None else []
 
 
     output = []
     print(noteseqs)
-    for i, seq in enumerate(noteseqs):
-      m = MidiFile()
-      # notes = seq.notes
-      notes = seq
-      
-      for (name, key, get_time) in [
-          ('note_off', by_end_time, lambda x: x.end_time),
-          ('note_on', by_start_time, lambda x: x.start_time)
-        ]:
-        m.add_track(name)
-        notes.sort(key=key)
+    for i, notes in enumerate(noteseqs):
+      # m = MidiFile()
+
+      # for (name, key, get_time) in [
+      #     ('note_off', by_end_time, lambda x: x.end_time),
+      #     ('note_on', by_start_time, lambda x: x.start_time)
+      #   ]:
+      #   m.add_track(name)
+      #   notes.sort(key=key)
+      #   last_time = 0
+
+      #   host.io.log(name)
+      #   for note in notes:
+      #     # ticks = host.song.convert(get_time(note), 'beats', 'ticks') # host.get('steps_per_quarter')
+      #     # last_time = last_time + int(round(ticks))
+      #     ticks = host.song.convert(get_time(note), 'beats', 'ticks') # host.get('steps_per_quarter')
+      #     # last_time = int(round(ticks))
+      #     host.io.log(f"last_time:     {ticks} (+{ticks - last_time})")
+          
+      #     # last_time = last_time + host.song.to_ticks(get_time(note) * host.get('steps_per_quarter'), 'beats')
+      #     m.tracks[-1].append(Message(name,
+      #       note=note.pitch,
+      #       channel=host.get('voices')[i],
+      #       velocity=note.velocity,
+      #       time=ticks - last_time
+      #       ))
+      #     last_time = ticks
+      # output.append([msg for msg in m if not msg.is_meta])
+    
+      output.append([])
+      for (name, get_time) in [
+            ('note_off', lambda x: x.end_time),
+            ('note_on', lambda x: x.start_time)
+          ]:
         last_time = 0
-        
-
         for note in notes:
-          # host.io.log(f"time:          {get_time(note)}")
-          host.io.log(f"last_time:     {last_time}")
-          # host.io.log(f"steps/quarter: {host.get('steps_per_quarter')}")
-          # host.io.log(f"ticks:         {host.song.to_ticks(get_time(note) * host.get('steps_per_quarter'), 'beats')}")
-          
+          ticks = host.song.convert(get_time(note), host.get('output_unit'), 'ticks') # host.get('steps_per_quarter')
+          ticks = int(round(ticks))
+          host.io.log(f"last_time:     {ticks} (+{ticks - last_time})")
+          last_time = ticks
 
-          
-          last_time = int(round(last_time + host.song.convert(get_time(note), 'seconds', 'ticks')))
-          # last_time = last_time + host.song.to_ticks(get_time(note) * host.get('steps_per_quarter'), 'beats')
-          m.tracks[-1].append(Message(name,
+          output[-1].append(Message(name,
             note=note.pitch,
             channel=host.get('voices')[i],
             velocity=note.velocity,
-            # time=last_time
-            time=last_time
+            time=ticks
             ))
 
-      output.append([msg for msg in m])
+    # Sort by start_time
+    output[-1].sort(key = lambda msg: msg.time)
+
+    print(output)
+
+    # Adjust note time
+    last_time = 0
+    for msg in output[-1]:
+      dur = msg.time - last_time
+      msg.time = dur
+      last_time += dur
+
+
+    host.io.log('output:')
+    host.io.log(output)
     return output
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def decode(token):
-    ''' Must return a mido message array (type (note_on), note, velocity, duration)'''
-
-    start = max(0, token.start_time - self.host.get('last_end_time'))
-    end = max(0, token.end_time - token.start_time)
-    decoded = [
-        ('note_on', token.pitch, token.velocity, start),
-        ('note_off', token.pitch, token.velocity, end)
-    ]
-
-    self.host.set('last_end_time', max(0, token.end_time))
-    return decoded
-
-
-def encode(message):
-    ''' Receives a mido message, must return a model-compatible token '''
-    last_end_time = self.host.get('last_end_time')
-    next_start_time = last_end_time + \
-        self.host.from_ticks(message.time, 'beats')
-
-    note = NoteSequence.Note(
-        instrument=0,
-        program=0,
-        start_time=last_end_time,
-        end_time=next_start_time,
-        velocity=message.velocity or 1,
-        pitch=message.note,
-    )
-
-    self.host.set('last_end_time', next_start_time)
-    return note
