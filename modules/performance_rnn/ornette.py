@@ -1,12 +1,9 @@
 import math
 import magenta
-from magenta import music as mm
 from note_seq.protobuf import generator_pb2
-from note_seq import NoteSequence
 
 from magenta.models.performance_rnn.performance_model import default_configs, PerformanceRnnModel
 from magenta.models.performance_rnn.performance_sequence_generator import PerformanceRnnSequenceGenerator
-from magenta.models.shared import sequence_generator
 from magenta.models.shared import sequence_generator_bundle
 
 import os
@@ -40,7 +37,7 @@ class OrnetteModule():
     def generate(self, tracks=None, length_seconds=4, voices=[0]):
         output = []
         for voice in voices:
-            last_end_time = max([0, *(n.notes[0].end_time for n in tracks if any(n.notes))])
+            last_end_time = max([max([0, *(note.end_time for note in track.notes if any(track.notes))]) for track in tracks])
 
             generator_options = generator_pb2.GeneratorOptions()
             generator_options.generate_sections.add(

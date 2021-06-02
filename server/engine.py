@@ -22,8 +22,6 @@ class Engine():
       self.input_filters = [midotrack2noteseq]
       self.output_filters = [noteseq2midotrack]
 
-
-
     # Controls
     def start(self):
         Thread(target=self.playback).start()
@@ -45,6 +43,11 @@ class Engine():
       if self.host.get('is_running') == True: return
       
       self.host.set('is_running', True)
+
+      if (self.must_generate()): self.generate()
+      else: self.host.io.log('it\'s cool')
+
+      # TODO: Update this buffer while it runs (make an while ! self.stopped loop?)
       for msg in self.host.song.play():
         with self.lock:
             
@@ -57,41 +60,11 @@ class Engine():
 
       self.host.set('is_running', False)
 
-
-    def must_generate(self):
-      host = self.host
-      if self.is_generating(): return False
-      elif host.song.empty(): return True
-
-      # TODO: wtf is this
-      if (host.get('batch_mode') and host.task_ended()): return False
-
-      remaining_ticks = host.song.to_ticks(host.song.data.length, 'seconds') - self.curtick
-
-      # TODO: Test
-      return remaining_ticks / host.get('buffer_length') < host.get('trigger_generate')
-
-
-
-
-
-    # TODO:
-    # 1. Fix start/run (why is it not printing?)
-    # 2. Make OSC great again! (send it to sclang)
-    # 3. Test must_generate
-    # 4. Refactor Generate:
-    #   - call get_buffer
-    #   - erase 'history'
-    #   - refactor encoding/decoding
-    #   - stretch: make filters?
-    # 5. Rename 'voices' to 'output_channels'
-    #   - Check if 'output_channels' > model.output_channels (.yml)
-    # 
-
-
     def generate(self, length=None, unit='beats', respond=False):
       host = self.host
       host.set('is_generating', True)
+
+      if length is None: length = self.host.get('output_length')
 
       # Assert Song State
       host.song.init_conductor()
@@ -124,6 +97,41 @@ class Engine():
             host.song.append(msg, track_index)
 
       host.set('is_generating', False)
+
+
+    def must_generate(self):
+      host = self.host
+      with self.lock:
+        if self.is_generating(): return False
+        elif host.song.empty(): return True
+
+        # TODO: wtf is this
+        # if (host.get('batch_mode') and host.task_ended()): return False
+
+        print(' ')
+        host.io.log(f'empty: {host.song.empty()}')
+        song_length = host.song.to_ticks(host.song.data.length, 'seconds')
+        host.io.log(f'song_length: {song_length} ticks')
+
+        curtick = self.curtick
+        curtick = host.song.to_ticks(curtick, 'seconds')
+        host.io.log(f'self.curtick: {curtick}')
+
+        remaining_ticks = song_length - curtick
+        host.io.log(f'remaining_ticks: {remaining_ticks}')
+
+        buffer_length = host.song.to_ticks(host.get('input_length'), host.get('input_unit'))
+        buffer_length = buffer_length
+        host.io.log(f'buffer_length: {buffer_length}')
+
+        ratio = remaining_ticks / buffer_length
+        host.io.log(f'ratio: {ratio}')
+
+        must = ratio < host.get('trigger_generate')
+        host.io.log(f'must: {must}')
+
+      # TODO: Test
+      return must
 
 
 
@@ -198,234 +206,20 @@ class Engine():
     def is_debugging(self):
       return self.host.get('debug_output') == True
 
-
-
-
-
-
     # Engine
     def is_running(self):
       return self.host.get('is_running') == True
+
+
+
+
+
+
+
+
+
 
     # Song
     def push_event(self, event, voice=1):
         self.host.io.log("[event] ~ {0}".format(event))
         self.state['history'][voice].append(event)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # def _generate(self, length=None, unit='beats', respond=False):
-    #   host = self.host
-    #   song = host.song
-    #   # song = self.song
-    #   if length is None:
-    #     length = host.get('missing_beats')
-
-    #   host.set('is_generating',True)
-    #   history = host.get('history')
-    #   hist_ = history[0]
-    #   threshold = host.get('trigger_generate')
-    #   playhead = host.get('playhead')
-    #   voices = host.get('voices')
-
-    #   max_len = host.get('buffer_length') 
-
-    #   # if not any(state['output_data'].tracks):
-    #       # data.init_output_data(state)
-
-    #   if (self.is_debugging()):
-    #       host.io.log(f'generating tokens ({playhead}/{len(hist_)} > {threshold})')
-    #       host.io.log(f'requested length: {length} {unit} ({song.to_ticks(length, unit)} ticks)')
-
-    #   # Generate sequence
-    #   ticks = song.to_ticks(length, unit)
-    #   final_length = song.from_ticks(ticks, host.get('input_unit'))
-    #   host.io.log(f'request: host.model.generate(history, {final_length})')
-
-    #   if final_length is None:
-    #     host.io.log(f'error: trying to generate length {final_length}')
-    #     return
-
-    #   output = host.model.generate(history, final_length, voices)
-    #   # host.io.log(f'{len(seq)} tokens were generated')
-
-    #   host.io.log(output)
-    #   host.io.log(f'len(output): {len(output)}')
-    #   host.io.log(f'len(hist): {len(history)}')
-
-    #   for i, v in enumerate(voices):
-    #     output_ = output[i]
-    #     hist_ = history[v]
-        
-    #     generated_length = len(output_) - len(hist_)
-    #     host.state['history'][v] = output_[-max_len:]
-    #     for event in output_[-generated_length:]:
-    #       for message in self.decode(event, v):
-    #           # song.add_message(host.state, message, v)
-    #           host.song.append(message, v)
-    #           # state['output_data'].tracks[v].append(message)
-
-    #   # Update Playhead
-    #   self.rewind(max(0, generated_length))
-
-    #   host.set('is_generating',False)
-    #   self.notify_wait(False)
-
-    #   if (respond):
-    #     # host.dump_history()
-    #     host.bridge.notify_task_complete()
-
-
-
-
-
-
-
-    # # TODO: DEPRECATE  Engine (update to mido) | Put side by side with run (core functions)
-    # def perform(self,action):
-    #   ''' Performs a musical action described by a tuple (name, value)
-    #       Name can be:
-          
-    #       'wait': waits value miliseconds until next action is performed
-    #       'play': sends an osc message to play the desired note (value)
-    #   '''
-    #   name, value = action
-    #   host = self.host
-    #   if (self.is_debugging()):
-    #     host.io.log(f'({host.get("playhead")}/{len(host.get("history")[0])}): {name} {value}')
-
-    #   if (host.set('batch_mode')):
-    #     self.state['until_next_event'] = 0
-    #     return
-
-    #   # Deprecate this
-    #   if (name == 'play'): host.play(int(value))
-      
-    #   # FIXME: Calculate seconds from incoming value unit (melody_rnn: beats)
-    #   if (name == 'wait'):
-    #       # ticks = self.to_ticks(value, state['output_unit'])
-    #       # secs = self.from_ticks(ticks, 'seconds')
-    #       self.state['until_next_event'] = value
-
-
-
-
-
-### Deprecate (Destroy, Erase, Improve)
-
-
-    # Engine (depr)
-
-    # # TODO: Deprecate
-    # def get_next_token(self,voice):
-    #   return self.peek(voice,0)
-
-    # # Engine (depr)
-    # def peek(self,voice=1,offset=1):
-    #   """ Check next event in history """
-    #   host = self.host
-    #   hist = host.get('history')
-    #   playhead = host.get('playhead')
-
-    #   if (host.song.has_history() == False): return None
-
-    #   no_more_tokens = playhead >= len(hist[voice])
-    #   position = playhead + offset
-
-    #   if (no_more_tokens):
-    #       self.notify_wait()
-    #       return None
-
-    #   if (position < 0):
-    #     host.io.log(f'Warning: trying to read a negative position in history ({playhead} + {offset} = {position})')
-    #     return None
-
-    #   return hist[voice][position]
-
-
-    # # Engine (depr)
-    # def decode(self, event, voice):
-    #   return [mido.Message(name,
-    #     note=note,
-    #     channel=voice,
-    #     velocity=velocity,
-    #     time=int(round(mido.second2tick(time, self.host.get('ticks_per_beat'), self.host.get('midi_tempo')))))
-    #     for (name, note, velocity, time)
-    #     in self.host.model.decode(event)]
-
-    # # Engine (depr)
-    # def get_action(self,message,voice=0):
-    #     ''' Get Action
-    #         Decode a midi message into a sequence of actions
-    #     '''
-    #     name, note, velocity, time = message
-    #     msg = mido.Message(name,
-    #       note=note,
-    #       channel=voice,
-    #       velocity=velocity,
-    #       time=self.host.song.to_ticks(time * self.host.get('steps_per_quarter'),'beat'))
-          
-    #     self.host.song.append(msg, voice)
-    #     return [('wait', time), ('play', note)] if name != 'note_off' else [('wait', time)]
-
-
-    # # Engine (depr)
-    # def process_next_token(self, voice=1):
-    #   ''' Reads the next token from the history
-    #       Decodes the token onto a mido messagee
-    #       Saves the message to the output
-    #       Decodes each message into actions
-    #       Performs the required actions
-    #       Increments playhead
-    #   '''
-    #   e = self.get_next_token(voice)
-
-    #   if (e == None):
-    #     if (self.is_debugging()): self.host.io.log(f'No event / voice {voice} is empty')
-    #     if (self.host.get('batch_mode') and self.host.task_ended()):
-    #         self.host.set('is_running', False)
-    #         self.host.save_output(self.host.get('output_filename'))
-    #     return
-
-    #   for message in self.host.model.decode(e):
-    #     for action in self.get_action(message,voice):
-    #       self.perform(action)
-
-    #   self.state['playhead'] = self.state['playhead'] + 1
-    # # TODO: Deprecate

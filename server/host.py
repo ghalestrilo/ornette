@@ -25,7 +25,6 @@ class Host:
 
     def start(self):
       try:
-        self.engine.start()
         if (self.state['batch_mode']): self.bridge.notify_task_complete()
         self.bridge.start()
       except KeyboardInterrupt:
