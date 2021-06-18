@@ -16,7 +16,7 @@ class Engine():
       self.state = host.state
       self.stopped = Event()
       self.should_wait = False
-      self.curtick = 0
+      self.curmsg = 0
       self.lock = Lock()
 
       self.input_filters = [midotrack2noteseq]
@@ -32,7 +32,7 @@ class Engine():
     def reset(self):
       # self.stopped = Event()
       self.notify_wait(False)
-      self.curtick = 0
+      self.curmsg = 0
 
     def stop(self):
       self.pause()
@@ -45,18 +45,22 @@ class Engine():
       self.host.set('is_running', True)
 
       if (self.must_generate()): self.generate()
-      else: self.host.io.log('it\'s cool')
 
-      # TODO: Update this buffer while it runs (make an while ! self.stopped loop?)
-      for msg in self.host.song.play():
-        with self.lock:
-            
-            # TODO: Event: play note
-            self.host.song.perform(msg)
-
-        self.curtick += msg.time
+      time = 0
+      while not self.stopped.wait(time):
+        time = 0
         if (self.must_generate()):
-            self.generate_in_background()
+          print('generating')
+          self.generate_in_background()
+
+        with self.lock:
+          msg = self.host.song.getmsg(self.curmsg)
+          self.curmsg = self.curmsg + 1
+
+          if msg is not None:
+            print(msg)
+            self.host.song.perform(msg)
+            time = msg.time
 
       self.host.set('is_running', False)
 
@@ -105,32 +109,11 @@ class Engine():
         if self.is_generating(): return False
         elif host.song.empty(): return True
 
-        # TODO: wtf is this
-        # if (host.get('batch_mode') and host.task_ended()): return False
-
-        print(' ')
-        host.io.log(f'empty: {host.song.empty()}')
-        song_length = host.song.to_ticks(host.song.data.length, 'seconds')
-        host.io.log(f'song_length: {song_length} ticks')
-
-        curtick = self.curtick
-        curtick = host.song.to_ticks(curtick, 'seconds')
-        host.io.log(f'self.curtick: {curtick}')
-
-        remaining_ticks = song_length - curtick
-        host.io.log(f'remaining_ticks: {remaining_ticks}')
-
-        buffer_length = host.song.to_ticks(host.get('input_length'), host.get('input_unit'))
-        buffer_length = buffer_length
-        host.io.log(f'buffer_length: {buffer_length}')
-
-        ratio = remaining_ticks / buffer_length
-        host.io.log(f'ratio: {ratio}')
-
+        buflen = 32
+        ratio = len(self.host.song.messages) - self.curmsg
+        ratio = 1 - (ratio / buflen)
         must = ratio < host.get('trigger_generate')
-        host.io.log(f'must: {must}')
 
-      # TODO: Test
       return must
 
 

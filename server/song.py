@@ -40,11 +40,15 @@ class Song():
         self.state = host.state
         self.data = data
         self.channels = []
+        self.messages = []
         self.reset()
 
-
+    # TODO: Deprecate
     def play(self):
       return self.data.play()
+
+    def getmsg(self,index):
+      return self.messages[index] if index < len(self.messages) else None
 
     def reset(self):
         if self.data is not None:
@@ -92,6 +96,7 @@ class Song():
           self.data.add_track(f'Track {len(self.data.tracks)}')
 
         self.data.tracks[track].append(message)
+        self.messages = [msg for msg in self.data]
 
     def load(self, filename, max_len=None, max_len_units=None):
         """ Load midi from a file onto the host's history
