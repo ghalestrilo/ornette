@@ -47,7 +47,8 @@ class Engine():
       if (self.must_generate()): self.generate()
 
       time = 0
-      while not self.stopped.wait(time):
+      output_unit = self.host.get('output_unit')
+      while not self.stopped.wait(self.host.song.convert(time, output_unit, 'seconds')):
         time = 0
         if (self.must_generate()):
           print('generating')

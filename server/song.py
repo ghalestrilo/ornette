@@ -96,6 +96,8 @@ class Song():
           self.data.add_track(f'Track {len(self.data.tracks)}')
 
         self.data.tracks[track].append(message)
+
+        # TODO: Switch mode (append/extend)
         self.messages = [msg for msg in self.data]
 
     def load(self, filename, max_len=None, max_len_units=None):
@@ -278,20 +280,10 @@ class Song():
 
     # TODO: When are these used? Are they necessary?
 
-    # Song (rename: get_channel)
+    # Move "Channels" to bridge/backend (rename: get_channel)
     def get_voice(self, voice_index=None):
       if voice_index is None:
         voice_index = self.host.get('voices')[0]
       # print(f'voice_index: {voice_index}')
       return self.host.get('voices')[voice_index]
 
-    # Song
-    # TODO: get_voice(idx): return self.get('history')[voices[idx]] if idx < len(voices) && voices[idx] < len(self.get('history')) else None
-    def has_history(self, voice_id=None):
-      if voice_id is None:
-        voice_id = self.host.get('voices')[0]
-      hist = self.get_voice(voice_id)
-      # return np.any(hist) and np.any(hist[0])
-      # print(f'hist({self.host.get("voices")[0]}): {True if hist and any(hist) else False}')
-      # print(hist)
-      return True if hist and any(hist) else False

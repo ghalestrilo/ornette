@@ -43,68 +43,28 @@ class OrnetteModule():
       self.server_state = host.state
       self.host = host
       self.host.set('generation_unit', 'seconds')
+      self.host.set('output_unit', 'beats')
+      self.host.set('input_unit', 'beats')
       self.last_end_time = 0
       self.host.set('voices', [1])
       self.host.set('steps_per_quarter', 4)
 
-  def generate(self, history=None, length_seconds=4, voices=[0]):
-    last_end_time = 0
+  def generate(self, tracks=None, length_seconds=4, voices=[0]):
+      output = []
 
-    output = []
-    for voice in voices:
-      # Get first voice
-      primer_sequence = [] if history is None else history[voice]
-      
-      # Get last end time
-      if (primer_sequence != None and any(primer_sequence)):
-          last_end_time = max(n.end_time for n in primer_sequence)
+      last_end_time = max([max([0, *(note.end_time for note in track.notes if any(track.notes))]) for track in tracks])
 
-      noteseq = NoteSequence(
-          notes=primer_sequence,
-          quantization_info={ 'steps_per_quarter': self.server_state['steps_per_quarter'] },
-          tempos=[ { 'time': 0, 'qpm': self.server_state['bpm'] } ],
-          total_quantized_steps=11,
-        )
+      for voice in voices:
+        # Get last end time
 
-      self.generator_options = generator_pb2.GeneratorOptions()
-      self.generator_options.args['temperature'].float_value = self.host.state['temperature']
-      self.generator_options.generate_sections.add(
-          start_time= last_end_time + 0,
-          end_time= last_end_time + length_seconds)
+        generator_options = generator_pb2.GeneratorOptions()
+        generator_options.generate_sections.add(
+            start_time=last_end_time,
+            end_time=last_end_time + length_seconds)
 
-      notes = self.model.generate(noteseq, self.generator_options).notes
-      output.append(notes)
-    return output
+        notes = self.model.generate(tracks[voice], generator_options).notes
+        output.append(notes)
+      return output
 
-  def decode(self, token):
-    ''' Must return a mido message (type (note_on), note, velocity, duration)'''
-    last_end_time = max(0, token.start_time - self.host.get('last_end_time'))
-    decoded = [
-      ('note_on', token.pitch, token.velocity, last_end_time),
-      ('note_off', token.pitch, token.velocity, token.end_time - token.start_time)
-    ]
-    self.host.set('last_end_time', token.end_time)
-    return decoded
-
-  def encode(self, message):
-    ''' Receives a mido message, must return a model-compatible token '''
-
-    last_end_time = self.host.get('last_end_time')
-
-    # next_start_time = self.last_end_time + message.time
-    next_start_time = last_end_time + self.host.from_ticks(message.time, 'beats')
-
-    note = NoteSequence.Note(
-      instrument=0,
-      program=0,
-      start_time=last_end_time,
-      end_time=next_start_time,
-      velocity=message.velocity,
-      pitch=message.note,
-    )
-    last_end_time = next_start_time
-    return note
-  
   def close(self):
-    pass
-  
+      pass

@@ -26,7 +26,7 @@ class OrnetteModule():
 
     def generate(self, tracks=None, length_seconds=4, voices=[0]):
         output = []
-        # last_end_time = max([0, *( )])
+
         last_end_time = max([max([0, *(note.end_time for note in track.notes if any(track.notes))]) for track in tracks])
 
         for voice in voices:
