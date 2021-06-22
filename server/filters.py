@@ -12,7 +12,7 @@ def midotrack2noteseq(tracks, host):
       last_end_time = 0
       for message in track:
         # next_start_time = last_end_time + host.song.from_ticks(message.time, 'beats')
-        next_start_time = last_end_time + host.song.convert(message.time, host.get('input_unit'), 'ticks')
+        next_start_time = last_end_time + host.song.from_ticks(message.time, host.get('input_unit'))
         if not message.is_meta:
           seqs[-1].append(NoteSequence.Note(
               instrument=0,
@@ -44,7 +44,7 @@ def noteseq2midotrack(noteseqs, host):
             ('note_on', lambda x: x.start_time)
           ]:
         for note in notes:
-          ticks = host.song.convert(get_time(note), host.get('output_unit'), 'ticks')
+          ticks = host.song.to_ticks(get_time(note), host.get('output_unit'))
           ticks = int(round(ticks))
 
           output[-1].append(Message(name,

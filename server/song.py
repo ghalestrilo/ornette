@@ -1,5 +1,5 @@
 import os
-# import gc # TODO: clear 
+import gc # TODO: clear 
 import sys
 import mido
 from os.path import normpath, join
@@ -56,13 +56,13 @@ class Song():
           self.data.tracks.clear()
 
         self.data = MidiFile(ticks_per_beat=self.host.get('ticks_per_beat')) # TODO: internal state
-        # gc.collect()
+        gc.collect()
 
         # TODO: Internal State
         host = self.host
         host.set('playhead', 0)
         host.set('last_end_time', 0) # Channels
-        if host.get('midi_tempo') is None: host.set('midi_tempo', mido.bpm2tempo(host.get('bpm'))) 
+        if self.get_tempo() is None: host.set('midi_tempo', mido.bpm2tempo(host.get('bpm'))) 
 
     def empty(self):
         """ Returns true if the song has no musical data """
@@ -148,7 +148,7 @@ class Song():
         if len(self.data.tracks): return
         track = MidiTrack('Conductor')
         track.append(MetaMessage('track_name', name=host.get('track_name')))
-        track.append(MetaMessage('set_tempo', tempo=host.get('midi_tempo')))
+        track.append(MetaMessage('set_tempo', tempo=self.get_tempo()))
         track.append(MetaMessage('time_signature',
               numerator=host.get('time_signature_numerator'),
             denominator=host.get('time_signature_denominator')))
@@ -196,6 +196,15 @@ class Song():
         if (unit == 'measures'): return length
         return self.get_beat_length(length, unit)
 
+
+
+
+
+
+
+
+
+    # Time Conversion
     def get_beat_length(self, length, unit):
         host = self.host
         length = length * 4 * host.get('time_signature_numerator') / host.get('time_signature_denominator')
@@ -207,10 +216,9 @@ class Song():
         if (unit == 'seconds'):
           return mido.tick2second(length,
             host.get('ticks_per_beat'),
-            host.get('midi_tempo'))
+            self.get_tempo())
         return None
 
-    # Time Conversion
     def convert(self, length, _from, _to):
       ticks = self.to_ticks(length, _from)
       final_length = self.from_ticks(ticks, _to)
@@ -226,7 +234,7 @@ class Song():
         if (unit == 'seconds'):
           return mido.tick2second(length,
             host.get('ticks_per_beat'),
-            host.get('midi_tempo'))
+            self.get_tempo())
 
         length = length / host.get('ticks_per_beat')
         if (unit == 'beats'):
@@ -238,6 +246,9 @@ class Song():
 
         return None
 
+    def get_tempo(self):
+      return int(round(60000000 / self.host.get('bpm')))
+
     def to_ticks(self, length, unit):
         host = self.host
         if unit not in units:
@@ -245,7 +256,7 @@ class Song():
         if (length is None): return None
         if (unit == 'seconds'): return mido.second2tick(length,
             host.get('ticks_per_beat'),
-            host.get('midi_tempo'))
+            self.get_tempo())
 
         if (unit == 'ticks'): return length
 
@@ -268,7 +279,7 @@ class Song():
       host.io.log('Time info:')
       host.io.log(f'   {measures} measure = {beats} beats = {ticks} ticks = {seconds} seconds')
       host.io.log(f'   {gtf(1, "measures")} == {gtf(beats, "beats")} == {gtf(ticks, "ticks")} == {gtf(seconds, "seconds")}')
-      host.io.log(f'   tempo: {host.get("midi_tempo")} | bpm: {host.get("bpm")} | tpb: {host.get("ticks_per_beat")}')
+      host.io.log(f'   tempo: {self.get_tempo()} | bpm: {host.get("bpm")} | tpb: {host.get("ticks_per_beat")}')
       host.io.log(f'   missing beats: {host.get("missing_beats")} | unit: {host.get("input_unit")}')
 
 

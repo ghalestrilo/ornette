@@ -48,6 +48,7 @@ class Engine():
 
       time = 0
       output_unit = self.host.get('output_unit')
+      # while not self.stopped.wait(self.host.song.from_ticks(time, 'seconds')):
       while not self.stopped.wait(self.host.song.convert(time, output_unit, 'seconds')):
         time = 0
         if (self.must_generate()):
@@ -63,17 +64,19 @@ class Engine():
             self.host.song.perform(msg)
             time = msg.time
 
+      print('done')
       self.host.set('is_running', False)
 
     def generate(self, length=None, unit='beats', respond=False):
       host = self.host
       host.set('is_generating', True)
+      print("starting generation")
 
       if length is None: length = self.host.get('output_length')
 
       # Assert Song State
       host.song.init_conductor()
-      print(host.song.data.tracks)
+      # print(host.song.data.tracks)
 
       # Prepare Input Buffer
       buflen = host.get('input_length')
@@ -96,6 +99,7 @@ class Engine():
       if len(output) != len(tracks):
           host.io.log(f'Expected model to generate {len(tracks)} tracks, but got {len(output)}')
 
+      #print(output)
       # Save Output to track
       for track_messages, track_index in zip(output, tracks):
           for msg in track_messages:
