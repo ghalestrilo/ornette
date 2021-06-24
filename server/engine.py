@@ -19,6 +19,9 @@ class Engine():
 
       self.should_wait = False
       self.curmsg = 0
+      
+      # TODO: This lock should probably go on Song
+      # Since it's mostly used to avoid song state race conditions
       self.lock = Lock()
 
       self.input_filters = [midotrack2noteseq]
