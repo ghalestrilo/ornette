@@ -3,22 +3,24 @@ from engine import Engine
 from song import Song
 from logger import Logger
 from store import Store
+from filters import Filters
 import mido
 import data
 from os import environ
 
 class Host:
     def __init__(self,args):
+      self.state = {}
       self.store = Store(self, args)
-      self.state = self.store.get_state()
       self.io = Logger(self)
       self.data = data
       self.song = Song(self)
       self.bridge = Bridge(self,args)
       self.engine = Engine(self)
+      self.filters = Filters(self)
+
       self.reset()
-      # self.set('voices', [1])
-      self.model = data.load_model(self,args.checkpoint)
+      self.model = data.load_model(self, args.checkpoint)
 
       # Notify startup for batch runner
       pass
@@ -42,19 +44,19 @@ class Host:
         self.song.reset()
         self.engine.reset()
 
-
     def set(self,field,value,silent=False):
       self.store.set(field,value,silent)
     
     def get(self,field=None):
       return self.store.get(field)
 
+    def add_filter(self, direction, filtername=None):
+      self.filters.append(direction, filtername)
 
     # TODO: Channel
     def play(self,pitch,instr=None):
       if (instr == None): self.bridge.play(pitch)
       else: self.bridge.play(pitch, instr)
-
 
 
     # Batch (depr)

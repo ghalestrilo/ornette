@@ -23,6 +23,10 @@ class OrnetteModule():
         self.host.set('last_end_time', 0)
         self.host.set('voices', [1])
 
+        # TODO: Move to yaml
+        self.host.add_filter('input', 'midotrack2noteseq')
+        self.host.add_filter('output', 'noteseq2midotrack')
+
         self.model = PerformanceRnnSequenceGenerator(
             model=PerformanceRnnModel(config),
             details=config.details,

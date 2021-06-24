@@ -53,6 +53,7 @@ state = {
 class Store():
     def __init__(self, host, args):
       self.host = host
+      self.host.state = state
       self.state = state
       self.state['module'] = args.module
       self.state['playback'] = args.playback

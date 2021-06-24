@@ -24,9 +24,6 @@ class Engine():
       # Since it's mostly used to avoid song state race conditions
       self.lock = Lock()
 
-      self.input_filters = [midotrack2noteseq]
-      self.output_filters = [noteseq2midotrack]
-
     # Controls
     def start(self):
         Thread(target=self.playback).start()
@@ -97,7 +94,8 @@ class Engine():
       buflen = host.song.to_ticks(length, 'beats')
       with self.lock:
         buffer = host.song.buffer(buflen)
-      for _filter in self.input_filters: buffer = _filter(buffer, host)
+      # for _filter in self.input_filters: buffer = _filter(buffer, host)
+      for _filter in host.filters.input: buffer = _filter(buffer, host)
 
       # Generate sequence
       tracks = host.get('voices')
@@ -109,8 +107,9 @@ class Engine():
       # Generate Output
       output = host.model.generate(buffer, final_length, tracks)
 
-      with self.lock:
-        for _filter in self.output_filters: output = _filter(output, host)
+      # with self.lock:
+      #   for _filter in self.output_filters: output = _filter(output, host)
+      for _filter in host.filters.output: output = _filter(output, host)
 
       # Warn (TODO: validation methods)
       if len(output) != len(tracks):

@@ -54,6 +54,8 @@ def load_model(host, checkpoint=None):
     from ornette import OrnetteModule
     return OrnetteModule(host, checkpoint=checkpoint)
 
+    # If YAML has filter keys, load them
+
 
 
 

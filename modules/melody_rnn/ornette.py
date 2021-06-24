@@ -19,10 +19,15 @@ class OrnetteModule():
         self.server_state = host.state
         self.host = host
         self.host.set('steps_per_quarter', config.steps_per_quarter)
-        self.host.set('generation_unit', 'seconds')
+        self.host.set('input_unit', 'bars')
+        self.host.set('output_unit', 'bars')
         self.last_end_time = 0
         self.host.set('last_end_time', 0)
         self.host.set('voices', [1])
+
+        # TODO: Move to yaml
+        self.host.add_filter('input', 'midotrack2noteseq')
+        self.host.add_filter('output', 'noteseq2midotrack')
 
     def generate(self, tracks=None, length_seconds=4, voices=[0]):
         output = []
