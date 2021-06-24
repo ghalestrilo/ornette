@@ -15,6 +15,8 @@ class Engine():
       self.host = host
       self.state = host.state
       self.stopped = Event()
+      self.fresh_buffer = Event()
+
       self.should_wait = False
       self.curmsg = 0
       self.lock = Lock()
@@ -51,26 +53,35 @@ class Engine():
       # while not self.stopped.wait(self.host.song.from_ticks(time, 'seconds')):
       while not self.stopped.wait(self.host.song.convert(time, output_unit, 'seconds')):
         time = 0
-        if (self.must_generate()):
-          print('generating')
-          self.generate_in_background()
+        _last_curmsg = self.curmsg
+
+        while not self.fresh_buffer.wait(0.1):
+          pass
+        
+        if self.must_generate(): self.generate_in_background()
 
         with self.lock:
           msg = self.host.song.getmsg(self.curmsg)
+
+        if msg is not None:
+          
+          # TODO: Remove
+          self.host.io.log(f'({self.curmsg}/{len(self.host.song.messages)}) {msg}')
+
           self.curmsg = self.curmsg + 1
+          self.host.song.perform(msg)
+          time = msg.time
+        
+        # Notify 
+        if _last_curmsg == self.curmsg:
+          self.fresh_buffer = Event()
 
-          if msg is not None:
-            print(msg)
-            self.host.song.perform(msg)
-            time = msg.time
-
-      print('done')
       self.host.set('is_running', False)
 
     def generate(self, length=None, unit='beats', respond=False):
       host = self.host
-      host.set('is_generating', True)
-      print("starting generation")
+
+      with self.lock: host.set('is_generating', True)
 
       if length is None: length = self.host.get('output_length')
 
@@ -93,19 +104,23 @@ class Engine():
 
       # Generate Output
       output = host.model.generate(buffer, final_length, tracks)
-      for _filter in self.output_filters: output = _filter(output, host)
+
+      with self.lock:
+        for _filter in self.output_filters: output = _filter(output, host)
 
       # Warn (TODO: validation methods)
       if len(output) != len(tracks):
           host.io.log(f'Expected model to generate {len(tracks)} tracks, but got {len(output)}')
 
-      #print(output)
       # Save Output to track
-      for track_messages, track_index in zip(output, tracks):
-          for msg in track_messages:
-            host.song.append(msg, track_index)
+      with self.lock:
+        for track_messages, track_index in zip(output, tracks):
+            for msg in track_messages:
+              if not isinstance(msg, str) and not msg.is_meta:
+                host.song.append(msg, track_index)
 
-      host.set('is_generating', False)
+      self.fresh_buffer.set()
+      with self.lock: host.set('is_generating', False)
 
 
     def must_generate(self):
@@ -113,12 +128,13 @@ class Engine():
       with self.lock:
         if self.is_generating(): return False
         elif host.song.empty(): return True
+        msgcount = len(self.host.song.messages)
 
-        buflen = 32
-        ratio = len(self.host.song.messages) - self.curmsg
-        ratio = 1 - (ratio / buflen)
-        must = ratio < host.get('trigger_generate')
-
+      buflen = 32
+      ratio = msgcount - self.curmsg
+      ratio = 1 - (ratio / buflen)
+      # self.host.io.log(f'must = {ratio} < {host.get("trigger_generate")}')
+      must = ratio > host.get('trigger_generate')
       return must
 
 
@@ -165,7 +181,6 @@ class Engine():
 
     def generate_in_background(self):
       Thread(target=self.generate).start()
-      # self.should_wait = False
 
     def notify_wait(self,should=True):
       self.should_wait = should

@@ -63,6 +63,5 @@ def noteseq2midotrack(noteseqs, host):
       dur = msg.time - last_time
       msg.time = dur
       last_time += dur
-
     return output
 

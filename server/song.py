@@ -167,6 +167,7 @@ class Song():
           out.append([])
 
           for msg in reversed(list(track)):
+            # print(f'msg: {msg}')
             if curticks > ticks: break
             curticks += msg.time
             out[-1].append(msg)
@@ -183,7 +184,7 @@ class Song():
       return self.channels[idx]
 
 
-    def perform(self, message):
+    def perform(self, message, idx=0):
       if message.type == 'note_on':
         chan = self.host.song.get_channel(message.channel)
         if chan: chan.play(message.note)
