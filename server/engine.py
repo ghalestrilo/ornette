@@ -92,7 +92,8 @@ class Engine():
       # Prepare Input Buffer
       buflen = host.get('input_length')
       buflen = host.song.to_ticks(length, 'beats')
-      buffer = host.song.buffer(buflen)
+      with self.lock:
+        buffer = host.song.buffer(buflen)
       for _filter in self.input_filters: buffer = _filter(buffer, host)
 
       # Generate sequence
@@ -116,7 +117,7 @@ class Engine():
       with self.lock:
         for track_messages, track_index in zip(output, tracks):
             for msg in track_messages:
-              if not isinstance(msg, str) and not msg.is_meta:
+              # if not isinstance(msg, str) and not msg.is_meta:
                 host.song.append(msg, track_index)
 
       self.fresh_buffer.set()
