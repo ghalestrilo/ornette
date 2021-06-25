@@ -3,6 +3,9 @@ from argparse import ArgumentParser
 from subprocess import PIPE
 import os
 
+from bullet import Bullet
+from bullet import colors
+
 
 server_port="5005"
 modelname="$1"
@@ -21,6 +24,8 @@ IMAGE_BASE="ornette/base"
 IMAGE_CLIENT="ornette/client"
 # IMAGE_BATCH_RUNNER="ornette/batch-runner"
 # DOCKER_START="docker run -it"
+
+configdir = os.path.join(os.path.expanduser('~'), '.ornette')
 
 client = docker.from_env()
 
@@ -52,11 +57,37 @@ def assert_image(module):
     build_image(module)
 
 
+
+def dropdown(prompt, choices):
+  cli = Bullet(
+    prompt = prompt,
+    choices = choices,
+    indent = 0,
+    align = 5,
+    margin = 2,
+    bullet = ">",
+    bullet_color=colors.bright(colors.foreground["yellow"]),
+    # word_color=colors.bright(colors.foreground["yellow"]),
+	  word_on_switch=colors.bright(colors.foreground["yellow"]),
+    # background_color=colors.background["black"],
+    # 
+    background_on_switch=colors.background["black"],
+	  pad_right = 2
+  )
+  return cli.launch()
+
+
+
+
+# Main
 if __name__ == '__main__':
 
   # Choose model
   if options.modelname is None:
-    print(os.listdir(modulesdir))
+    message = "\nWhich model do you want to run?"
+    directory = 'modules'
+    choices = [file for file in os.listdir(directory) if os.path.isdir(os.path.join(directory, file))]
+    options.modelname = dropdown(message, choices)
     options.modelname = os.listdir(modulesdir)[0]
 
   # Check rebuild
@@ -73,8 +104,11 @@ if __name__ == '__main__':
 
   # Choose checkpoint
   if options.checkpoint is None:
-    print(os.listdir(modulesdir))
-    options.checkpoint = os.listdir(modulesdir)[0]
+    message = f"\nWhich {options.modelname} bundle should be loaded?"
+    directory = os.path.join(configdir, 'checkpoints', options.modelname)
+    choices = os.listdir(directory)
+    options.modelname = dropdown(message, choices)
+    options.modelname = os.listdir(modulesdir)[0]
 
   # Run Module
   curdir = os.path.abspath(os.curdir)
