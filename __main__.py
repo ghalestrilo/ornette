@@ -84,11 +84,10 @@ if __name__ == '__main__':
 
   # Choose model
   if options.modelname is None:
-    message = "\nWhich model do you want to run?"
+    message = "\n Which model do you want to run?"
     directory = 'modules'
     choices = [file for file in os.listdir(directory) if os.path.isdir(os.path.join(directory, file))]
     options.modelname = dropdown(message, choices)
-    options.modelname = os.listdir(modulesdir)[0]
 
   # Check rebuild
   if options.rebuild:
@@ -104,13 +103,13 @@ if __name__ == '__main__':
 
   # Choose checkpoint
   if options.checkpoint is None:
-    message = f"\nWhich {options.modelname} bundle should be loaded?"
+    message = f"\n Which {options.modelname} bundle should be loaded?"
     directory = os.path.join(configdir, 'checkpoints', options.modelname)
     choices = os.listdir(directory)
-    options.modelname = dropdown(message, choices)
-    options.modelname = os.listdir(modulesdir)[0]
+    options.checkpoint = dropdown(message, choices)
 
   # Run Module
+  print(f'\n Starting {options.modelname}:{options.checkpoint}')
   curdir = os.path.abspath(os.curdir)
   for msg in client.containers.run(f'ornette/{options.modelname}',
     network_mode = 'host',
