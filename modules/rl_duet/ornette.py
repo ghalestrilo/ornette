@@ -144,33 +144,5 @@ class OrnetteModule():
       music = [partner.data.cpu().numpy(), pred.data.cpu().numpy()]
       return music
 
-    # # FIXME: Probably unnecessary
-    # def get_step_length(self):
-    #   return 1 / self.host.get('steps_per_quarter')
-
-    # def decode(self, token):
-    #   step_length = self.get_step_length()
-    #   if token == self.pitch2index['rest']:
-    #     return [('note_off', 92, 127, step_length)]
-
-    #   pitch = self.index2pitch[token]
-    #   if len(pitch.split('_')) > 1:
-    #     # print(pitch)
-    #     pitch = pitch.split('_')[0]
-    #     # print(pitch)
-    #     return [('note_off', int(pitch), 127, step_length)]
-
-    #   note = int(self.index2pitch[token])
-    #   return [('note_on', note, 127, step_length),
-    #           ('note_off', note, 127, 0)
-    #           ]
-
-    # def encode(self, message):
-    #   step_length = self.get_step_length()
-    #   # rests = message.time / step_length / self.host.get('steps_per_quarter')
-    #   # rests = [self.pitch2index['rest'] for i in range(rests)][1:]
-    #   # return [message.note] + rests
-    #   return message.note
-
     def close(self):
       return None

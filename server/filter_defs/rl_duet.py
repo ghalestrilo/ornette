@@ -5,19 +5,29 @@ def midotrack2notearray(tracks, host):
 
 def notearray2midotrack(notearrays, host):
   step_length = 1 / host.get('steps_per_quarter')
-
+  
+  print(notearrays)
   output = []
-  for notearray, i in enumerate(notearrays):
+  for i, notearray in enumerate(notearrays):
     output.append([])
+
+    last_voice = output[-1]
 
     for token in notearray:
       if token == host.model.pitch2index['rest']:
-        return [('note_off', 92, 127, step_length)]
+        last_voice.append(
+          Message('note_off',
+              note=92,
+              channel=host.get('voices')[i],
+              velocity=127,
+              time=step_length
+              ))
+        continue
 
       pitch = host.model.index2pitch[token]
       if len(pitch.split('_')) > 1:
         pitch = pitch.split('_')[0]
-        output[-1].append(Message('note_off',
+        last_voice.append(Message('note_off',
             note=int(pitch),
             channel=host.get('voices')[i],
             velocity=127,
@@ -27,21 +37,21 @@ def notearray2midotrack(notearrays, host):
 
       note = int(host.model.index2pitch[token])
 
-      output[-1].append(Message('note_on',
+      last_voice.append(Message('note_on',
             note=note,
             channel=host.get('voices')[i],
             velocity=127,
             time=step_length
             ))
 
-      output[-1].append(Message('note_off',
+      last_voice.append(Message('note_off',
             note=note,
             channel=host.get('voices')[i],
             velocity=127,
             time=0
             ))
 
-  return midotrack2notearray
+  return output
 
 
 filters = {
