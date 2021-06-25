@@ -45,6 +45,9 @@ class OrnetteModule():
           steps_per_quarter=config.steps_per_quarter,
           bundle=bundle_file)
 
+        # TODO: Move to YAML
+        self.host.include_filters('magenta')
+
     def generate(self, history=None, length_seconds=4, voices=[0, 1]):
         init_pitch = 55
         step_length = 1 / self.host.get('steps_per_quarter')

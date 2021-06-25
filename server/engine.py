@@ -3,13 +3,6 @@ from threading import Thread, Event, Lock
 # import numpy as np
 import math
 
-
-import mido # FIXME: Remove this once #decode() / #getaction() have been updated
-
-
-# FIXME: This should come from the module
-from filters import midotrack2noteseq, noteseq2midotrack
-
 class Engine():
     def __init__(self, host):
       self.host = host

@@ -55,8 +55,6 @@ class RCNNAtt(nn.Module):
         return out
 
 
-
-
 class OrnetteModule():
     def __init__(self, host, checkpoint='rl_duet'):
       i2p, p2i, _ = pickle.load(open('/ckpt/meta.info', 'rb'))
@@ -77,6 +75,10 @@ class OrnetteModule():
       self.host.set('steps_per_quarter', 4)
       self.host.set('voices', [1,2])
       self.meta = []
+
+      host.include_filters('rl_duet')
+      host.add_filter('input', 'midotrack2notearray')
+      host.add_filter('output', 'notearray2midotrack')
 
     def generate(self, history=None, length_steps=4, voices=[]):
       maxlen = max(len(history[v]) for v in voices)
@@ -142,33 +144,33 @@ class OrnetteModule():
       music = [partner.data.cpu().numpy(), pred.data.cpu().numpy()]
       return music
 
-    # FIXME: Probably unnecessary
-    def get_step_length(self):
-      return 1 / self.host.get('steps_per_quarter')
+    # # FIXME: Probably unnecessary
+    # def get_step_length(self):
+    #   return 1 / self.host.get('steps_per_quarter')
 
-    def decode(self, token):
-      step_length = self.get_step_length()
-      if token == self.pitch2index['rest']:
-        return [('note_off', 92, 127, step_length)]
+    # def decode(self, token):
+    #   step_length = self.get_step_length()
+    #   if token == self.pitch2index['rest']:
+    #     return [('note_off', 92, 127, step_length)]
 
-      pitch = self.index2pitch[token]
-      if len(pitch.split('_')) > 1:
-        # print(pitch)
-        pitch = pitch.split('_')[0]
-        # print(pitch)
-        return [('note_off', int(pitch), 127, step_length)]
+    #   pitch = self.index2pitch[token]
+    #   if len(pitch.split('_')) > 1:
+    #     # print(pitch)
+    #     pitch = pitch.split('_')[0]
+    #     # print(pitch)
+    #     return [('note_off', int(pitch), 127, step_length)]
 
-      note = int(self.index2pitch[token])
-      return [('note_on', note, 127, step_length),
-              ('note_off', note, 127, 0)
-              ]
+    #   note = int(self.index2pitch[token])
+    #   return [('note_on', note, 127, step_length),
+    #           ('note_off', note, 127, 0)
+    #           ]
 
-    def encode(self, message):
-      step_length = self.get_step_length()
-      # rests = message.time / step_length / self.host.get('steps_per_quarter')
-      # rests = [self.pitch2index['rest'] for i in range(rests)][1:]
-      # return [message.note] + rests
-      return message.note
+    # def encode(self, message):
+    #   step_length = self.get_step_length()
+    #   # rests = message.time / step_length / self.host.get('steps_per_quarter')
+    #   # rests = [self.pitch2index['rest'] for i in range(rests)][1:]
+    #   # return [message.note] + rests
+    #   return message.note
 
     def close(self):
       return None

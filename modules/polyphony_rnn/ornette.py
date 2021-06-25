@@ -50,6 +50,7 @@ class OrnetteModule():
       self.host.set('steps_per_quarter', 4)
       
       # TODO: Move to yaml
+      self.host.include_filters('magenta')
       self.host.add_filter('input', 'midotrack2noteseq')
       self.host.add_filter('output', 'noteseq2midotrack')
 
