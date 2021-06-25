@@ -25,7 +25,6 @@ class Engine():
       self.stopped.set()
 
     def reset(self):
-      # self.stopped = Event()
       self.notify_wait(False)
       self.curmsg = 0
 
@@ -87,7 +86,8 @@ class Engine():
       buflen = host.song.to_ticks(length, 'beats')
       with self.lock:
         buffer = host.song.buffer(buflen)
-      # for _filter in self.input_filters: buffer = _filter(buffer, host)
+
+      # Apply Input Filters
       for _filter in host.filters.input: buffer = _filter(buffer, host)
 
       # Generate sequence
@@ -100,8 +100,7 @@ class Engine():
       # Generate Output
       output = host.model.generate(buffer, final_length, tracks)
 
-      # with self.lock:
-      #   for _filter in self.output_filters: output = _filter(output, host)
+      # Apply Output Filters
       for _filter in host.filters.output: output = _filter(output, host)
 
       # Warn (TODO: validation methods)
@@ -112,7 +111,6 @@ class Engine():
       with self.lock:
         for track_messages, track_index in zip(output, tracks):
             for msg in track_messages:
-              # if not isinstance(msg, str) and not msg.is_meta:
                 host.song.append(msg, track_index)
 
       self.fresh_buffer.set()
