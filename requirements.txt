@@ -1,0 +1,3 @@
+bullet==2.2.0
+PyYAML==5.1.1
+docker==4.0.2
