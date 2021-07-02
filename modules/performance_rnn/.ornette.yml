@@ -6,3 +6,8 @@ checkpoints:
   density_conditioned_performance_with_dynamics: http://download.magenta.tensorflow.org/models/density_conditioned_performance_with_dynamics.mag
   pitch_conditioned_performance_with_dynamics: http://download.magenta.tensorflow.org/models/pitch_conditioned_performance_with_dynamics.mag
   multiconditioned_performance_with_dynamics: http://download.magenta.tensorflow.org/models/multiconditioned_performance_with_dynamics.mag
+
+config:
+    output_unit: seconds
+    voices:
+      - 1

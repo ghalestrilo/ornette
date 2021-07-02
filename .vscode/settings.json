@@ -6,5 +6,8 @@
     "**/node_modules/*/**": true,
     "unimplemented/": true
   },
-  "python.dataScience.notebookFileRoot": "${workspaceFolder}"
+  "python.dataScience.notebookFileRoot": "${workspaceFolder}",
+  "python.venvFolders": [
+    "envs"
+  ]
 }
