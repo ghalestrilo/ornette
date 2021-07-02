@@ -28,6 +28,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 if __name__ == "__main__":
     args = get_args()
 
+
     if not args.batch_mode:
       pretty_errors.replace_stderr()
 

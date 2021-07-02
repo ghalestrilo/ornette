@@ -26,6 +26,7 @@ state = {
     'input_length': 4,      # read from .ornette.yml
     'output_unit': 'beats', # read from .ornette.yml
     'output_length': 4,     # read from .ornette.yml
+    'time_coeff': 1,
 
     # TODO: move to channel
     'voices': [1], # Deprecate

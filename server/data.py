@@ -23,6 +23,7 @@ def download_checkpoint(name, url, force=False):
     ckptpath = normpath(f'{checkpoint_dir}/{name}')
     if os.path.exists(ckptpath) and not force:
         return
+    print(f'downloading  {name}, "{url}"')
     response = req.urlopen(url, timeout=5)
     content = response.read()
     with open(ckptpath, 'wb') as f:
@@ -37,8 +38,7 @@ def prep_module():
             for k, v in pair.items():
                 if k == "checkpoints":
                     for checkpoint_name, checkpoint_url in v.items():
-                        print(
-                            f'downloading  {checkpoint_name}, "{checkpoint_url}"')
+                        print(f'checking {checkpoint_name}')
                         download_checkpoint(
                             checkpoint_name, checkpoint_url, False)
                 # if verbose: print(k, ' -> ', v)

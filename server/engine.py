@@ -43,7 +43,7 @@ class Engine():
       time = 0
       output_unit = self.host.get('output_unit')
       # while not self.stopped.wait(self.host.song.from_ticks(time, 'seconds')):
-      while not self.stopped.wait(self.host.song.convert(time, output_unit, 'seconds')):
+      while not self.stopped.wait(self.host.song.convert(time, output_unit, 'seconds') * self.host.get('time_coeff')):
         time = 0
         _last_curmsg = self.curmsg
 

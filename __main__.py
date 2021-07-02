@@ -108,20 +108,43 @@ if __name__ == '__main__':
     choices = os.listdir(directory)
     options.checkpoint = dropdown(message, choices)
 
+  # Define directories
+  curdir = os.path.abspath(os.curdir)
+  ckptdir = os.path.join(os.path.expanduser('~'), '.ornette', 'checkpoints', options.modelname)
+  hostdir = os.path.join(curdir, 'server')
+  outdir = os.path.join(curdir, 'output')
+  moduledir = os.path.join(curdir, 'modules', options.modelname)
+
   # Run Module
   print(f'\n Starting {options.modelname}:{options.checkpoint}')
-  curdir = os.path.abspath(os.curdir)
-  for msg in client.containers.run(f'ornette/{options.modelname}',
-    network_mode = 'host',
-    stream = True,
-    command = 'bash -c python /ornette',
-    stderr=True,
-    hostname = 'server',
-    volumes = {
-      os.path.join(curdir, 'server'): { 'bind': '/ornette', 'mode': 'ro' },
-      os.path.join(curdir, 'output'): { 'bind': '/output', 'mode': 'rw' },
-      os.path.join(curdir, 'modules', options.modelname): { 'bind': '/model', 'mode': 'ro' },
-      os.path.join(os.path.expanduser('~'), '.ornette', 'checkpoints', options.modelname): { 'bind': '/ckpt', 'mode': 'ro' }
-    }
-  ):
-    print(msg)
+
+  try:
+    instance = client.containers.run(f'ornette/{options.modelname}',
+      # 'ls /ckpt',
+      # 'python /ornette',
+      f'bash -c "python /ornette \
+          --module={options.modelname} \
+          --checkpoint={options.checkpoint}"',
+      # 'bash -c "python"',
+      network_mode = 'host',
+      stream = True,
+      detach = True,
+      # command = 'bash -c "python /ornette"',
+      # stderr = True,
+      # tty = True,
+      # stdout = True,
+      hostname = 'server',
+      volumes = {
+        hostdir:   { 'mode': 'ro', 'bind': '/ornette' },
+        outdir:    { 'mode': 'rw', 'bind': '/output' },
+        moduledir: { 'mode': 'ro', 'bind': '/model' },
+        ckptdir:   { 'mode': 'rw', 'bind': '/ckpt' }
+      }
+    )
+
+    for line in instance.logs(stream=True):
+      print(line.strip().decode('utf-8'))
+  except KeyboardInterrupt:
+    instance.kill()
+  
+  if instance: instance.kill()

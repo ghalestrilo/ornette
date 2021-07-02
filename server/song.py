@@ -298,4 +298,3 @@ class Song():
         voice_index = self.host.get('voices')[0]
       # print(f'voice_index: {voice_index}')
       return self.host.get('voices')[voice_index]
-

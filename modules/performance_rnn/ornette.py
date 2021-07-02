@@ -18,7 +18,8 @@ class OrnetteModule():
 
         self.server_state = host.state
         self.host = host
-        self.host.set('input_unit', 'seconds') # Deprecate
+        self.host.set('time_coeff', 10)
+        self.host.set('input_unit', 'seconds')
         self.host.set('output_unit', 'seconds')
         self.host.set('last_end_time', 0)
         self.host.set('voices', [1])
