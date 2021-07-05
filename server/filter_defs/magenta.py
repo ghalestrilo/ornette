@@ -1,4 +1,4 @@
-from note_seq import NoteSequence
+from note_seq import NoteSequence, PianorollSequence
 from mido import MidiFile, Message
 
 # Magenta Filters
@@ -29,6 +29,28 @@ def midotrack2noteseq(tracks, host):
         tempos=[{ 'time': 0, 'qpm': host.get('bpm') }],
         total_quantized_steps=11,
     ) for seq in seqs]
+
+def midotrack2pianoroll(tracks, host):
+    init_pitch = host.get('init_pitch')
+    primer_sequence = []
+    step_length = 1 / host.get('steps_per_quarter')
+    for i, own_note in enumerate(tracks[0]):
+      partner_note = tracks[1][i]
+      primer_sequence.append((own_note, partner_note) if partner_note else (own_note,))
+
+    if not any(primer_sequence): primer_sequence = [(init_pitch,)]
+
+    # Get last end time
+    last_end_time = (len(primer_sequence) * step_length
+      if primer_sequence != None and any(primer_sequence)
+      else 0 )
+    host.set('last_end_time', last_end_time)
+
+    return PianorollSequence(
+      events_list=primer_sequence,
+      steps_per_quarter=host.get('steps_per_quarter'),
+      shift_range=True)
+
 
 ## Output Filters
 def noteseq2midotrack(noteseqs, host):
@@ -63,10 +85,48 @@ def noteseq2midotrack(noteseqs, host):
       last_time += dur
     return output
 
+
+
+
+
+def pianoroll2midotrack(pianoroll, host):
+  output = []
+  step_length = 1 / host.get('steps_per_quarter')
+  for note_tuple in pianoroll.notes:
+    while len(note_tuple) > len(output): output.append([])
+
+    # Parse event and create message
+    for i, note in enumerate(note_tuple):
+      output[i].append(Message('note_on',
+        note=note,
+        channel=host.get('voices')[i],
+        velocity=note.velocity,
+        time=step_length
+        ))
+
+    # Pad eventless tracks
+    for i in range(len(note_tuple) - len(output)): 
+      if len(output[-i]):
+        output[-i][-1].time += step_length
+      else:
+        output[-i].append(Message('note_off',
+          note=0,
+          channel=host.get('voices')[i],
+          velocity=note.velocity,
+          time=step_length
+          ))
+  return output
+
+
+
+
+
 filters = {
   # Input
   'midotrack2noteseq': midotrack2noteseq,
+  'midotrack2pianoroll': midotrack2pianoroll,
 
   # Output
   'noteseq2midotrack': noteseq2midotrack,
+  'pianoroll2midotrack': pianoroll2midotrack,
 }

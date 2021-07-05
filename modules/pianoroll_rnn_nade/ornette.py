@@ -23,7 +23,6 @@ import time
 from magenta.models.pianoroll_rnn_nade.pianoroll_rnn_nade_model import default_configs, PianorollRnnNadeModel
 from magenta.models.pianoroll_rnn_nade.pianoroll_rnn_nade_sequence_generator import PianorollRnnNadeSequenceGenerator
 from magenta.models.shared import sequence_generator_bundle
-from note_seq import NoteSequence, PianorollSequence
 from note_seq.protobuf import generator_pb2
 
 class OrnetteModule():
@@ -38,6 +37,7 @@ class OrnetteModule():
         self.host.set('last_end_time', 0.125)
         self.host.set('steps_per_quarter', 4)
         self.host.set('voices', [1,2])
+        self.host.set('init_pitch', 55)
 
         self.model = PianorollRnnNadeSequenceGenerator(
           model=PianorollRnnNadeModel(config),
@@ -47,60 +47,20 @@ class OrnetteModule():
 
         # TODO: Move to YAML
         self.host.include_filters('magenta')
+        self.host.add_filter('input', 'midotrack2pianoroll')
+        self.host.add_filter('output', 'pianoroll2midotrack')
 
-    def generate(self, history=None, length_seconds=4, voices=[0, 1]):
-        init_pitch = 55
-        step_length = 1 / self.host.get('steps_per_quarter')
-
-        # Get voices
-        voices_ = [history[i] for i in voices]
-
-        # Pad Partner sequence
-        voices_[1] = voices_[1] + list(None for i in range(len(voices_[0]) - len(voices_[1])))
-
-        # Build Primer
-        primer_sequence = []
-        for i, own_note in enumerate(voices_[0]):
-          partner_note = voices_[1][i]
-          primer_sequence.append((own_note, partner_note) if partner_note else (own_note,))
-
-        if not any(primer_sequence): primer_sequence = [(init_pitch,)]
-
-        # Get last end time
-        last_end_time = (len(primer_sequence) * step_length
-          if primer_sequence != None and any(primer_sequence)
-          else 0 )
-
-        primer_pianoroll = PianorollSequence(
-          events_list=primer_sequence,
-          steps_per_quarter=self.host.get('steps_per_quarter'),
-          shift_range=True)
-        primer_sequence = primer_pianoroll.to_sequence(qpm=self.host.get('bpm'))
+    def generate(self, history=None, length_seconds=4, tracks=[0, 1]):
+        primer_sequence = history.to_sequence(qpm=self.host.get('bpm'))
 
         generator_options = generator_pb2.GeneratorOptions()
         generator_options.generate_sections.add(
-            start_time=last_end_time,
-            end_time=last_end_time + length_seconds)
+            start_time=self.host.get('last_end_time'),
+            end_time=self.host.get('last_end_time') + length_seconds)
 
         seq = self.model.generate(primer_sequence, generator_options)
 
-        return [[n.pitch for n in seq.notes], []] # TODO: Split voices
-
-    def decode(self, token):
-        step_length = 1 / self.host.get('steps_per_quarter')
-        return [('note_on', token, 127, 0), ('note_off', token, 127, step_length)]
-
-    def encode(self, message):
-        ''' Receives a mido message, must return a model-compatible token '''
-        last_end_time = self.host.get('last_end_time')
-        step_length = 1 / self.host.get('steps_per_quarter')
-
-        # note = (message.note,)
-        note = message.note
-        # note = NoteSequence.Note(pitch=message.note)
-
-        self.host.set('last_end_time', last_end_time + step_length)
-        return note
+        return seq
 
     def close(self):
       return None
