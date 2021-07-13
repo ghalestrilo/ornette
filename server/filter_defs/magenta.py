@@ -87,9 +87,12 @@ def noteseq2midotrack(noteseqs, host):
 
 
 
+def noteseq2pianoroll(noteseq,host):
+  return PianorollSequence(quantized_sequence=noteseq)
 
-
+# WIP
 def pianoroll2midotrack(pianoroll, host):
+  # output = [[],[]]
   output = []
   step_length = 1 / host.get('steps_per_quarter')
   for note_tuple in pianoroll.notes:
@@ -128,5 +131,6 @@ filters = {
 
   # Output
   'noteseq2midotrack': noteseq2midotrack,
+  'noteseq2pianoroll': noteseq2pianoroll,
   'pianoroll2midotrack': pianoroll2midotrack,
 }

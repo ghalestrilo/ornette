@@ -48,6 +48,7 @@ class OrnetteModule():
         # TODO: Move to YAML
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'midotrack2pianoroll')
+        self.host.add_filter('output', 'noteseq2pianoroll')
         self.host.add_filter('output', 'pianoroll2midotrack')
 
     def generate(self, history=None, length_seconds=4, tracks=[0, 1]):
