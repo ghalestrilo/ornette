@@ -23,6 +23,7 @@ import time
 from magenta.models.pianoroll_rnn_nade.pianoroll_rnn_nade_model import default_configs, PianorollRnnNadeModel
 from magenta.models.pianoroll_rnn_nade.pianoroll_rnn_nade_sequence_generator import PianorollRnnNadeSequenceGenerator
 from magenta.models.shared import sequence_generator_bundle
+from magenta.music.sequences_lib import is_relative_quantized_sequence
 from note_seq.protobuf import generator_pb2
 
 class OrnetteModule():
@@ -33,7 +34,8 @@ class OrnetteModule():
 
         self.server_state = host.state
         self.host = host
-        self.host.set('generation_unit', 'seconds')
+        self.host.set('output_unit', 'bars')
+        self.host.set('input_unit', 'bars')
         self.host.set('last_end_time', 0.125)
         self.host.set('steps_per_quarter', 4)
         self.host.set('voices', [1,2])
@@ -42,14 +44,13 @@ class OrnetteModule():
         self.model = PianorollRnnNadeSequenceGenerator(
           model=PianorollRnnNadeModel(config),
           details=config.details,
-          steps_per_quarter=config.steps_per_quarter,
+          steps_per_quarter=host.get('steps_per_quarter'),
           bundle=bundle_file)
 
         # TODO: Move to YAML
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'midotrack2pianoroll')
-        self.host.add_filter('output', 'noteseq2pianoroll')
-        self.host.add_filter('output', 'pianoroll2midotrack')
+        self.host.add_filter('output', 'noteseq2midotrack')
 
     def generate(self, history=None, length_seconds=4, tracks=[0, 1]):
         primer_sequence = history.to_sequence(qpm=self.host.get('bpm'))
@@ -61,7 +62,10 @@ class OrnetteModule():
 
         seq = self.model.generate(primer_sequence, generator_options)
 
-        return seq
+        print(f'seq.quantization_info.steps_per_quarter: {seq.quantization_info.steps_per_quarter}')
+        print(f'relative quantized? {is_relative_quantized_sequence(seq)}')
+
+        return [seq.notes]
 
     def close(self):
       return None

@@ -1,4 +1,5 @@
 from note_seq import NoteSequence, PianorollSequence
+from magenta.music.sequences_lib import is_relative_quantized_sequence
 from mido import MidiFile, Message
 
 # Magenta Filters
@@ -30,15 +31,40 @@ def midotrack2noteseq(tracks, host):
         total_quantized_steps=11,
     ) for seq in seqs]
 
+
+
+
+
+
+
+
+
+
+
 def midotrack2pianoroll(tracks, host):
     init_pitch = host.get('init_pitch')
     primer_sequence = []
     step_length = 1 / host.get('steps_per_quarter')
+    
+    noteseq = NoteSequence(
+      quantization_info={'steps_per_quarter': host.get('steps_per_quarter')},
+      tempos=[{ 'time': 0, 'qpm': host.get('bpm') }],
+    )
+    pianorollseq = PianorollSequence(quantized_sequence=noteseq)
+
+    print(f'noteseq.quantization_info.steps_per_quarter: {noteseq.quantization_info.steps_per_quarter}')
+    print(f'relative quantized? {is_relative_quantized_sequence(noteseq)}')
+    
+    
     for i, own_note in enumerate(tracks[0]):
       partner_note = tracks[1][i]
-      primer_sequence.append((own_note, partner_note) if partner_note else (own_note,))
+      tuple_ = (own_note, partner_note) if partner_note else (own_note,)
+      primer_sequence.append(tuple_)
+      pianorollseq.append(tuple_)
 
-    if not any(primer_sequence): primer_sequence = [(init_pitch,)]
+    if not any(primer_sequence):
+      primer_sequence = [(init_pitch,)]
+      pianorollseq.append((init_pitch,))
 
     # Get last end time
     last_end_time = (len(primer_sequence) * step_length
@@ -46,10 +72,34 @@ def midotrack2pianoroll(tracks, host):
       else 0 )
     host.set('last_end_time', last_end_time)
 
-    return PianorollSequence(
-      events_list=primer_sequence,
-      steps_per_quarter=host.get('steps_per_quarter'),
-      shift_range=True)
+    # host.get('steps_per_quarter')
+
+    # print('primer_sequence')
+    # print(primer_sequence)
+    # print('primer_sequence.quantization_info.steps_per_quarter')
+    # print(primer_sequence.quantization_info.steps_per_quarter)
+
+    # sequences_lib.assert_is_relative_quantized_sequence
+
+    return pianorollseq
+
+    # return PianorollSequence(
+    #   # events_list=primer_sequence,
+    #   note_sequence=primer_sequence
+    #   steps_per_quarter=host.get('steps_per_quarter'),
+    #   shift_range=True)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## Output Filters
