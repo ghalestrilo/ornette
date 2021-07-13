@@ -31,16 +31,6 @@ def midotrack2noteseq(tracks, host):
         total_quantized_steps=11,
     ) for seq in seqs]
 
-
-
-
-
-
-
-
-
-
-
 def midotrack2pianoroll(tracks, host):
     init_pitch = host.get('init_pitch')
     primer_sequence = []
@@ -72,35 +62,7 @@ def midotrack2pianoroll(tracks, host):
       else 0 )
     host.set('last_end_time', last_end_time)
 
-    # host.get('steps_per_quarter')
-
-    # print('primer_sequence')
-    # print(primer_sequence)
-    # print('primer_sequence.quantization_info.steps_per_quarter')
-    # print(primer_sequence.quantization_info.steps_per_quarter)
-
-    # sequences_lib.assert_is_relative_quantized_sequence
-
     return pianorollseq
-
-    # return PianorollSequence(
-    #   # events_list=primer_sequence,
-    #   note_sequence=primer_sequence
-    #   steps_per_quarter=host.get('steps_per_quarter'),
-    #   shift_range=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ## Output Filters
 def noteseq2midotrack(noteseqs, host):
@@ -135,14 +97,10 @@ def noteseq2midotrack(noteseqs, host):
       last_time += dur
     return output
 
-
-
 def noteseq2pianoroll(noteseq,host):
   return PianorollSequence(quantized_sequence=noteseq)
 
-# WIP
 def pianoroll2midotrack(pianoroll, host):
-  # output = [[],[]]
   output = []
   step_length = 1 / host.get('steps_per_quarter')
   for note_tuple in pianoroll.notes:
