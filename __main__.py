@@ -37,6 +37,8 @@ args.add_argument('--modelname', type=str,
 args.add_argument('--checkpoint', type=str, help="The checkpoint to be loaded")
 args.add_argument('--rebuild', type=bool, default=False,
                   help="Force docker images to be rebuilt")
+args.add_argument('--exec', type=str, default=None,
+                  help="Startup command to run on the server")
 options = args.parse_args()
 
 # Procedures
@@ -156,7 +158,9 @@ if __name__ == '__main__':
             f'ornette/{options.modelname}',
             f'bash -c "python /ornette \
           --module={options.modelname} \
-          --checkpoint={options.checkpoint}"',
+          --checkpoint={options.checkpoint} \
+          --exec={options.exec or str("")}" \
+          ',
             network_mode='host',
             stream=True,
             auto_remove=True,
