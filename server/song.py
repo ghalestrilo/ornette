@@ -260,7 +260,13 @@ class Song():
 
     def get_tempo(self):
       # TODO: this could be wrong (!)
-      return int(round(60000000 / self.host.get('bpm') / self.host.get('steps_per_quarter')))
+      bpm = self.host.get('bpm')
+      # spq = self.host.get('steps_per_quarter')
+      # spq = 1 # FIXME
+      # tempo = int(round(60000000 / bpm / spq))
+      tempo = int(round(60000000 / bpm))
+      # print(f'tempo = {tempo} | bpm = {bpm} | spq = {spq} ')
+      return tempo
 
     def to_ticks(self, length, unit):
         host = self.host

@@ -12,9 +12,6 @@ class Engine():
 
       self.should_wait = False
       self.curmsg = 0
-      
-      # TODO: Move to host
-      # self.host.lock = Lock()
 
     # Controls
     def start(self):
@@ -34,26 +31,27 @@ class Engine():
     # Core
     def playback(self):
       if self.host.get('is_running') == True: return
-      
       self.host.set('is_running', True)
 
+      # Trigger background generation
       if (self.must_generate()): self.generate()
 
       time = 0
-      # output_unit = self.host.get('output_unit')
-      while not self.stopped.wait(self.host.song.from_ticks(time, 'seconds')):
-      # while not self.stopped.wait(self.host.song.convert(time, output_unit, 'seconds')): #* self.host.get('time_coeff')):
+      while not self.stopped.wait(time):
         time = 0
         _last_curmsg = self.curmsg
 
-        while not self.fresh_buffer.wait(0.1):
-          pass
+        # Wait until more notes have been generated
+        while not self.fresh_buffer.wait(0.1): pass
         
+        # Trigger background generation
         if self.must_generate(): self.generate_in_background()
 
+        # Get current note
         with self.host.lock:
           msg = self.host.song.getmsg(self.curmsg)
 
+        # Play it
         if msg is not None:
           
           # TODO: Remove
@@ -61,28 +59,35 @@ class Engine():
 
           self.curmsg = self.curmsg + 1
           self.host.song.perform(msg)
-          time = msg.time # Here, msg.time MUST be in ticks
+          time = msg.time # Here, msg.time returns in BEATS (because of mido)
+          time = self.host.song.convert(time, 'beats', 'seconds') # Convert that to seconds
+          time = time * self.host.get('steps_per_quarter') / 2 # Without this, playback happens too fast (IDK why)
+          # print(f'msg.time: {msg.time} | wait: {time}s')
         
-        # Notify 
+        # Notify buffer has ended
         if _last_curmsg == self.curmsg:
           self.fresh_buffer = Event()
 
       self.host.set('is_running', False)
 
-    def generate(self, length=None, unit='beats', respond=False):
+    def generate(self, length=None, unit=None, respond=False):
       host = self.host
 
       with self.host.lock: host.set('is_generating', True)
 
+      # Default values for output length
       if length is None: length = self.host.get('output_length')
+      if unit is None: unit = self.host.get('output_unit')
 
       # Assert Song State
-      host.song.init_conductor()
+      # host.song.init_conductor()
+      with self.host.lock: host.song.init_conductor()
       # print(host.song.data.tracks)
 
-      # Prepare Input Buffer
+      # Prepare Input Buffer (<input_length> <input_unit>s)
       buflen = host.get('input_length')
-      buflen = host.song.to_ticks(length, 'beats')
+      # buflen = host.song.to_ticks(buflen, 'beats')
+      buflen = host.song.to_ticks(buflen, host.get('input_unit'))
       with self.host.lock:
         buffer = host.song.buffer(buflen)
 
@@ -91,10 +96,11 @@ class Engine():
 
       # Generate sequence
       tracks = host.get('voices')
+      # final_length = host.song.convert(length, unit, host.get('input_unit'))
       final_length = host.song.convert(length, unit, host.get('input_unit'))
-      if final_length is None:
-        host.io.log(f'error: trying to generate length {final_length} ({length} {unit} to {host.get("input_unit")})')
-        return
+      # if final_length is None:
+      #   host.io.log(f'error: trying to generate length {final_length} ({length} {unit} to {host.get("input_unit")})')
+      #   return
 
       # Generate Output
       output = host.model.generate(buffer, final_length, tracks)
