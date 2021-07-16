@@ -196,9 +196,9 @@ class Song():
 
 
     def perform(self, message, idx=0):
-      if message.type == 'note_on':
+      if message.type in ['note_on', 'note_off']:
         chan = self.host.song.get_channel(message.channel)
-        if chan: chan.play(message.note)
+        if chan: chan.play(message)
 
 
 
@@ -259,12 +259,10 @@ class Song():
         return None
 
     def get_tempo(self):
-      # TODO: this could be wrong (!)
       bpm = self.host.get('bpm')
-      # spq = self.host.get('steps_per_quarter')
-      # spq = 1 # FIXME
-      # tempo = int(round(60000000 / bpm / spq))
-      tempo = int(round(60000000 / bpm))
+      ppq = 1 # TODO: Get
+      ms = int(round( 60000 / (bpm * ppq)))
+      tempo = 1000 * ms
       # print(f'tempo = {tempo} | bpm = {bpm} | spq = {spq} ')
       return tempo
 

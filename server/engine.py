@@ -184,24 +184,6 @@ class Engine():
     def notify_wait(self,should=True):
       self.should_wait = should
 
-
-
-    # def start_metronome(self):
-      # pass
-      # Thread(target=self.run_metronome).start()
-    
-    # def run_metronome(self):
-    #   # TODO: step to time is track logic
-    #   while not self.stopped.wait(60/self.state['bpm']/4):
-    #     if (self.state['is_running'] == True):
-    #       self.host.play(0,'hh')
-
-
-
-
-
-
-
     def is_generating(self):
       return self.host.get('is_generating') == True
 

@@ -24,10 +24,13 @@ class Channel():
       self._instrument = new_instrument
 
     # TODO: 
-    def play(self, note):
-      msg = ([ 'note', note - NOTE_OFFSET
-        , 'cut', note - NOTE_OFFSET
-        , 'gain', 1
+    def play(self, message):
+      msg = ([ 'note', message.note - NOTE_OFFSET
+        , 'cut', message.note
+        , 'sustain', 8
+        , 'release', 1
+        # , 'gain', 0 if message.type == 'note_off' else message.velocity / 127
+        , 'gain', 0 if message.type == 'note_off' else message.velocity / 100
         ]
         + self.instrument())
       if self.host is not None: self.host.bridge.play(msg)

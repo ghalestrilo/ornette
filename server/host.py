@@ -60,12 +60,6 @@ class Host:
     def add_filter(self, direction, filtername=None):
       self.filters.append(direction, filtername)
 
-    # TODO: Channel
-    def play(self,pitch,instr=None):
-      if (instr == None): self.bridge.play(pitch)
-      else: self.bridge.play(pitch, instr)
-
-
     # Batch (depr)
     def task_ended(self):
       did_it_end = len(self.song.get_voice()) >= self.get('buffer_length')
