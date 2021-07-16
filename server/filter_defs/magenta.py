@@ -11,6 +11,11 @@ def midotrack2noteseq(tracks, host):
       seqs.append([])
       last_end_time = 0
       for message in track:
+        
+        # AttributeError:
+        # 'str' object has no attribute 'time'
+        if isinstance(message, str): continue
+
         next_start_time = last_end_time + host.song.from_ticks(message.time, host.get('input_unit'))
         if not message.is_meta:
           seqs[-1].append(NoteSequence.Note(
@@ -76,7 +81,7 @@ def noteseq2midotrack(noteseqs, host):
             ('note_on', lambda x: x.start_time)
           ]:
         for note in notes:
-          ticks = host.song.to_ticks(get_time(note), host.get('output_unit'))
+          ticks = host.song.to_ticks(get_time(note), host.get('output_unit')) * host.get('time_coeff')
           ticks = int(round(ticks))
 
           output[-1].append(Message(name,

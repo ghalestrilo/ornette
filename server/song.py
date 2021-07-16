@@ -50,13 +50,23 @@ class Song():
     def getmsg(self,index):
       return self.messages[index] if index < len(self.messages) else None
 
-    def reset(self):
+    def reset(self, initialize_voices=True):
+      # with self.host.lock:
         if self.data is not None:
           for t in self.data.tracks: t.clear()
           self.data.tracks.clear()
 
         self.data = MidiFile(ticks_per_beat=self.host.get('ticks_per_beat')) # TODO: internal state
-        gc.collect()
+
+        # This
+        # if initialize_voices:
+          # self.init_conductor()
+          # for i, _ in enumerate(self.host.get('voices')):
+            # t = MidiTrack("track")
+            # self.data.tracks.append(t)
+
+        # gc.collect()
+
 
         # TODO: Internal State
         host = self.host
@@ -169,6 +179,7 @@ class Song():
           for msg in reversed(list(track)):
             # print(f'msg: {msg}')
             if curticks > ticks: break
+            if isinstance(msg,str): continue
             curticks += msg.time
             out[-1].append(msg)
 
@@ -248,7 +259,8 @@ class Song():
         return None
 
     def get_tempo(self):
-      return int(round(60000000 / self.host.get('bpm')))
+      # TODO: this could be wrong (!)
+      return int(round(60000000 / self.host.get('bpm') / self.host.get('steps_per_quarter')))
 
     def to_ticks(self, length, unit):
         host = self.host
@@ -259,13 +271,13 @@ class Song():
             host.get('ticks_per_beat'),
             self.get_tempo())
 
-        if (unit == 'ticks'): return length
+        if (unit == 'ticks'): return int(round(length))
 
         length = length * host.get('ticks_per_beat')
-        if (unit == 'beats'): return length
+        if (unit == 'beats'): return int(round(length))
 
         length = length * 4 * host.get('time_signature_numerator') / host.get('time_signature_denominator')
-        if (unit in ['measures', 'bars']): return length
+        if (unit in ['measures', 'bars']): return int(round(length))
         return None
 
 

@@ -70,9 +70,10 @@ class OrnetteModule():
       self.index2pitch = i2p
       self.model = model
       self.host = host
-      self.host.set('generation_unit', 'beats')
-      self.host.set('missing_beats', 16)
-      self.host.set('steps_per_quarter', 4)
+      self.host.set('input_unit', 'beats')
+      self.host.set('output_unit', 'beats')
+      # self.host.set('missing_beats', 4)
+      self.host.set('steps_per_quarter', 2)
       self.host.set('voices', [1,2])
       self.meta = []
 
@@ -87,7 +88,7 @@ class OrnetteModule():
       # Continue the Meta array
       next_meta = [x + 1 for x in self.meta]
       next_meta = next_meta[-1] if any(next_meta) else 1
-      self.meta = [(i + next_meta) % sig for i in range(maxlen)]
+      self.meta = np.array([(i + next_meta) % sig for i in range(maxlen)])
 
       music = self.sample_(self.model,
         np.array(history[voices[0]]),

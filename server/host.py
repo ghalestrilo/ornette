@@ -4,12 +4,14 @@ from song import Song
 from logger import Logger
 from store import Store
 from filters import Filters
+from threading import Lock
 import mido
 import data
 from os import environ
 
 class Host:
     def __init__(self,args):
+      self.lock = Lock()
       self.state = {}
       self.store = Store(self, args)
       self.io = Logger(self)

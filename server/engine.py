@@ -13,9 +13,8 @@ class Engine():
       self.should_wait = False
       self.curmsg = 0
       
-      # TODO: This lock should probably go on Song
-      # Since it's mostly used to avoid song state race conditions
-      self.lock = Lock()
+      # TODO: Move to host
+      # self.host.lock = Lock()
 
     # Controls
     def start(self):
@@ -41,9 +40,9 @@ class Engine():
       if (self.must_generate()): self.generate()
 
       time = 0
-      output_unit = self.host.get('output_unit')
-      # while not self.stopped.wait(self.host.song.from_ticks(time, 'seconds')):
-      while not self.stopped.wait(self.host.song.convert(time, output_unit, 'seconds') * self.host.get('time_coeff')):
+      # output_unit = self.host.get('output_unit')
+      while not self.stopped.wait(self.host.song.from_ticks(time, 'seconds')):
+      # while not self.stopped.wait(self.host.song.convert(time, output_unit, 'seconds')): #* self.host.get('time_coeff')):
         time = 0
         _last_curmsg = self.curmsg
 
@@ -52,7 +51,7 @@ class Engine():
         
         if self.must_generate(): self.generate_in_background()
 
-        with self.lock:
+        with self.host.lock:
           msg = self.host.song.getmsg(self.curmsg)
 
         if msg is not None:
@@ -62,7 +61,7 @@ class Engine():
 
           self.curmsg = self.curmsg + 1
           self.host.song.perform(msg)
-          time = msg.time
+          time = msg.time # Here, msg.time MUST be in ticks
         
         # Notify 
         if _last_curmsg == self.curmsg:
@@ -73,7 +72,7 @@ class Engine():
     def generate(self, length=None, unit='beats', respond=False):
       host = self.host
 
-      with self.lock: host.set('is_generating', True)
+      with self.host.lock: host.set('is_generating', True)
 
       if length is None: length = self.host.get('output_length')
 
@@ -84,7 +83,7 @@ class Engine():
       # Prepare Input Buffer
       buflen = host.get('input_length')
       buflen = host.song.to_ticks(length, 'beats')
-      with self.lock:
+      with self.host.lock:
         buffer = host.song.buffer(buflen)
 
       # Apply Input Filters
@@ -108,18 +107,18 @@ class Engine():
           host.io.log(f'Expected model to generate {len(tracks)} tracks, but got {len(output)}')
 
       # Save Output to track
-      with self.lock:
+      with self.host.lock:
         for track_messages, track_index in zip(output, tracks):
             for msg in track_messages:
                 host.song.append(msg, track_index)
 
       self.fresh_buffer.set()
-      with self.lock: host.set('is_generating', False)
+      with self.host.lock: host.set('is_generating', False)
 
 
     def must_generate(self):
       host = self.host
-      with self.lock:
+      with self.host.lock:
         if self.is_generating(): return False
         elif host.song.empty(): return True
         msgcount = len(self.host.song.messages)

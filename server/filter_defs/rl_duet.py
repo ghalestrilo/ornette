@@ -1,10 +1,13 @@
 from mido import Message
+import numpy as np
 
 def midotrack2notearray(tracks, host):
-  return [[msg.note for msg in track] for track in tracks]
+  a = [[msg.note for msg in track] for track in tracks]
+  return np.array(a)
 
 def notearray2midotrack(notearrays, host):
   step_length = 1 / host.get('steps_per_quarter')
+  step_length = host.song.to_ticks(step_length, host.get('output_unit'))
   
   print(notearrays)
   output = []
@@ -41,14 +44,14 @@ def notearray2midotrack(notearrays, host):
             note=note,
             channel=host.get('voices')[i],
             velocity=127,
-            time=step_length
+            time=0
             ))
 
       last_voice.append(Message('note_off',
             note=note,
             channel=host.get('voices')[i],
             velocity=127,
-            time=0
+            time=step_length
             ))
 
   return output
