@@ -42,7 +42,8 @@ class Engine():
         _last_curmsg = self.curmsg
 
         # Wait until more notes have been generated
-        while not self.fresh_buffer.wait(0.1): pass
+        while not self.fresh_buffer.wait(0.1):
+          if self.stopped.is_set(): return
         
         # Trigger background generation
         if self.must_generate(): self.generate_in_background()
@@ -71,8 +72,6 @@ class Engine():
       self.host.set('is_running', False)
 
     def generate(self, length=None, unit=None, respond=False):
-      print(f'length: {length}')
-      print(f'unit: {unit}')
       host = self.host
 
       with self.host.lock: host.set('is_generating', True)

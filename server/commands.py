@@ -3,17 +3,17 @@
 # It specifies commands that the user can issue to the server
 # These can be passed via command-line or interactively via OSC
 
-def set(self, host, *args):
+def set(host, *args):
   print(args)
-  args = args[1:]
+  # args = args[1:]
   key = args[0]
   value = list(args[1:])
   if len(value) == 1: value = value[0]
-  self.host.set(key, value)
+  host.set(key, value)
 
 commands = (
   { 'reset':     lambda host: host.reset()
-  , 'set':       lambda host, args: set(host, args)
+  , 'set':       lambda host, *args: set(host, *args)
   , "debug":     lambda host, key: host.io.print() if key == 'all' else host.io.print(key)
 
   # Engine
