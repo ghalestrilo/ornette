@@ -5,12 +5,20 @@ from logger import Logger
 from store import Store
 from filters import Filters
 from threading import Lock
+from commands import run_batch
 import mido
 import data
 from os import environ
 
+# WIP: Passing commands via CLI
+# Problem: `end` don't end no program
+# TODO: Seems like `close` is called before the event loop starts
+# Try using a flag (self.ready = Event()) and setting it through load_model / engine start
+# Wait for it before issuing any --exec commands
+
 class Host:
-    def __init__(self,args):
+    def __init__(self, args):
+      self.exec = args.exec
       self.lock = Lock()
       self.state = {}
       self.store = Store(self, args)
@@ -26,20 +34,16 @@ class Host:
 
       self.reset()
       self.model = data.load_model(self, args.checkpoint)
-      
-      
-
-      # Notify startup for batch runner
-      pass
 
     def start(self):
       try:
-        if (self.state['batch_mode']): self.bridge.notify_task_complete()
+        if self.exec:
+          run_batch(self, self.exec)
         self.bridge.start()
       except KeyboardInterrupt:
-          self.close()
-          return
-      self.close()
+        self.close()
+        return
+
 
     def close(self):
         self.engine.stop()

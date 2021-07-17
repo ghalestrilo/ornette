@@ -42,7 +42,8 @@ class Engine():
         _last_curmsg = self.curmsg
 
         # Wait until more notes have been generated
-        while not self.fresh_buffer.wait(0.1): pass
+        while not self.fresh_buffer.wait(0.1):
+          if self.stopped.is_set(): return
         
         # Trigger background generation
         if self.must_generate(): self.generate_in_background()

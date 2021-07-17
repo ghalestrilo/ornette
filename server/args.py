@@ -17,5 +17,7 @@ def get_args():
 
     parser.add_argument("--playback",   type=bool, default=True,        help="Use supercollider for sound playback")
     parser.add_argument("--batch-mode", type=bool, default=False,       help="Run in batch mode")
-    parser.add_argument("--exec",       type=str,  default=None,        help="Command to execute in server (then shutdown)")
+    
+    parser.add_argument("--exec",       type=str,  default="",          help="Semicolon-separated commands to be executed by the server. If defined, once complete, the server will shut down.")
+    
     return parser.parse_args()

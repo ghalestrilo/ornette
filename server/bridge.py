@@ -1,5 +1,8 @@
 from pythonosc import osc_server, udp_client
 from pythonosc.dispatcher import Dispatcher
+from threading import Thread
+
+from commands import commands, run
 
 NOTE_OFFSET=60
 
@@ -12,61 +15,24 @@ class Bridge:
         self.client = udp_client.SimpleUDPClient(args.sc_ip, args.sc_port)
 
     def start(self):
-        # print("Serving {} on {}".format(state['module'], state['server'].server_address))
         self.server.serve_forever()
 
-    def set(self, *args):
-      args = args[1:]
-      key = args[0]
-      value = list(args[1:])
-      if len(value) == 1: value = value[0]
-      self.host.set(key, value)
+    def run_command(self, addr, args, command):
+        run(addr[1:], self.host, args)
 
+    def bind_command(self, title, command):
+      self.dispatcher.map(f'/{title}', lambda addr, *args: self.run_command(addr, args, command))
 
     def bind_dispatcher(self, dispatcher):
-        host = self.host
-
-        # Host
-        dispatcher.map("/reset", lambda _: host.reset())
-
-        # dispatcher.map("/tfdebug", debug_tensorflow)
-
-        dispatcher.map("/set",       self.set)
-        dispatcher.map("/debug",     lambda addr, key: host.io.print() if key == 'all' else host.io.print(key))
-
-        # Engine
-        dispatcher.map("/generate",  lambda addr, length, unit: host.engine.generate(length, unit, True))
-        dispatcher.map("/start",     lambda _: host.engine.start())
-        dispatcher.map("/stop",      lambda _: host.engine.stop())
-
-        # Song
-        dispatcher.map("/load",      lambda *args: host.song.load(args[1],
-            args[2] if len(args) > 2 else None,
-            args[3] if len(args) > 3 else 'bars',
-          ))
-        dispatcher.map("/save",       lambda addr, name: host.song.save(name))
-        dispatcher.map("/buffer",     lambda addr, num: host.io.log(host.song.buffer(num)))
-        dispatcher.map("/event",      lambda _, ev: host.push_event(ev))
-        dispatcher.map("/instrument", lambda addr, index, *inst: host.song.get_voice(index).set_instrument(inst))
-
-        # if (self.host.model):
-        #     dispatcher.map("/sample", sample_model, self.model)
-        
-        if (self.host.state['playback'] == True):
-          dispatcher.map("/play", lambda _,pitch: self.play(pitch))
-
-        dispatcher.map("/quit",  lambda _: host.close())
-        dispatcher.map("/exit",  lambda _: host.close())
-        dispatcher.map("/kill",  lambda _: host.close())
-        dispatcher.map("/end",   lambda _: host.close())
+      self.dispatcher = dispatcher
+      for title, command in commands.items():
+        self.bind_command(title, command)
 
     def play(self, msg):
-        # self.host.io.log("Sending message: ")
-        # self.host.io.log(msg)
         self.client.send_message('/play2', msg)
 
     def stop(self):
-        self.server.shutdown()
+        Thread(target=self.server.shutdown).start()
 
     def notify_task_complete(self):
         print('[server] task complete')
