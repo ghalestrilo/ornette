@@ -13,9 +13,11 @@ def get_args():
 
     parser.add_argument("--module",     type=str,  default=None,        help="The model to use (music-transformer, remi)")
     parser.add_argument("--checkpoint", type=str,  default=None,        help="The checkpoint you wish to load")
-    parser.add_argument("--exec",       type=str,  default=None,        help="Semicolon-separated commands to be executed by the server. If defined, once complete, the server will shut down.")
     parser.add_argument('--state',      type=str,  default="0",         help='the initial state of the improv')
 
     parser.add_argument("--playback",   type=bool, default=True,        help="Use supercollider for sound playback")
     parser.add_argument("--batch-mode", type=bool, default=False,       help="Run in batch mode")
+    
+    parser.add_argument("--exec",       type=str,  default="",          help="Semicolon-separated commands to be executed by the server. If defined, once complete, the server will shut down.")
+    
     return parser.parse_args()

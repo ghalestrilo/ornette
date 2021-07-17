@@ -5,12 +5,14 @@ from logger import Logger
 from store import Store
 from filters import Filters
 from threading import Lock
+from commands import commands
 import mido
 import data
 from os import environ
 
 class Host:
-    def __init__(self,args):
+    def __init__(self, args):
+      self.exec = args.exec
       self.lock = Lock()
       self.state = {}
       self.store = Store(self, args)
@@ -26,20 +28,32 @@ class Host:
 
       self.reset()
       self.model = data.load_model(self, args.checkpoint)
-      
-      
 
       # Notify startup for batch runner
       pass
 
     def start(self):
       try:
-        if (self.state['batch_mode']): self.bridge.notify_task_complete()
+        if self.exec:
+          self.run_commands(self.exec)
+          # TODO: Add a CLI flag to boot the server anyway after exec
         self.bridge.start()
       except KeyboardInterrupt:
-          self.close()
-          return
-      self.close()
+        self.close()
+        return
+
+    def run_commands(self, command_list):
+      if not isinstance(command_list, str): return
+
+      for line in command_list.split(';'):
+        print(line)
+        line = line.split(' ')
+        cmd, args = line[0], line[1:]
+        print((cmd, args))
+        try:
+          commands[cmd](self)
+        except KeyError:
+          print(f'unknown command: {cmd}')
 
     def close(self):
         self.engine.stop()
