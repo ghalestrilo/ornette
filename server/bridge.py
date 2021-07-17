@@ -1,5 +1,6 @@
 from pythonosc import osc_server, udp_client
 from pythonosc.dispatcher import Dispatcher
+from threading import Thread
 
 from commands import commands, run
 
@@ -31,7 +32,7 @@ class Bridge:
         self.client.send_message('/play2', msg)
 
     def stop(self):
-        self.server.shutdown()
+        Thread(target=self.server.shutdown).start()
 
     def notify_task_complete(self):
         print('[server] task complete')

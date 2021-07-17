@@ -5,7 +5,7 @@ from logger import Logger
 from store import Store
 from filters import Filters
 from threading import Lock
-from commands import run
+from commands import run_batch
 import mido
 import data
 from os import environ
@@ -38,22 +38,12 @@ class Host:
     def start(self):
       try:
         if self.exec:
-          self.run_commands(self.exec)
-          # TODO: Add a CLI flag to boot the server anyway after exec
+          run_batch(self, self.exec)
         self.bridge.start()
       except KeyboardInterrupt:
         self.close()
         return
 
-    def run_commands(self, command_list):
-      if not isinstance(command_list, str): return
-
-      for line in command_list.split(';'):
-        print(line)
-        line = line.split(' ')
-        cmd, args = line[0], line[1:]
-        print((cmd, args))
-        run(cmd, self, args)
 
     def close(self):
         self.engine.stop()
