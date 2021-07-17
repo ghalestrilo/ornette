@@ -17,7 +17,7 @@ commands = (
   , "debug":     lambda host, key: host.io.print() if key == 'all' else host.io.print(key)
 
   # Engine
-  , "generate":  lambda host, length, unit='beats': host.engine.generate(length, unit, True)
+  , "generate":  lambda host, length, unit='beats': host.engine.generate(int(length), unit, True)
   , "start":     lambda host: host.engine.start()
   , "stop":      lambda host: host.engine.stop()
 
@@ -36,3 +36,13 @@ commands = (
   , "end":        lambda host: host.close()
   }
 )
+
+def run(cmd, host, args):
+  """ Runs a user command """
+  host.io.log(f'cmd request: {cmd} {args}')
+  try:
+    fn = commands[cmd]
+    fn(host, *args)
+  except KeyError:
+    print(f'unknown command: {cmd}')
+

@@ -37,8 +37,3 @@ if __name__ == "__main__":
     # Prep Model
     host = Host(args)
     host.start()
-
-
-    # if (state['return']==CODE_REBOOT):
-    #   print("Should Reboot")
-    # state['return']

@@ -5,10 +5,16 @@ from logger import Logger
 from store import Store
 from filters import Filters
 from threading import Lock
-from commands import commands
+from commands import run
 import mido
 import data
 from os import environ
+
+# WIP: Passing commands via CLI
+# Problem: `end` don't end no program
+# TODO: Seems like `close` is called before the event loop starts
+# Try using a flag (self.ready = Event()) and setting it through load_model / engine start
+# Wait for it before issuing any --exec commands
 
 class Host:
     def __init__(self, args):
@@ -29,9 +35,6 @@ class Host:
       self.reset()
       self.model = data.load_model(self, args.checkpoint)
 
-      # Notify startup for batch runner
-      pass
-
     def start(self):
       try:
         if self.exec:
@@ -50,10 +53,7 @@ class Host:
         line = line.split(' ')
         cmd, args = line[0], line[1:]
         print((cmd, args))
-        try:
-          commands[cmd](self)
-        except KeyError:
-          print(f'unknown command: {cmd}')
+        run(cmd, self, args)
 
     def close(self):
         self.engine.stop()

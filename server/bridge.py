@@ -24,9 +24,6 @@ class Bridge:
         self.host.set(key, value)
 
     def run_command(self, addr, args, command):
-        # print(addr)
-        # print(args)
-        # print(command)
         command(self.host, *args)
 
     def bind_command(self, title, command):

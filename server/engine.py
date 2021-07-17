@@ -71,6 +71,8 @@ class Engine():
       self.host.set('is_running', False)
 
     def generate(self, length=None, unit=None, respond=False):
+      print(f'length: {length}')
+      print(f'unit: {unit}')
       host = self.host
 
       with self.host.lock: host.set('is_generating', True)
