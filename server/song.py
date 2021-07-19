@@ -180,6 +180,7 @@ class Song():
             # print(f'msg: {msg}')
             if curticks > ticks: break
             if isinstance(msg,str): continue
+            if msg.type not in ['note_on', 'note_off']: continue
             curticks += msg.time
             out[-1].append(msg)
 

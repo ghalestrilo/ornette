@@ -16,7 +16,6 @@ def midotrack2noteseq(tracks, host):
         # AttributeError:
         # 'str' object has no attribute 'time'
         if isinstance(message, str): continue
-        print(message)
 
         next_start_time = last_end_time + host.song.from_ticks(message.time, host.get('input_unit'))
         if not message.is_meta:

@@ -52,6 +52,8 @@ def run_batch(host, command_list):
     if not isinstance(command_list, str): return
 
     for line in command_list.split(';'):
-      line = line.split(' ')
+      line = [ term for term in line.split(' ')
+               if term not in ['\n']
+             ]
       cmd, args = line[0], line[1:]
       run(cmd, host, args)
