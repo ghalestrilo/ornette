@@ -7,6 +7,7 @@ from mido import MidiFile, Message
 ## Input Filters
 def midotrack2noteseq(tracks, host):
     seqs = []
+    velocity_sensitive = host.get('is_velocity_sensitive')
     for track in tracks:
       seqs.append([])
       last_end_time = 0
@@ -15,6 +16,7 @@ def midotrack2noteseq(tracks, host):
         # AttributeError:
         # 'str' object has no attribute 'time'
         if isinstance(message, str): continue
+        print(message)
 
         next_start_time = last_end_time + host.song.from_ticks(message.time, host.get('input_unit'))
         if not message.is_meta:
@@ -23,7 +25,7 @@ def midotrack2noteseq(tracks, host):
               program=0,
               start_time=last_end_time,
               end_time=next_start_time,
-              velocity=message.velocity,
+              velocity=message.velocity if velocity_sensitive else 100,
               pitch=message.note
               ))
         last_end_time = next_start_time
@@ -72,6 +74,7 @@ def midotrack2pianoroll(tracks, host):
 ## Output Filters
 def noteseq2midotrack(noteseqs, host):
     output = []
+    velocity_sensitive = host.get('is_velocity_sensitive')
 
     # Convert Notes to Messages
     for i, notes in enumerate(noteseqs):
@@ -87,7 +90,7 @@ def noteseq2midotrack(noteseqs, host):
           output[-1].append(Message(name,
             note=note.pitch,
             channel=host.get('voices')[i],
-            velocity=note.velocity,
+            velocity=note.velocity if velocity_sensitive else 100,
             time=ticks
             ))
 

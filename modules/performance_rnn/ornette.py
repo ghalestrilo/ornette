@@ -23,6 +23,7 @@ class OrnetteModule():
         self.host.set('output_unit', 'seconds')
 
         self.host.set('last_end_time', 0)
+        self.host.set('is_velocity_sensitive', True)
         self.host.set('steps_per_quarter', config.steps_per_quarter)
         self.host.set('voices', [1])
 

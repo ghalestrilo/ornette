@@ -22,7 +22,7 @@ commands = (
     , "stop":      lambda host: host.engine.stop()
 
     # Song
-    , "load":       lambda host, filename, length=None, unit='bars': host.song.load(filename, length, unit)
+    , "load":       lambda host, filename, length=None, unit='bars': host.song.load(filename, int(length), unit)
     , "save":       lambda host, name: host.song.save(name)
     , "buffer":     lambda host, num: host.io.log(host.song.buffer(num))
     , "event":      lambda host, ev: host.push_event(ev)

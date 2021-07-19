@@ -7,10 +7,11 @@ state = {
     'debug_output': True,
     'until_next_event': 0.25, # TODO: Remove after MIDI-based refactor
 
-    # Controls
-    'temperature': 1.2,      # read from .ornette.yml
-    'buffer_length': 64,     # read from .ornette.yml
-    'trigger_generate': 0.5, # read from .ornette.yml
+    # Model Parameters
+    'temperature': 1.2,             # read from .ornette.yml
+    'buffer_length': 64,            # read from .ornette.yml
+    'trigger_generate': 0.5,        # read from .ornette.yml
+    'is_velocity_sensitive': False, # read from .ornette.yml
 
     # TODO: Move to Engine (Operation/Playback Variables)
     'is_generating': False, # Keep
