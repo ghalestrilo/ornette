@@ -180,11 +180,18 @@ class Song():
             # print(f'msg: {msg}')
             if curticks > ticks: break
             if isinstance(msg,str): continue
+
+            # Only return note_on and note_off messages
+            # TODO: accumulate time from other messages
+            if msg.is_meta:
+              self.host.io.log(f'ignoring {msg}')
+              continue
             if msg.type not in ['note_on', 'note_off']: continue
             curticks += msg.time
             out[-1].append(msg)
 
         # return out
+        out = list(reversed(out))
         return [list(self.data.tracks[0])] + out[1:]
 
 

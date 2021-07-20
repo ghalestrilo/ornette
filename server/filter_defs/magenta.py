@@ -29,12 +29,16 @@ def midotrack2noteseq(tracks, host):
               ))
         last_end_time = next_start_time
 
+    # Calculate total quantized steps
+    # total_quantized_steps = max(seq[0].end_time for seq in seqs) - min(seq[0].start_time for seq in seqs)
+    # total_quantized_steps = host.song.convert(total_quantized_steps, 'beats', 'steps')
+
     return [NoteSequence(
         notes=seq,
         quantization_info={
             'steps_per_quarter': host.get('steps_per_quarter')},
         tempos=[{ 'time': 0, 'qpm': host.get('bpm') }],
-        total_quantized_steps=11,
+        # total_quantized_steps = total_quantized_steps,
     ) for seq in seqs]
 
 def midotrack2pianoroll(tracks, host):
@@ -42,18 +46,21 @@ def midotrack2pianoroll(tracks, host):
     primer_sequence = []
     step_length = 1 / host.get('steps_per_quarter')
     
+    # Create empty PianorollSequence
     noteseq = NoteSequence(
       quantization_info={'steps_per_quarter': host.get('steps_per_quarter')},
       tempos=[{ 'time': 0, 'qpm': host.get('bpm') }],
     )
     pianorollseq = PianorollSequence(quantized_sequence=noteseq)
-
-    print(f'noteseq.quantization_info.steps_per_quarter: {noteseq.quantization_info.steps_per_quarter}')
-    print(f'relative quantized? {is_relative_quantized_sequence(noteseq)}')
-    
+    # print(f'noteseq.quantization_info.steps_per_quarter: {noteseq.quantization_info.steps_per_quarter}')
+    # print(f'relative quantized? {is_relative_quantized_sequence(noteseq)}')
+    # print(tracks)
     
     for i, own_note in enumerate(tracks[0]):
+      # print(own_note)
+      if own_note.is_meta: continue # FIXME: This is bullshit, the song#buffer method should take care of this
       partner_note = tracks[1][i]
+      own_note = own_note.note
       tuple_ = (own_note, partner_note) if partner_note else (own_note,)
       primer_sequence.append(tuple_)
       pianorollseq.append(tuple_)
@@ -65,7 +72,7 @@ def midotrack2pianoroll(tracks, host):
     # Get last end time
     last_end_time = (len(primer_sequence) * step_length
       if primer_sequence != None and any(primer_sequence)
-      else 0 )
+      else 0)
     host.set('last_end_time', last_end_time)
 
     return pianorollseq

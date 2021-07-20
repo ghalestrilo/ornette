@@ -37,7 +37,7 @@ class OrnetteModule():
         self.host.set('output_unit', 'bars')
         self.host.set('input_unit', 'bars')
         self.host.set('last_end_time', 0.125)
-        self.host.set('steps_per_quarter', 4)
+        self.host.set('steps_per_quarter', 8)
         self.host.set('voices', [1,2])
         self.host.set('init_pitch', 55)
 
@@ -53,6 +53,7 @@ class OrnetteModule():
         self.host.add_filter('output', 'noteseq2midotrack')
 
     def generate(self, history=None, length_seconds=4, tracks=[0, 1]):
+        print(history)
         primer_sequence = history.to_sequence(qpm=self.host.get('bpm'))
 
         generator_options = generator_pb2.GeneratorOptions()

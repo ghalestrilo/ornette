@@ -131,6 +131,8 @@ class Engine():
         msgcount = len(self.host.song.messages)
 
       buflen = 32
+      # FIXME: Calculate Buffer Length from ticks?
+      # buflen = host.get('input_length')
       ratio = msgcount - self.curmsg
       ratio = 1 - (ratio / buflen)
       # self.host.io.log(f'must = {ratio} < {host.get("trigger_generate")}')
