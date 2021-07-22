@@ -5,6 +5,8 @@ class Logger:
       self.host = host
       self.state = host.state
 
+    
+
     # TODO: IO
     def log(self, msg):
       # if self.is_debugging(): print(f"[server] {msg}")
@@ -28,6 +30,18 @@ class Logger:
               for msg in track:
                 self.host.io.log(f'  {msg}')
 
+            return
+
+          if (field == 'buffer'):
+            ticks = self.host.song.to_ticks(16,'bars')
+            self.host.io.log(f'debugging 16 bars ({ticks} ticks)')
+            data = self.host.song.buffer(ticks)
+            self.host.io.log(data)
+            for track in data:
+              self.host.io.log(track)
+
+              for msg in track:
+                self.host.io.log(f'  {msg}')
             return
 
           if (field == 'time'):

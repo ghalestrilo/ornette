@@ -39,6 +39,7 @@ def midotrack2noteseq(tracks, host):
             'steps_per_quarter': host.get('steps_per_quarter')},
         tempos=[{ 'time': 0, 'qpm': host.get('bpm') }],
         # total_quantized_steps = total_quantized_steps,
+        # total_quantized_steps = 
     ) for seq in seqs]
 
 def midotrack2pianoroll(tracks, host):

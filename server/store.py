@@ -16,13 +16,13 @@ state = {
     # TODO: Move to Engine (Operation/Playback Variables)
     'is_generating': False, # Keep
     'time_shift_denominator': 100,
-    'is_running': False,  # Deprecate?
-    'playback': True,     # Deprecate?
-    'return': 0,          # Deprecate?
-    'history': [[]],      # Deprecate
-    'playhead': 0,        # Deprecate
-    'missing_beats': 4,   # Deprecate
-    'last_end_time': 0,   # Deprecate
+    'is_running': False,    # Deprecate?
+    'playback': True,       # Deprecate?
+    'return': 0,            # Deprecate?
+    'history': [[]],        # Deprecate
+    'playhead': 0,          # Deprecate
+    'missing_beats': 4,     # Deprecate
+    'last_end_time': 0,     # Deprecate
     'input_unit': 'beats',  # read from .ornette.yml
     'input_length': 4,      # read from .ornette.yml
     'output_unit': 'beats', # read from .ornette.yml
@@ -33,9 +33,9 @@ state = {
     'voices': [1], # Deprecate
     'instrument': [ 's', 'superpiano', 'velocity', '0.4' ], # Deprecate
 
-    # TODO: move to track
-    'output_data': mido.MidiFile(), # Deprecate
-    'save_output': True, # Deprecate
+    # TODO: move to song
+    'output_data': mido.MidiFile(),       # Deprecate
+    'save_output': True,                  # Deprecate
     'track_name': 'Acoustic Grand Piano', # Deprecate
     'bpm': 120,
     'midi_tempo': None,

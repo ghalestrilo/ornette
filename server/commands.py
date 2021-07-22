@@ -14,7 +14,7 @@ def set(host, *args):
 commands = (
     { 'reset':     lambda host: host.reset()
     , 'set':       lambda host, *args: set(host, *args)
-    , "debug":     lambda host, key: host.io.print() if key == 'all' else host.io.print(key)
+    , "debug":     lambda host, key: host.io.print(key) if key == 'all' else host.io.print(key)
 
     # Engine
     , "generate":  lambda host, length, unit='beats': host.engine.generate(int(length), unit, True)

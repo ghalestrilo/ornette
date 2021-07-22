@@ -191,8 +191,11 @@ class Song():
             out[-1].append(msg)
 
         # return out
-        out = list(reversed(out))
-        return [list(self.data.tracks[0])] + out[1:]
+        out = [list(reversed(x)) for x in out]
+        # self.host.io.log(f'out: {out}')
+        out = [list(self.data.tracks[0])] + out[1:]
+        # self.host.io.log(f'out: {out}')
+        return out
 
 
     def get_channel(self, idx):
