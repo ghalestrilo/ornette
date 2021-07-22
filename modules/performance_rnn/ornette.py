@@ -19,18 +19,22 @@ class OrnetteModule():
         self.server_state = host.state
         self.host = host
 
+        self.host.set('time_coeff', (1/10)) # TODO: Check this coefficient
         self.host.set('input_unit', 'seconds')
         self.host.set('output_unit', 'seconds')
 
         self.host.set('last_end_time', 0)
         self.host.set('is_velocity_sensitive', True)
         self.host.set('steps_per_quarter', config.steps_per_quarter)
+        # self.host.set('steps_per_quarter', 2)
+        # self.host.set('steps_per_quarter', 4)
         self.host.set('voices', [1])
 
         # TODO: Move to yaml
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'midotrack2noteseq')
         self.host.add_filter('output', 'noteseq2midotrack')
+        self.host.add_filter('output', 'mido_track_sort_by_time')
 
         self.model = PerformanceRnnSequenceGenerator(
             model=PerformanceRnnModel(config),

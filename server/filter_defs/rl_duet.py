@@ -9,7 +9,7 @@ def notearray2midotrack(notearrays, host):
   step_length = 1 / host.get('steps_per_quarter')
   step_length = host.song.to_ticks(step_length, host.get('output_unit'))
   
-  print(notearrays)
+  # print(notearrays)
   output = []
   for i, notearray in enumerate(notearrays):
     output.append([])

@@ -54,14 +54,12 @@ class OrnetteModule():
       self.host.include_filters('magenta')
       self.host.add_filter('input', 'midotrack2noteseq')
       self.host.add_filter('output', 'noteseq2midotrack')
+      self.host.add_filter('output', 'mido_track_sort_by_time')
+      self.host.add_filter('output', 'mido_track_subtract_last_time')
 
   def generate(self, tracks=None, length_seconds=4, voices=[0]):
       output = []
-      print('input')
-      print(tracks)
-
       last_end_time = max([max([0, *(note.end_time for note in track.notes if any(track.notes))]) for track in tracks])
-      print(f'last_end_time {last_end_time}')
 
       generator_options = generator_pb2.GeneratorOptions()
 
@@ -83,14 +81,12 @@ class OrnetteModule():
 
         notes = self.model.generate(track, generator_options).notes
         notes = [n for n in notes if n.start_time > last_end_time]
+
+        # Update times to avoid gaps between generated sections
         for n in notes:
           n.start_time -= last_end_time
           n.end_time -= last_end_time
         
-        print('output')
-        # print(notes)
-        # output.append(notes[len(track):])
-        notes
         output.append(notes)
       return output
 

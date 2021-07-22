@@ -51,9 +51,11 @@ class OrnetteModule():
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'midotrack2pianoroll')
         self.host.add_filter('output', 'noteseq2midotrack')
+        self.host.add_filter('output', 'mido_track_sort_by_time')
+        self.host.add_filter('output', 'mido_track_subtract_last_time')
 
     def generate(self, history=None, length_seconds=4, tracks=[0, 1]):
-        print(history)
+        # print(history)
         primer_sequence = history.to_sequence(qpm=self.host.get('bpm'))
 
         generator_options = generator_pb2.GeneratorOptions()
@@ -63,8 +65,8 @@ class OrnetteModule():
 
         seq = self.model.generate(primer_sequence, generator_options)
 
-        print(f'seq.quantization_info.steps_per_quarter: {seq.quantization_info.steps_per_quarter}')
-        print(f'relative quantized? {is_relative_quantized_sequence(seq)}')
+        # print(f'seq.quantization_info.steps_per_quarter: {seq.quantization_info.steps_per_quarter}')
+        # print(f'relative quantized? {is_relative_quantized_sequence(seq)}')
 
         return [seq.notes]
 

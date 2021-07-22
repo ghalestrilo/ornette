@@ -101,16 +101,35 @@ def noteseq2midotrack(noteseqs, host):
             time=ticks
             ))
 
-    # Sort by start_time
-    output[-1].sort(key = lambda msg: msg.time)
+      # Sort by start_time
+      output[-1].sort(key = lambda msg: msg.time)
 
     # Adjust note time
+    # last_time = 0
+    # for msg in output[-1]:
+    #   dur = msg.time - last_time
+    #   msg.time = dur
+    #   last_time += dur
+    return output
+
+def mido_track_sort_by_time(tracks, host):
+  """ Sorts Track messages by time """
+  for track in tracks:
+    track.sort(key = lambda msg: msg.time)
+
+  return tracks
+
+def mido_track_subtract_last_time(tracks, host):
+  """ Some models save accumulated time instead of  """
+  # Adjust note time
+  for track in tracks:
     last_time = 0
-    for msg in output[-1]:
+    for msg in track:
       dur = msg.time - last_time
       msg.time = dur
       last_time += dur
-    return output
+  
+  return tracks
 
 def noteseq2pianoroll(noteseq,host):
   return PianorollSequence(quantized_sequence=noteseq)
@@ -156,4 +175,6 @@ filters = {
   'noteseq2midotrack': noteseq2midotrack,
   'noteseq2pianoroll': noteseq2pianoroll,
   'pianoroll2midotrack': pianoroll2midotrack,
+  'mido_track_sort_by_time': mido_track_sort_by_time,
+  'mido_track_subtract_last_time': mido_track_subtract_last_time,
 }
