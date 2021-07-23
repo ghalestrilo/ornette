@@ -55,7 +55,6 @@ class OrnetteModule():
         self.host.add_filter('output', 'mido_track_subtract_last_time')
 
     def generate(self, history=None, length_seconds=4, tracks=[0, 1]):
-        # print(history)
         primer_sequence = history.to_sequence(qpm=self.host.get('bpm'))
 
         generator_options = generator_pb2.GeneratorOptions()
@@ -64,9 +63,6 @@ class OrnetteModule():
             end_time=self.host.get('last_end_time') + length_seconds)
 
         seq = self.model.generate(primer_sequence, generator_options)
-
-        # print(f'seq.quantization_info.steps_per_quarter: {seq.quantization_info.steps_per_quarter}')
-        # print(f'relative quantized? {is_relative_quantized_sequence(seq)}')
 
         return [seq.notes]
 
