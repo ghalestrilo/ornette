@@ -2,7 +2,7 @@ from mido import Message
 import numpy as np
 
 def midotrack2notearray(tracks, host):
-  a = [[msg.note for msg in track] for track in tracks]
+  a = [[msg.note for msg in track if not msg.is_meta] for track in tracks]
   return np.array(a)
 
 def notearray2midotrack(notearrays, host):

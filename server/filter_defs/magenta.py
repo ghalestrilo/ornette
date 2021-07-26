@@ -192,7 +192,7 @@ def noteseq2midotrack_performance_rnn(noteseqs, host):
     for i, notes in enumerate(noteseqs):
       track = []
       for (name, get_time) in [
-            # ('note_off', lambda x: x.end_time),
+            ('note_off', lambda x: x.end_time),
             ('note_on', lambda x: x.start_time)
           ]:
         for note in notes:
@@ -288,13 +288,22 @@ def filter_test(noteseq_, host):
 
 
 
-
+def mido_no_0_velocity(tracks, host):
+    """ 0-velocity messages crash PerformanceRNN
+        This filter substitutes 0 velocity by 1
+    """
+    for track in tracks:
+      for msg in track:
+        if msg.type in ['note_on', 'note_off'] and msg.velocity == 0:
+          msg.velocity = 1
+    return tracks
 
 
 filters = {
-  # Input
+  # Input (Mido)
   'midotrack2noteseq': midotrack2noteseq,
   'midotrack2pianoroll': midotrack2pianoroll,
+  'mido_no_0_velocity': mido_no_0_velocity,
   'filter_test': filter_test,
 
   # Output

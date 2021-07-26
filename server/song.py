@@ -4,6 +4,7 @@ import sys
 import mido
 from os.path import normpath, join
 from mido import MidiFile, MidiTrack, Message, MetaMessage, tempo2bpm
+import mido
 from datetime import datetime
 
 from channel import Channel
@@ -116,9 +117,9 @@ class Song():
         """
         mid = MidiFile(filename) # This checks if the file exists, before anything
 
-        self.host.io.log(f'ticks_per_beat: {mid.ticks_per_beat}')
+        # self.host.io.log(f'ticks_per_beat: {mid.ticks_per_beat}')
         self.host.set('ticks_per_beat', mid.ticks_per_beat) # TODO: Set self
-        self.host.io.log(f'ticks_per_beat: {self.host.get("ticks_per_beat")}')
+        # self.host.io.log(f'ticks_per_beat: {self.host.get("ticks_per_beat")}')
         self.reset()
         # if self.host.get('batch_mode'): self.host.bridge.notify_task_complete()
 
@@ -127,7 +128,8 @@ class Song():
           ticks_so_far = 0
           offset = 0
           
-          track = MidiTrack(ticks_per_beat=mid.ticks_per_beat)
+          # track = mido.MidiTrack(ticks_per_beat=mid.ticks_per_beat)
+          track = mido.MidiTrack()
 
           for msg in file_track:
             if max_len is not None: 
