@@ -52,22 +52,11 @@ class Song():
       return self.messages[index] if index < len(self.messages) else None
 
     def reset(self, initialize_voices=True):
-      # with self.host.lock:
         if self.data is not None:
           for t in self.data.tracks: t.clear()
           self.data.tracks.clear()
 
         self.data = MidiFile(ticks_per_beat=self.host.get('ticks_per_beat')) # TODO: internal state
-
-        # This
-        # if initialize_voices:
-          # self.init_conductor()
-          # for i, _ in enumerate(self.host.get('voices')):
-            # t = MidiTrack("track")
-            # self.data.tracks.append(t)
-
-        # gc.collect()
-
 
         # TODO: Internal State
         host = self.host
@@ -117,18 +106,13 @@ class Song():
         """
         mid = MidiFile(filename) # This checks if the file exists, before anything
 
-        # self.host.io.log(f'ticks_per_beat: {mid.ticks_per_beat}')
         self.host.set('ticks_per_beat', mid.ticks_per_beat) # TODO: Set self
-        # self.host.io.log(f'ticks_per_beat: {self.host.get("ticks_per_beat")}')
         self.reset()
-        # if self.host.get('batch_mode'): self.host.bridge.notify_task_complete()
 
         for i, file_track in enumerate(mid.tracks):
-          # index = i + 1 if len(mid.tracks) < 2 else ifss
           ticks_so_far = 0
           offset = 0
           
-          # track = mido.MidiTrack(ticks_per_beat=mid.ticks_per_beat)
           track = mido.MidiTrack()
 
           for msg in file_track:
@@ -194,9 +178,7 @@ class Song():
 
         # return out
         out = [list(reversed(x)) for x in out]
-        # self.host.io.log(f'out: {out}')
         out = [list(self.data.tracks[0])] + out[1:]
-        # self.host.io.log(f'out: {out}')
         return out
 
 
@@ -276,7 +258,6 @@ class Song():
       ppq = 1 # TODO: Get
       ms = int(round( 60000 / (bpm * ppq)))
       tempo = 1000 * ms
-      # print(f'tempo = {tempo} | bpm = {bpm} | spq = {spq} ')
       return tempo
 
     def to_ticks(self, length, unit):
@@ -325,5 +306,4 @@ class Song():
     def get_voice(self, voice_index=None):
       if voice_index is None:
         voice_index = self.host.get('voices')[0]
-      # print(f'voice_index: {voice_index}')
       return self.host.get('voices')[voice_index]

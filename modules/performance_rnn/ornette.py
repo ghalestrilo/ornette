@@ -19,15 +19,15 @@ class OrnetteModule():
         self.server_state = host.state
         self.host = host
 
-        # self.host.set('input_unit', 'seconds')
-        self.host.set('input_unit', 'bars')
-        # self.host.set('output_unit', 'seconds')
-        self.host.set('output_unit', 'bars')
+        self.host.set('input_unit', 'seconds')
+        self.host.set('time_coeff', 2)
+        # self.host.set('input_unit', 'bars')
+        self.host.set('output_unit', 'seconds')
+        # self.host.set('output_unit', 'bars')
 
         self.host.set('last_end_time', 0)
         self.host.set('is_velocity_sensitive', True)
-        self.host.set('steps_per_quarter', config.steps_per_quarter)  
-        # self.host.set('steps_per_quarter', 8)
+        self.host.set('steps_per_quarter', config.steps_per_quarter)
         self.host.set('voices', [1])
 
         # TODO: Move to yaml
@@ -35,12 +35,7 @@ class OrnetteModule():
         self.host.add_filter('input', 'mido_no_0_velocity')
         self.host.add_filter('input', 'midotrack2noteseq')
 
-        # self.host.add_filter('output', 'filter_test')
         self.host.add_filter('output', 'noteseq2midotrack_performance_rnn')
-
-        # mido_track_subtract_last_time: Notas ficam muito pequenas e frases soam mal
-        # self.host.add_filter('output', 'mido_track_sort_by_time')
-        # self.host.add_filter('output', 'mido_track_subtract_last_time')
 
         self.model = PerformanceRnnSequenceGenerator(
             model=PerformanceRnnModel(config),
