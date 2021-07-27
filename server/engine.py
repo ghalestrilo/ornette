@@ -37,7 +37,8 @@ class Engine():
       if (self.must_generate()): self.generate()
 
       time = 0
-      while not self.stopped.wait(time):
+      should_stop = False
+      while not should_stop:
         time = 0
         _last_curmsg = self.curmsg
 
@@ -59,11 +60,12 @@ class Engine():
           self.host.io.log(f'({self.curmsg}/{len(self.host.song.messages)}) {msg}')
 
           self.curmsg = self.curmsg + 1
-          self.host.song.perform(msg)
           time = msg.time # Here, msg.time returns in BEATS (because of mido)
           time = self.host.song.convert(time, 'beats', 'seconds') # Convert that to seconds
           time = time * self.host.get('steps_per_quarter') / 2 # Without this, playback happens too fast (IDK why)
           # print(f'msg.time: {msg.time} | wait: {time}s')
+          should_stop = self.stopped.wait(time)
+          self.host.song.perform(msg)
         
         # Notify buffer has ended
         if _last_curmsg == self.curmsg:
@@ -131,6 +133,8 @@ class Engine():
         msgcount = len(self.host.song.messages)
 
       buflen = 32
+      # FIXME: Calculate Buffer Length from ticks?
+      # buflen = host.get('input_length')
       ratio = msgcount - self.curmsg
       ratio = 1 - (ratio / buflen)
       # self.host.io.log(f'must = {ratio} < {host.get("trigger_generate")}')

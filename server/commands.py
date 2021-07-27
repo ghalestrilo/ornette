@@ -14,7 +14,7 @@ def set(host, *args):
 commands = (
     { 'reset':     lambda host: host.reset()
     , 'set':       lambda host, *args: set(host, *args)
-    , "debug":     lambda host, key: host.io.print() if key == 'all' else host.io.print(key)
+    , "debug":     lambda host, key: host.io.print(key) if key == 'all' else host.io.print(key)
 
     # Engine
     , "generate":  lambda host, length, unit='beats': host.engine.generate(int(length), unit, True)
@@ -22,7 +22,7 @@ commands = (
     , "stop":      lambda host: host.engine.stop()
 
     # Song
-    , "load":       lambda host, filename, length=None, unit='bars': host.song.load(filename, length, unit)
+    , "load":       lambda host, filename, length=None, unit='bars': host.song.load(filename, int(length), unit)
     , "save":       lambda host, name: host.song.save(name)
     , "buffer":     lambda host, num: host.io.log(host.song.buffer(num))
     , "event":      lambda host, ev: host.push_event(ev)
@@ -52,6 +52,8 @@ def run_batch(host, command_list):
     if not isinstance(command_list, str): return
 
     for line in command_list.split(';'):
-      line = line.split(' ')
+      line = [ term for term in line.split(' ')
+               if term not in ['\n']
+             ]
       cmd, args = line[0], line[1:]
       run(cmd, host, args)

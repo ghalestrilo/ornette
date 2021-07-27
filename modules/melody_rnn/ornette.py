@@ -20,7 +20,9 @@ class OrnetteModule():
         self.host = host
         self.host.set('steps_per_quarter', config.steps_per_quarter)
         self.host.set('input_unit', 'bars')
+        # self.host.set('input_unit', 'beats')
         self.host.set('output_unit', 'bars')
+        # self.host.set('output_unit', 'beats')
         self.last_end_time = 0
         self.host.set('last_end_time', 0)
         self.host.set('voices', [1])
@@ -29,6 +31,10 @@ class OrnetteModule():
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'midotrack2noteseq')
         self.host.add_filter('output', 'noteseq2midotrack')
+        self.host.add_filter('output', 'mido_track_sort_by_time')
+        self.host.add_filter('output', 'mido_track_subtract_last_time')
+        
+        
 
     def generate(self, tracks=None, length_seconds=4, voices=[0]):
         output = []

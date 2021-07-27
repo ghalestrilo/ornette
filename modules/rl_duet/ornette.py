@@ -70,10 +70,10 @@ class OrnetteModule():
       self.index2pitch = i2p
       self.model = model
       self.host = host
-      self.host.set('input_unit', 'beats')
-      self.host.set('output_unit', 'beats')
+      self.host.set('input_unit', 'bars')
+      self.host.set('output_unit', 'bars')
       # self.host.set('missing_beats', 4)
-      self.host.set('steps_per_quarter', 2)
+      self.host.set('steps_per_quarter', 4)
       self.host.set('voices', [1,2])
       self.meta = []
 

@@ -48,28 +48,52 @@ class OrnetteModule():
       self.last_end_time = 0
       self.host.set('voices', [1])
       self.host.set('steps_per_quarter', 4)
+      self.host.set('trigger_generate', 0.1)
       
       # TODO: Move to yaml
       self.host.include_filters('magenta')
       self.host.add_filter('input', 'midotrack2noteseq')
       self.host.add_filter('output', 'noteseq2midotrack')
+      self.host.add_filter('output', 'mido_track_sort_by_time')
+      self.host.add_filter('output', 'mido_track_subtract_last_time')
 
   def generate(self, tracks=None, length_seconds=4, voices=[0]):
       output = []
-
       last_end_time = max([max([0, *(note.end_time for note in track.notes if any(track.notes))]) for track in tracks])
+
+      generator_options = generator_pb2.GeneratorOptions()
+
+      generator_options.args['temperature'].float_value = 1.0
+      generator_options.args['beam_size'].int_value = 1
+      generator_options.args['branch_factor'].int_value = 1
+      generator_options.args['steps_per_iteration'].int_value = 1
+      generator_options.args['condition_on_primer'].bool_value = True
+      generator_options.args['no_inject_primer_during_generation'].bool_value = True
+      generator_options.args['inject_primer_during_generation'].bool_value = False
 
       for voice in voices:
         # Get last end time
-
-        generator_options = generator_pb2.GeneratorOptions()
+        track = tracks[voice]
+        # last_end_time = track.total_time
         generator_options.generate_sections.add(
-            start_time=last_end_time,
-            end_time=last_end_time + length_seconds)
+          start_time=last_end_time,
+          end_time=last_end_time + length_seconds)
 
-        notes = self.model.generate(tracks[voice], generator_options).notes
+        notes = self.model.generate(track, generator_options).notes
+        notes = [n for n in notes if n.start_time > last_end_time]
+
+        # Update times to avoid gaps between generated sections
+        for n in notes:
+          n.start_time -= last_end_time
+          n.end_time -= last_end_time
+        
         output.append(notes)
       return output
 
   def close(self):
       pass
+
+
+
+# seconds_per_step = 60.0 / qpm / generator.steps_per_quarter
+# generate_end_time = FLAGS.num_steps * seconds_per_step

@@ -148,6 +148,7 @@ if __name__ == '__main__':
         '~'), '.ornette', 'checkpoints', options.modelname)
     hostdir = os.path.join(curdir, 'server')
     outdir = os.path.join(curdir, 'output')
+    datadir = os.path.join(curdir, 'dataset')
     moduledir = os.path.join(curdir, 'modules', options.modelname)
 
     # Run Module
@@ -169,6 +170,7 @@ if __name__ == '__main__':
             volumes={
                 hostdir:   {'mode': 'ro', 'bind': '/ornette'},
                 outdir:    {'mode': 'rw', 'bind': '/output'},
+                datadir:   {'mode': 'ro', 'bind': '/dataset'},
                 moduledir: {'mode': 'ro', 'bind': '/model'},
                 ckptdir:   {
                      'mode': 'rw', 'bind': '/ckpt'}
