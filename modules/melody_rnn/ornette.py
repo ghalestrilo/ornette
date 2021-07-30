@@ -30,7 +30,6 @@ class OrnetteModule():
         # TODO: Move to yaml
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'midotrack2noteseq')
-        self.host.add_filter('input', 'print_noteseqs')
         self.host.add_filter('output', 'noteseq2midotrack')
         self.host.add_filter('output', 'mido_track_sort_by_time')
         self.host.add_filter('output', 'mido_track_subtract_last_time')
@@ -41,7 +40,7 @@ class OrnetteModule():
         last_end_time = max([max([0, *(note.end_time for note in track.notes if any(track.notes))])
           for track
           in tracks])
-        print(last_end_time)
+        print(f'last_end_time: {last_end_time}')
 
         # self.config.steps_per_second = 100 * self.host.get('bpm') / 120
         generator_options = generator_pb2.GeneratorOptions()
@@ -49,13 +48,13 @@ class OrnetteModule():
             start_time=last_end_time,
             end_time=last_end_time + length_seconds)
 
-        generator_options.args['temperature'].float_value = 1.0
-        generator_options.args['beam_size'].int_value = 1
-        generator_options.args['branch_factor'].int_value = 1
-        generator_options.args['steps_per_iteration'].int_value = 1
-        generator_options.args['condition_on_primer'].bool_value = True
-        generator_options.args['no_inject_primer_during_generation'].bool_value = True
-        generator_options.args['inject_primer_during_generation'].bool_value = False
+        # generator_options.args['temperature'].float_value = 1.0
+        # generator_options.args['beam_size'].int_value = 1
+        # generator_options.args['branch_factor'].int_value = 1
+        # generator_options.args['steps_per_iteration'].int_value = 1
+        # generator_options.args['condition_on_primer'].bool_value = True
+        # generator_options.args['no_inject_primer_during_generation'].bool_value = True
+        # generator_options.args['inject_primer_during_generation'].bool_value = False
 
         output = [self.model.generate(tracks[voice], generator_options) for voice in output_tracks]
 

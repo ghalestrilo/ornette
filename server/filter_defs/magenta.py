@@ -57,6 +57,7 @@ def midotrack2noteseq(tracks, host):
         ringing_interval = map(lambda msg: msg.time, ringing_interval)
         duration = sum(ringing_interval)
 
+        # Create Notes
         if not message.is_meta:
           note = NoteSequence.Note(
               instrument=0,
@@ -86,9 +87,7 @@ def midotrack2noteseq(tracks, host):
         tempos=[{ 'time': 0, 'qpm': qpm }],
         total_quantized_steps=total_quantized_steps
     ) for seq in seqs]
-    # TODO; 
     
-    # print_noteseqs(sequences, label="input")
     return sequences
 
 
@@ -135,15 +134,20 @@ def noteseq2midotrack(noteseqs, host):
     velocity_sensitive = host.get('is_velocity_sensitive')
     noteseqs = [seq.notes for seq in noteseqs]
 
+    buffer_size = host.get('last_end_time')
+
     # Convert Notes to Messages
-    for i, notes in enumerate(noteseqs):
+    for (i, notes) in enumerate(noteseqs):
       output.append([])
       for (name, get_time) in [
             ('note_off', lambda x: x.end_time),
             ('note_on', lambda x: x.start_time)
           ]:
         for note in notes:
-          ticks = host.song.to_ticks(get_time(note), host.get('output_unit'))
+          time = get_time(note)
+          if time < buffer_size: continue # Skip input sequence
+          time = time - buffer_size
+          ticks = host.song.to_ticks(time, host.get('output_unit'))
           ticks = int(round(ticks))
 
           output[-1].append(Message(name,
@@ -235,7 +239,6 @@ def noteseq2midotrack_performance_rnn(noteseqs, host):
     coeff = host.get('time_coeff') # Time-stretching coefficient
 
     # Convert Notes to Messages
-    print(noteseqs)
     for i, notes in enumerate(noteseqs):
       track = []
       for (name, get_time) in [
@@ -255,14 +258,6 @@ def noteseq2midotrack_performance_rnn(noteseqs, host):
             time=ticks * coeff
             ))
 
-      # print('\n\n============')
-      # for n in notes: print(f'pitch={n.pitch} start={n.start_time} end={n.end_time}')
-      # print('============\n\n')
-
-      # print('\n\n============')
-      # for t in track: print(t)
-      # print('============\n\n')
-
       if not any(track): continue
 
       # Sort messages by time
@@ -280,64 +275,7 @@ def noteseq2midotrack_performance_rnn(noteseqs, host):
 
       output.append(track.copy())
 
-    print(output)
     return output
-
-
-# TODO: This is test code, move to a test case
-def filter_test(noteseq_, host):
-  noteseq = [ [63, 100, 3.81, 4.0]
-            , [60, 100, 3.82, 4.0]
-            , [54, 100, 3.83, 4.0]
-            , [44, 100, 3.84, 4.0]
-            ]
-
-  noteseq = [NoteSequence.Note(
-                instrument=0,
-                program=0,
-                start_time=start_time,
-                end_time=end_time,
-                velocity=velocity,
-                pitch=pitch
-                )
-    for [pitch, velocity, start_time, end_time]
-    in noteseq]
-  noteseq = NoteSequence(
-        notes=noteseq,
-        quantization_info={
-            'steps_per_quarter': host.get('steps_per_quarter')},
-        tempos=[{ 'time': 0, 'qpm': host.get('bpm') }],
-        ).notes
-  # print(noteseq)
-
-  midotrack = noteseq2midotrack_performance_rnn([noteseq], host)
-  midotrack = midotrack[0]
-  expected = [ Message('note_on', channel=1, note=63, velocity=100, time=0)
-             , Message('note_on', channel=1, note=60, velocity=100, time=0.01)
-             , Message('note_on', channel=1, note=54, velocity=100, time=0.01)
-             , Message('note_on', channel=1, note=44, velocity=100, time=0.01)
-             , Message('note_off', channel=1, note=63, velocity=100, time=0.16)
-             , Message('note_off', channel=1, note=60, velocity=100, time=0)
-             , Message('note_off', channel=1, note=54, velocity=100, time=0)
-             , Message('note_off', channel=1, note=44, velocity=100, time=0)
-             ]
-  for msg in expected:
-    msg.time = host.song.to_ticks(msg.time, host.get('output_unit'))
-
-  print("\n\n===============")
-  print(noteseq)
-  for i in range(len(expected)):
-    if len(midotrack) < i:
-      print('These notes are missing:')
-      print(expected[i:])
-      break
-    print(f'{expected[i]} \t| {midotrack[i]}')
-  print("===============\n\n")
-  exit()
-  return noteseq_
-
-
-
 
 def mido_no_0_velocity(tracks, host):
     """ 0-velocity messages crash PerformanceRNN
@@ -356,7 +294,6 @@ filters = {
   'midotrack2noteseq': midotrack2noteseq,
   'midotrack2pianoroll': midotrack2pianoroll,
   'mido_no_0_velocity': mido_no_0_velocity,
-  'filter_test': filter_test,
   'midotrack2noteseq_performance_rnn': midotrack2noteseq_performance_rnn,
 
   # Output

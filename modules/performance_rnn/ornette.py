@@ -32,7 +32,9 @@ class OrnetteModule():
         self.host.add_filter('input', 'mido_no_0_velocity')
         self.host.add_filter('input', 'midotrack2noteseq')
 
-        self.host.add_filter('output', 'noteseq2midotrack_performance_rnn')
+        self.host.add_filter('output', 'noteseq2midotrack')
+        self.host.add_filter('output', 'mido_track_sort_by_time')
+        self.host.add_filter('output', 'mido_track_subtract_last_time')
 
         self.model = PerformanceRnnSequenceGenerator(
             model=PerformanceRnnModel(config),
@@ -50,7 +52,7 @@ class OrnetteModule():
 
         for voice in output_tracks:
             last_end_time = max([max([0, *(note.end_time for note in track.notes if any(track.notes))]) for track in tracks])
-            print(f'last_end_time  {last_end_time}')
+            # print(f'last_end_time  {last_end_time}')
 
             generator_options = generator_pb2.GeneratorOptions()
             generator_options.generate_sections.add(
@@ -58,7 +60,8 @@ class OrnetteModule():
                 end_time=last_end_time + length_seconds)
 
             # FIXME: Remove .notes
-            seq = self.model.generate(tracks[voice], generator_options).notes
+            seq = self.model.generate(tracks[voice], generator_options)
+            # seq = seq.notes
             output.append(seq)
         return output
 

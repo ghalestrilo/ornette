@@ -52,6 +52,7 @@ class OrnetteModule():
       # TODO: Move to yaml
       self.host.include_filters('magenta')
       self.host.add_filter('input', 'midotrack2noteseq')
+      self.host.add_filter('output', 'print_noteseqs')
       self.host.add_filter('output', 'noteseq2midotrack')
       self.host.add_filter('output', 'mido_track_sort_by_time')
       self.host.add_filter('output', 'mido_track_subtract_last_time')
