@@ -36,7 +36,7 @@ class OrnetteModule():
         self.host = host
         self.host.set('output_unit', 'bars')
         self.host.set('input_unit', 'bars')
-        self.host.set('voices', [1,2])
+        self.host.set('output_tracks', [1,2])
         self.host.set('init_pitch', 55)
 
         self.model = PianorollRnnNadeSequenceGenerator(
@@ -53,7 +53,7 @@ class OrnetteModule():
         self.host.add_filter('output', 'mido_track_sort_by_time')
         self.host.add_filter('output', 'mido_track_subtract_last_time')
 
-    def generate(self, history=None, length_seconds=4, tracks=[0, 1]):
+    def generate(self, history=None, length_seconds=4, output_tracks=[1, 2]):
         primer_sequence = history.to_sequence(qpm=120)
 
         generator_options = generator_pb2.GeneratorOptions()

@@ -30,7 +30,7 @@ state = {
     'time_coeff': 1,
 
     # TODO: move to channel
-    'voices': [1], # Deprecate
+    'output_tracks': [1], # Deprecate
     'instrument': [ 's', 'superpiano', 'velocity', '0.4' ], # Deprecate
 
     # TODO: move to song
@@ -73,7 +73,7 @@ class Store():
 
 
         # Move to TrackData
-        if (field == 'voices'):
+        if (field == 'output_tracks'):
           try: value = list(value)
           except TypeError: value = [value]
           value = list(map(int,value))

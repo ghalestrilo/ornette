@@ -28,7 +28,7 @@ class OrnetteModule():
         self.host.set('last_end_time', 0)
         self.host.set('is_velocity_sensitive', True)
         self.host.set('steps_per_quarter', config.steps_per_quarter)
-        self.host.set('voices', [1])
+        self.host.set('output_tracks', [1])
 
         # TODO: Move to yaml
         self.host.include_filters('magenta')
@@ -48,10 +48,10 @@ class OrnetteModule():
             bundle=bundle_file,
             note_performance=config.note_performance)
 
-    def generate(self, tracks=None, length_seconds=4, voices=[0]):
+    def generate(self, tracks=None, length_seconds=4, output_tracks=[0]):
         output = []
 
-        for voice in voices:
+        for voice in output_tracks:
             last_end_time = max([max([0, *(note.end_time for note in track.notes if any(track.notes))]) for track in tracks])
             print(f'last_end_time  {last_end_time}')
 

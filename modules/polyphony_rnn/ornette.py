@@ -45,7 +45,7 @@ class OrnetteModule():
       self.host.set('output_unit', 'measures')
       self.host.set('input_unit', 'measures')
       self.last_end_time = 0
-      self.host.set('voices', [1])
+      self.host.set('output_tracks', [1])
       self.host.set('steps_per_quarter', 4)
       self.host.set('trigger_generate', 0.1)
       
@@ -56,7 +56,7 @@ class OrnetteModule():
       self.host.add_filter('output', 'mido_track_sort_by_time')
       self.host.add_filter('output', 'mido_track_subtract_last_time')
 
-  def generate(self, tracks=None, length_seconds=4, voices=[0]):
+  def generate(self, tracks=None, length_seconds=4, output_tracks=[0]):
       output = []
       last_end_time = max([max([0, *(note.end_time for note in track.notes if any(track.notes))]) for track in tracks])
 
@@ -70,7 +70,7 @@ class OrnetteModule():
       generator_options.args['no_inject_primer_during_generation'].bool_value = True
       generator_options.args['inject_primer_during_generation'].bool_value = False
 
-      for voice in voices:
+      for voice in output_tracks:
         # Get last end time
         track = tracks[voice]
         # last_end_time = track.total_time

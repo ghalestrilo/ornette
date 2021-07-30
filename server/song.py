@@ -20,7 +20,7 @@ units = ['measures', 'bars', 'seconds', 'ticks', 'beats']
 # - bpm
 # - time_signature_numerator
 # - time_signature_denominator
-# - voices
+# - output_tracks
 
 # Gets
 # - output_data
@@ -33,7 +33,7 @@ units = ['measures', 'bars', 'seconds', 'ticks', 'beats']
 # - ticks_per_beat
 # - missing_beats
 # - input_unit
-# - voices
+# - output_tracks
 
 class Song():
     def __init__(self, host, data=None):
@@ -51,7 +51,7 @@ class Song():
     def getmsg(self,index):
       return self.messages[index] if index < len(self.messages) else None
 
-    def reset(self, initialize_voices=True):
+    def reset(self, initialize_output_tracks=True):
         if self.data is not None:
           for t in self.data.tracks: t.clear()
           self.data.tracks.clear()
@@ -313,5 +313,5 @@ class Song():
     # Move "Channels" to bridge/backend (rename: get_channel)
     def get_voice(self, voice_index=None):
       if voice_index is None:
-        voice_index = self.host.get('voices')[0]
-      return self.host.get('voices')[voice_index]
+        voice_index = self.host.get('output_tracks')[0]
+      return self.host.get('output_tracks')[voice_index]

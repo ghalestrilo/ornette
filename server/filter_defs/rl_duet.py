@@ -21,7 +21,7 @@ def notearray2midotrack(notearrays, host):
         last_voice.append(
           Message('note_off',
               note=92,
-              channel=host.get('voices')[i],
+              channel=host.get('output_tracks')[i],
               velocity=127,
               time=step_length
               ))
@@ -32,7 +32,7 @@ def notearray2midotrack(notearrays, host):
         pitch = pitch.split('_')[0]
         last_voice.append(Message('note_off',
             note=int(pitch),
-            channel=host.get('voices')[i],
+            channel=host.get('output_tracks')[i],
             velocity=127,
             time=step_length
             ))
@@ -42,14 +42,14 @@ def notearray2midotrack(notearrays, host):
 
       last_voice.append(Message('note_on',
             note=note,
-            channel=host.get('voices')[i],
+            channel=host.get('output_tracks')[i],
             velocity=127,
             time=0
             ))
 
       last_voice.append(Message('note_off',
             note=note,
-            channel=host.get('voices')[i],
+            channel=host.get('output_tracks')[i],
             velocity=127,
             time=step_length
             ))

@@ -144,7 +144,7 @@ def noteseq2midotrack(noteseqs, host):
 
           output[-1].append(Message(name,
             note=note.pitch,
-            channel=host.get('voices')[i],
+            channel=host.get('output_tracks')[i],
             velocity=note.velocity if velocity_sensitive else 100,
             time=ticks
             ))
@@ -185,7 +185,7 @@ def mido_track_subtract_last_time(tracks, host):
 #     for i, note in enumerate(note_tuple):
 #       output[i].append(Message('note_on',
 #         note=note,
-#         channel=host.get('voices')[i],
+#         channel=host.get('output_tracks')[i],
 #         velocity=note.velocity,
 #         time=step_length
 #         ))
@@ -197,7 +197,7 @@ def mido_track_subtract_last_time(tracks, host):
 #       else:
 #         output[-i].append(Message('note_off',
 #           note=0,
-#           channel=host.get('voices')[i],
+#           channel=host.get('output_tracks')[i],
 #           velocity=note.velocity,
 #           time=step_length
 #           ))
@@ -281,7 +281,7 @@ def noteseq2midotrack_performance_rnn(noteseqs, host):
 
           track.append(Message(name,
             note=note.pitch,
-            channel=host.get('voices')[i],
+            channel=host.get('output_tracks')[i],
             velocity=note.velocity if velocity_sensitive else 100,
             time=ticks * coeff
             ))
