@@ -19,11 +19,8 @@ class OrnetteModule():
         self.server_state = host.state
         self.host = host
 
-        self.host.set('input_unit', 'seconds')
-        self.host.set('time_coeff', 2)
-        # self.host.set('input_unit', 'bars')
-        self.host.set('output_unit', 'seconds')
-        # self.host.set('output_unit', 'bars')
+        self.host.set('input_unit', 'bars')
+        self.host.set('output_unit', 'bars')
 
         self.host.set('last_end_time', 0)
         self.host.set('is_velocity_sensitive', True)

@@ -2,19 +2,15 @@ from note_seq import NoteSequence, PianorollSequence
 from note_seq.midi_io import note_sequence_to_pretty_midi
 from magenta.music.sequences_lib import is_relative_quantized_sequence, quantize_note_sequence
 from mido import MidiFile, Message
+from itertools import takewhile
 
 # Magenta Filters
 
 def print_noteseqs(noteseqs, label=""):
-  # print(noteseq)
-
-  # print(noteseq.ticks_per_quarter)
-  # print(noteseq.steps_per_second)
-  # print(noteseq.quantization_info)
-  # print(noteseq.ticks_per_quarter)
-  # print(noteseq.notes)
+  """ Prints a NoteSeq and returns it """
   print(f'[{label}] printing sequences')
-  for noteseq in noteseqs:
+  for i, noteseq in enumerate(noteseqs):
+    print(f'\n sequence {i}')
     for note in noteseq.notes:
       print(f'pitch: {note.pitch}\t| velocity: {note.velocity}\t| start_time: {note.start_time:.4f}\t| end_time: {note.end_time:.4f}')
   return noteseqs
@@ -25,39 +21,61 @@ def midotrack2noteseq(tracks, host):
         State: Tested, converts neatly
     """
     seqs = []
+    qpm = 120 # IMPORTANT: The input qpm must be fixed to 120, otherwise the models will generate output in a wrong scale of times
     velocity_sensitive = host.get('is_velocity_sensitive')
-    # qpm = host.get('bpm')
-    qpm = 120 # Models were only generating in 120 BPM
     steps_per_quarter = host.get('steps_per_quarter')
+
+    input_unit = host.get('input_unit')
+
+    # tracks = [[msg in track for msg in track if not isinstance(msg, str) ] for track in tracks]
 
     for track in tracks:
       seqs.append([])
-      last_end_time = 0
-      for message in track:
+      # First create start_times, then end_times
+
+      # seq_start_time = list(filter(lambda msg: msg.type == 'note_on', track))[:1]
+      seq_start_time = next(filter(lambda msg: msg.type == 'note_on', track), None)
+      seq_start_time = seq_start_time.time if seq_start_time else 0
+
+      note_start_ticks = 0
+
+      # enumerate track
+      for (i, message) in enumerate(track):
         
         # AttributeError:
         # 'str' object has no attribute 'time'
         if isinstance(message, str): continue
 
-        next_start_time = last_end_time + host.song.from_ticks(message.time, host.get('input_unit'))
+        # Update note start time
+        note_start_ticks += message.time
+
+        # Calculate note duration
+        rest = track[i:]
+        rest = filter(lambda msg: not msg.is_meta, rest)
+        ringing_interval = takewhile(lambda msg: msg.type != 'note_off' and msg.note != msg.note, rest)
+        print(ringing_interval)
+        ringing_interval = map(lambda msg: msg.time, ringing_interval)
+        duration = sum(ringing_interval)
+
         if not message.is_meta:
           note = NoteSequence.Note(
               instrument=0,
               program=0,
-              start_time=last_end_time,
-              end_time=next_start_time,
+              start_time=host.song.from_ticks(note_start_ticks - seq_start_time, input_unit),
+              end_time=host.song.from_ticks(note_start_ticks - seq_start_time + duration, input_unit),
               velocity=message.velocity,
               pitch=message.note
               )
           if velocity_sensitive and message.velocity:
             note.velocity = message.velocity
           seqs[-1].append(note)
-        last_end_time = next_start_time
+
 
     # Calculate Input Buffer Size
     total_quantized_steps = host.get('input_length')
     total_quantized_steps = host.song.convert(total_quantized_steps, host.get('input_unit'), 'beats')
     total_quantized_steps = int(round(total_quantized_steps))
+    print(f'total_quantized_steps: {total_quantized_steps}')
 
     sequences = [NoteSequence(
         notes=seq.copy(),
@@ -69,8 +87,6 @@ def midotrack2noteseq(tracks, host):
         total_quantized_steps=total_quantized_steps
     ) for seq in seqs]
     # TODO; 
-
-    # sequences = [quantize_note_sequence(sequence, steps_per_quarter) for sequence in sequences]
     
     # print_noteseqs(sequences, label="input")
     return sequences
@@ -85,7 +101,7 @@ def midotrack2pianoroll(tracks, host):
     primer_sequence = []
     step_length = 1 / host.get('steps_per_quarter')
 
-    qpm = 120 # IMPORTANT: This value is fixed
+    qpm = 120 # IMPORTANT: The input qpm must be fixed to 120, otherwise the models will generate output in a wrong scale of times
 
     # Create empty PianorollSequence
     noteseq = NoteSequence(
@@ -93,12 +109,7 @@ def midotrack2pianoroll(tracks, host):
       tempos=[{ 'time': 0, 'qpm': qpm }], 
     )
     pianorollseq = PianorollSequence(quantized_sequence=noteseq)
-    # print(f'noteseq.quantization_info.steps_per_quarter: {noteseq.quantization_info.steps_per_quarter}')
-    # print(f'relative quantized? {is_relative_quantized_sequence(noteseq)}')
-    # print(tracks)
-    
     for i, own_note in enumerate(tracks[0]):
-      # print(own_note)
       if own_note.is_meta: continue # FIXME: This is bullshit, the song#buffer method should take care of this
       partner_note = tracks[1][i]
       own_note = own_note.note
@@ -122,11 +133,6 @@ def midotrack2pianoroll(tracks, host):
 def noteseq2midotrack(noteseqs, host):
     output = []
     velocity_sensitive = host.get('is_velocity_sensitive')
-
-    print('output')
-    # steps_per_quarter = host.get('steps_per_quarter')
-    # for sequence in noteseqs: print_noteseq(sequence, label="output")
-    # noteseqs = [quantize_note_sequence(sequence, steps_per_quarter) for sequence in noteseqs]
     noteseqs = [seq.notes for seq in noteseqs]
 
     # Convert Notes to Messages
@@ -138,8 +144,6 @@ def noteseq2midotrack(noteseqs, host):
           ]:
         for note in notes:
           ticks = host.song.to_ticks(get_time(note), host.get('output_unit'))
-          # ticks *= host.get('bpm') / 120 # Convert from 120 to song bpm
-          # ticks *= host.get('time_coeff')
           ticks = int(round(ticks))
 
           output[-1].append(Message(name,
@@ -171,41 +175,6 @@ def mido_track_subtract_last_time(tracks, host):
       last_time += dur
   
   return tracks
-
-# def noteseq2pianoroll(noteseq,host):
-#   return PianorollSequence(quantized_sequence=noteseq)
-
-# def pianoroll2midotrack(pianoroll, host):
-#   output = []
-#   step_length = 1 / host.get('steps_per_quarter')
-#   for note_tuple in pianoroll.notes:
-#     while len(note_tuple) > len(output): output.append([])
-
-#     # Parse event and create message
-#     for i, note in enumerate(note_tuple):
-#       output[i].append(Message('note_on',
-#         note=note,
-#         channel=host.get('output_tracks')[i],
-#         velocity=note.velocity,
-#         time=step_length
-#         ))
-
-#     # Pad eventless tracks
-#     for i in range(len(note_tuple) - len(output)): 
-#       if len(output[-i]):
-#         output[-i][-1].time += step_length
-#       else:
-#         output[-i].append(Message('note_off',
-#           note=0,
-#           channel=host.get('output_tracks')[i],
-#           velocity=note.velocity,
-#           time=step_length
-#           ))
-#   return output
-
-
-
-
 
 
 
