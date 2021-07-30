@@ -16,7 +16,7 @@ units = ['measures', 'bars', 'seconds', 'ticks', 'beats']
 # - history
 # - ticks_per_beat
 # - track_name
-# - midi_tempo
+# - tempo
 # - bpm
 # - time_signature_numerator
 # - time_signature_denominator
@@ -28,7 +28,7 @@ units = ['measures', 'bars', 'seconds', 'ticks', 'beats']
 # - history
 # - time_signature_numerator
 # - time_signature_denominator
-# - midi_tempo
+# - tempo
 # - bpm
 # - ticks_per_beat
 # - missing_beats
@@ -56,13 +56,13 @@ class Song():
           for t in self.data.tracks: t.clear()
           self.data.tracks.clear()
 
-        self.data = MidiFile(ticks_per_beat=self.host.get('ticks_per_beat')) # TODO: internal state
 
         # TODO: Internal State
         host = self.host
+        self.data = MidiFile(ticks_per_beat=host.get('ticks_per_beat'))
         host.set('playhead', 0)
         host.set('last_end_time', 0) # Channels
-        if self.get_tempo() is None: host.set('midi_tempo', mido.bpm2tempo(host.get('bpm'))) 
+        if self.get_tempo() is None: host.set('tempo', mido.bpm2tempo(120))
 
     def empty(self):
         """ Returns true if the song has no musical data """
@@ -106,7 +106,7 @@ class Song():
         """
         mid = MidiFile(filename) # This checks if the file exists, before anything
 
-        self.host.set('ticks_per_beat', mid.ticks_per_beat) # TODO: Set self
+        self.host.set('ticks_per_beat', mid.ticks_per_beat)
         self.reset()
 
         for i, file_track in enumerate(mid.tracks):
@@ -123,15 +123,19 @@ class Song():
 
             track.append(msg)
 
+            tempo_set = False
+
             if msg.is_meta:
                 if msg.type == 'track_name':
                     self.host.set('track_name', msg.name)
-                if msg.type == 'set_tempo':
-                    self.host.set('midi_tempo', msg.tempo)
-                    self.host.set('bpm', tempo2bpm(msg.tempo))
+                if msg.type == 'set_tempo' and not tempo_set:
+                    tempo_set = True
+                    self.host.set('tempo', msg.tempo)
                 if msg.type == 'time_signature':
                     self.host.set('time_signature_numerator', msg.numerator)
                     self.host.set('time_signature_denominator', msg.denominator)
+                    self.host.set('clocks_per_click', msg.clocks_per_click)
+                    self.host.set('steps_per_quarter', msg.notated_32nd_notes_per_beat)
                 continue
             
             if (ticks_so_far == 0 and msg.time > 0): offset = msg.time
@@ -253,12 +257,12 @@ class Song():
 
         return None
 
+    def get_bpm(self):
+      tempo = self.get_tempo()
+      return int(round(tempo2bpm(tempo)))
+
     def get_tempo(self):
-      bpm = self.host.get('bpm')
-      ppq = 1 # TODO: Get
-      ms = int(round( 60000 / (bpm * ppq)))
-      tempo = 1000 * ms
-      return tempo
+      return self.host.get('tempo')
 
     def to_ticks(self, length, unit):
         host = self.host
@@ -279,7 +283,7 @@ class Song():
         return None
 
 
-    # Move to... bridge? maybe
+    # Move to... bridge? IO? maybe
     def time_debug(self, measures=1):
       host = self.host
       ticks = self.to_ticks(measures, "measures")
@@ -290,8 +294,9 @@ class Song():
       host.io.log('Time info:')
       host.io.log(f'   {measures} measure = {beats} beats = {ticks} ticks = {seconds} seconds')
       host.io.log(f'   {gtf(1, "measures")} == {gtf(beats, "beats")} == {gtf(ticks, "ticks")} == {gtf(seconds, "seconds")}')
-      host.io.log(f'   tempo: {self.get_tempo()} | bpm: {host.get("bpm")} | tpb: {host.get("ticks_per_beat")}')
-      host.io.log(f'   missing beats: {host.get("missing_beats")} | unit: {host.get("input_unit")}')
+      host.io.log(f'   tempo: {self.get_tempo()} | bpm: {self.get_bpm()} | tpb: {host.get("ticks_per_beat")}')
+      host.io.log(f'   model input:  {host.get("input_length")} {host.get("input_unit")} ')
+      host.io.log(f'   model output: {host.get("output_length")} {host.get("output_unit")} ')
 
 
 

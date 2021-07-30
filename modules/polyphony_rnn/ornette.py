@@ -42,7 +42,6 @@ class OrnetteModule():
         bundle=bundle_file)
       self.server_state = host.state
       self.host = host
-      # self.host.set('generation_unit', 'seconds')
       self.host.set('output_unit', 'measures')
       self.host.set('input_unit', 'measures')
       self.last_end_time = 0
@@ -79,11 +78,13 @@ class OrnetteModule():
           start_time=last_end_time,
           end_time=last_end_time + length_seconds)
 
-        notes = self.model.generate(track, generator_options).notes
-        notes = [n for n in notes if n.start_time > last_end_time]
+        # FIXME: rm .notes
+        notes = self.model.generate(track, generator_options)
+        # notes = notes.notes
+        # notes = [n for n in notes if n.start_time > last_end_time]
 
-        # Update times to avoid gaps between generated sections
-        for n in notes:
+        # # Update times to avoid gaps between generated sections
+        for n in notes.notes:
           n.start_time -= last_end_time
           n.end_time -= last_end_time
         

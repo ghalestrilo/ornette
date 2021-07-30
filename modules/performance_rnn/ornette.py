@@ -60,6 +60,7 @@ class OrnetteModule():
                 start_time=last_end_time,
                 end_time=last_end_time + length_seconds)
 
+            # FIXME: Remove .notes
             seq = self.model.generate(tracks[voice], generator_options).notes
             output.append(seq)
         return output
