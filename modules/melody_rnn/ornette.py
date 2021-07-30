@@ -33,8 +33,6 @@ class OrnetteModule():
         self.host.add_filter('output', 'noteseq2midotrack')
         self.host.add_filter('output', 'mido_track_sort_by_time')
         self.host.add_filter('output', 'mido_track_subtract_last_time')
-        
-        
 
     def generate(self, tracks=None, length_seconds=4, voices=[0]):
         # output = []
@@ -57,8 +55,6 @@ class OrnetteModule():
         generator_options.args['no_inject_primer_during_generation'].bool_value = True
         generator_options.args['inject_primer_during_generation'].bool_value = False
 
-        for i, track in enumerate(tracks):
-          print(f'track {i} tempos: {track.tempos}')
         output = [self.model.generate(tracks[voice], generator_options) for voice in voices]
 
         # for voice in voices:
@@ -68,7 +64,6 @@ class OrnetteModule():
         # for seq in output:
         #   seq.notes = [n for n in seq.notes if n.start_time > last_end_time]
 
-        print(output)
         return output
 
     def close(self):

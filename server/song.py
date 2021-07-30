@@ -298,7 +298,10 @@ class Song():
       host.io.log(f'   model input:  {host.get("input_length")} {host.get("input_unit")} ')
       host.io.log(f'   model output: {host.get("output_length")} {host.get("output_unit")} ')
 
-
+    # TODO: Get Buffer Length:
+    def get_buffer_length(self, unit='ticks'):
+      # Return min(song_length, buffer_length)
+      return 0
 
 
 

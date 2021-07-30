@@ -68,11 +68,6 @@ class Store():
     def set(self, field, value, silent=False):
       try:
 
-        # Song values
-        # WIP: make qpm a virtual value
-        #   change bpm to qpm, 
-        #   store midi tempo instead of bpm, 
-        #   get bpm calls song:get_bpm
         if (field in ['bpm', 'qpm']):
           self.host.song.set_qpm(value)
 
@@ -81,7 +76,6 @@ class Store():
         if (field == 'voices'):
           try: value = list(value)
           except TypeError: value = [value]
-          # value = [int(v) for v in value]
           value = list(map(int,value))
           for i in value:
             while i + 1 > len(self.get('history')): self.set('history', self.get('history') + [[]])
