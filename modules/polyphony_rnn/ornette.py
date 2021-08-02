@@ -42,24 +42,35 @@ class OrnetteModule():
         bundle=bundle_file)
       self.server_state = host.state
       self.host = host
-      # self.host.set('generation_unit', 'seconds')
       self.host.set('output_unit', 'measures')
       self.host.set('input_unit', 'measures')
       self.last_end_time = 0
-      self.host.set('voices', [1])
+      self.host.set('output_tracks', [1])
       self.host.set('steps_per_quarter', 4)
       self.host.set('trigger_generate', 0.1)
       
       # TODO: Move to yaml
       self.host.include_filters('magenta')
       self.host.add_filter('input', 'midotrack2noteseq')
+      # self.host.add_filter('input', 'print_noteseqs')
+      self.host.add_filter('input', 'merge_noteseqs')
+      self.host.add_filter('output', 'print_noteseqs')
+      self.host.add_filter('output', 'drop_input_length')
       self.host.add_filter('output', 'noteseq2midotrack')
       self.host.add_filter('output', 'mido_track_sort_by_time')
       self.host.add_filter('output', 'mido_track_subtract_last_time')
 
-  def generate(self, tracks=None, length_seconds=4, voices=[0]):
+  def generate(self, tracks=None, length_bars=4, output_tracks=[0]):
       output = []
-      last_end_time = max([max([0, *(note.end_time for note in track.notes if any(track.notes))]) for track in tracks])
+      # last_end_time = max([max([0, *(note.end_time for note in track.notes if any(track.notes))]) for track in tracks])
+      last_end_time = max([0] + [note.end_time if any(track.notes) else 0
+        for track in tracks
+        for note in track.notes
+        ])
+      print(f'last_end_time: {last_end_time}')
+      self.host.set('last_end_time', last_end_time)
+      # buffer_length = last_end_time
+      buffer_length = self.host.song.get_buffer_length()
 
       generator_options = generator_pb2.GeneratorOptions()
 
@@ -68,32 +79,15 @@ class OrnetteModule():
       generator_options.args['branch_factor'].int_value = 1
       generator_options.args['steps_per_iteration'].int_value = 1
       generator_options.args['condition_on_primer'].bool_value = True
-      generator_options.args['no_inject_primer_during_generation'].bool_value = True
-      generator_options.args['inject_primer_during_generation'].bool_value = False
+      generator_options.args['no_inject_primer_during_generation'].bool_value = False
+      generator_options.args['inject_primer_during_generation'].bool_value = True
 
-      for voice in voices:
-        # Get last end time
-        track = tracks[voice]
-        # last_end_time = track.total_time
-        generator_options.generate_sections.add(
-          start_time=last_end_time,
-          end_time=last_end_time + length_seconds)
+      generator_options.generate_sections.add(
+        start_time=last_end_time,
+        end_time=last_end_time + length_bars + buffer_length)
 
-        notes = self.model.generate(track, generator_options).notes
-        notes = [n for n in notes if n.start_time > last_end_time]
-
-        # Update times to avoid gaps between generated sections
-        for n in notes:
-          n.start_time -= last_end_time
-          n.end_time -= last_end_time
-        
-        output.append(notes)
+      output = [self.model.generate(tracks[index], generator_options) for index in output_tracks]
       return output
 
   def close(self):
       pass
-
-
-
-# seconds_per_step = 60.0 / qpm / generator.steps_per_quarter
-# generate_end_time = FLAGS.num_steps * seconds_per_step
