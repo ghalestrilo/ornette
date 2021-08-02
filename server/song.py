@@ -301,6 +301,8 @@ class Song():
     # TODO: Get Buffer Length:
     def get_buffer_length(self, unit='ticks'):
       total_song_time = self.convert(self.data.length, 'seconds', 'bars')
+      notes = [note for note in self.data if note.type in ['note_on', 'note_off']]
+      total_song_time -= self.from_ticks(notes[0].time, 'bars')  if any(notes) else 0
       input_length = self.convert(self.host.get('input_length'), self.host.get('input_unit'), 'bars')
       return min(total_song_time, input_length)
 

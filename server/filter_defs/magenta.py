@@ -22,9 +22,6 @@ def drop_input_length(noteseqs, host):
   for noteseq in noteseqs:
     if not any(noteseq.notes): continue
     while any(noteseq.notes) and noteseq.notes[0].start_time < seq_start_time:
-      # print(noteseq.notes[0])
-      # print(f'{noteseq.notes[0].start_time} < {seq_start_time}')
-      # noteseq.notes.pop()
       noteseq.notes.remove(noteseq.notes[0])
     for note in noteseq.notes:
       note.start_time -= seq_start_time
@@ -98,7 +95,6 @@ def midotrack2noteseq(tracks, host):
         notes=seq.copy(),
         quantization_info={
           'steps_per_quarter': steps_per_quarter,
-          # 'steps_per_second': 177 # Isso não afeta a saída
         },
         tempos=[{ 'time': 0, 'qpm': qpm }],
         total_quantized_steps=total_quantized_steps
@@ -305,12 +301,26 @@ def mido_no_0_velocity(tracks, host):
     return tracks
 
 
+def merge_noteseqs(noteseqs, host, conductor=True):
+  steps_per_quarter = host.get('steps_per_quarter')
+  # qpm = host.get('bpm')
+  output = NoteSequence(
+    notes=[note for seq in noteseqs for note in seq.notes[1:]],
+    quantization_info={
+      'steps_per_quarter': steps_per_quarter,
+    },
+    tempos=[{ 'time': 0, 'qpm': 120 }],
+  )
+  output.notes.sort(key=lambda x: x.start_time)
+  return [noteseqs[0], output]
+
 filters = {
   # Input (Mido)
   'midotrack2noteseq': midotrack2noteseq,
   'midotrack2pianoroll': midotrack2pianoroll,
   'mido_no_0_velocity': mido_no_0_velocity,
   'midotrack2noteseq_performance_rnn': midotrack2noteseq_performance_rnn,
+  'merge_noteseqs': merge_noteseqs,
   
 
   # Output
