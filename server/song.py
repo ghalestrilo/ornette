@@ -5,6 +5,7 @@ import mido
 from os.path import normpath, join
 from mido import MidiFile, MidiTrack, Message, MetaMessage, tempo2bpm
 import mido
+from math import floor
 from datetime import datetime
 
 from channel import Channel
@@ -299,12 +300,18 @@ class Song():
       host.io.log(f'   model output: {host.get("output_length")} {host.get("output_unit")} ')
 
     # TODO: Get Buffer Length:
-    def get_buffer_length(self, unit='ticks'):
-      total_song_time = self.convert(self.data.length, 'seconds', 'bars')
-      notes = [note for note in self.data if note.type in ['note_on', 'note_off']]
-      total_song_time -= self.from_ticks(notes[0].time, 'bars')  if any(notes) else 0
-      input_length = self.convert(self.host.get('input_length'), self.host.get('input_unit'), 'bars')
-      return min(total_song_time, input_length)
+    def get_buffer_length(self, unit='bars', truncate=False):
+
+      # Total Song Time
+      total_song_time = self.convert(self.data.length, 'seconds', unit)
+
+      # Requested Input
+      input_length = self.convert(self.host.get('input_length'), self.host.get('input_unit'), unit)
+
+      # Whichever is lowest
+      length = min(total_song_time, input_length)
+      if truncate: length = floor(length)
+      return length
 
 
 

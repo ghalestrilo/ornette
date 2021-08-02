@@ -52,7 +52,7 @@ class OrnetteModule():
       # TODO: Move to yaml
       self.host.include_filters('magenta')
       self.host.add_filter('input', 'midotrack2noteseq')
-      self.host.add_filter('input', 'print_noteseqs')
+      # self.host.add_filter('input', 'print_noteseqs')
       self.host.add_filter('input', 'merge_noteseqs')
       self.host.add_filter('output', 'print_noteseqs')
       self.host.add_filter('output', 'drop_input_length')
@@ -69,8 +69,8 @@ class OrnetteModule():
         ])
       print(f'last_end_time: {last_end_time}')
       self.host.set('last_end_time', last_end_time)
-      # buffer_length = self.host.song.get_buffer_length()
-      buffer_length = last_end_time
+      # buffer_length = last_end_time
+      buffer_length = self.host.song.get_buffer_length()
 
       generator_options = generator_pb2.GeneratorOptions()
 
@@ -82,9 +82,6 @@ class OrnetteModule():
       generator_options.args['no_inject_primer_during_generation'].bool_value = False
       generator_options.args['inject_primer_during_generation'].bool_value = True
 
-      # print(output_tracks)
-      # print(tracks)
-
       generator_options.generate_sections.add(
         start_time=last_end_time,
         end_time=last_end_time + length_bars + buffer_length)
@@ -94,8 +91,3 @@ class OrnetteModule():
 
   def close(self):
       pass
-
-
-
-# seconds_per_step = 60.0 / qpm / generator.steps_per_quarter
-# generate_end_time = FLAGS.num_steps * seconds_per_step

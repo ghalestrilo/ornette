@@ -295,8 +295,8 @@ def mido_no_0_velocity(tracks, host):
     """
     for track in tracks:
       for msg in track:
-        # if msg.type in ['note_on', 'note_off'] and msg.velocity == 0:
-        if msg.type in ['note_on'] and msg.velocity == 0:
+        if msg.type in ['note_on', 'note_off'] and msg.velocity == 0:
+        # if msg.type in ['note_on'] and msg.velocity == 0:
           msg.velocity = 1
     return tracks
 
