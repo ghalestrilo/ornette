@@ -9,5 +9,5 @@ checkpoints:
 
 config:
     output_unit: seconds
-    voices:
+    output_tracks:
       - 1

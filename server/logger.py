@@ -52,7 +52,7 @@ class Logger:
           if (pretty == True and field == 'history'):
             for voice in data:
               pprint([host.model.decode(e) for e in voice])
-            self.log(f'{len(data)} voices total')
+            self.log(f'{len(data)} output_tracks total')
             return
           if (pretty == True and field == 'output_data'):
             pprint(data)

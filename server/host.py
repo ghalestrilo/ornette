@@ -59,6 +59,7 @@ class Host:
       self.store.set(field,value,silent)
     
     def get(self,field=None):
+      if field == 'bpm': return self.song.get_bpm()
       return self.store.get(field)
 
     def add_filter(self, direction, filtername=None):

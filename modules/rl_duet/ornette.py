@@ -74,15 +74,15 @@ class OrnetteModule():
       self.host.set('output_unit', 'bars')
       # self.host.set('missing_beats', 4)
       self.host.set('steps_per_quarter', 4)
-      self.host.set('voices', [1,2])
+      self.host.set('output_tracks', [1,2])
       self.meta = []
 
       host.include_filters('rl_duet')
       host.add_filter('input', 'midotrack2notearray')
       host.add_filter('output', 'notearray2midotrack')
 
-    def generate(self, history=None, length_steps=4, voices=[]):
-      maxlen = max(len(history[v]) for v in voices)
+    def generate(self, history=None, length_steps=4, output_tracks=[]):
+      maxlen = max(len(history[v]) for v in output_tracks)
       sig = 4
 
       # Continue the Meta array
@@ -91,8 +91,8 @@ class OrnetteModule():
       self.meta = np.array([(i + next_meta) % sig for i in range(maxlen)])
 
       music = self.sample_(self.model,
-        np.array(history[voices[0]]),
-        np.array(history[voices[1]]),
+        np.array(history[output_tracks[0]]),
+        np.array(history[output_tracks[1]]),
         self.meta,
         self.pitch2index['rest'],length_steps)
 
