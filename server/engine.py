@@ -98,7 +98,7 @@ class Engine():
       for _filter in host.filters.input: buffer = _filter(buffer, host)
 
       # Generate sequence
-      tracks = host.get('voices')
+      tracks = host.get('output_tracks')
       # final_length = host.song.convert(length, unit, host.get('input_unit'))
       final_length = host.song.convert(length, unit, host.get('input_unit'))
       # if final_length is None:

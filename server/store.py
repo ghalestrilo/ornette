@@ -30,18 +30,19 @@ state = {
     'time_coeff': 1,
 
     # TODO: move to channel
-    'voices': [1], # Deprecate
+    'output_tracks': [1], # Deprecate
     'instrument': [ 's', 'superpiano', 'velocity', '0.4' ], # Deprecate
 
     # TODO: move to song
     'output_data': mido.MidiFile(),       # Deprecate
     'save_output': True,                  # Deprecate
     'track_name': 'Acoustic Grand Piano', # Deprecate
-    'bpm': 120,
-    'midi_tempo': None,
+    # 'bpm': 120,
     'time_signature_numerator': 4, 
     'time_signature_denominator': 4,
-    'ticks_per_beat': 960, # TODO: How do I determine that?
+    'tempo': None,
+    'ticks_per_beat': 960,
+    'pulses_per_quarter': 24,
     'steps_per_quarter': 4,
 
     # Batch execution control
@@ -67,10 +68,15 @@ class Store():
     def set(self, field, value, silent=False):
       try:
 
+        if (field in ['bpm', 'qpm']):
+          self.host.song.set_qpm(value)
+
+
         # Move to TrackData
-        if (field == 'voices'):
+        if (field == 'output_tracks'):
           try: value = list(value)
           except TypeError: value = [value]
+          value = list(map(int,value))
           for i in value:
             while i + 1 > len(self.get('history')): self.set('history', self.get('history') + [[]])
             while i + 1 > len(self.host.song.data.tracks): self.host.song.data.tracks.append(mido.MidiTrack())
