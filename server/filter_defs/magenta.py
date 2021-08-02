@@ -6,13 +6,29 @@ from itertools import takewhile
 
 # Magenta Filters
 
-def print_noteseqs(noteseqs, label=""):
+def print_noteseqs(noteseqs, host, label=""):
   """ Prints a NoteSeq and returns it """
   print(f'[{label}] printing sequences')
   for i, noteseq in enumerate(noteseqs):
     print(f'\n sequence {i}')
     for note in noteseq.notes:
       print(f'pitch: {note.pitch}\t| velocity: {note.velocity}\t| start_time: {note.start_time:.4f}\t| end_time: {note.end_time:.4f}')
+  return noteseqs
+
+def drop_input_length(noteseqs, host):
+  seq_start_time = host.song.get_buffer_length()
+
+  print(f'dropping notes before: {seq_start_time}')
+  for noteseq in noteseqs:
+    if not any(noteseq.notes): continue
+    while any(noteseq.notes) and noteseq.notes[0].start_time < seq_start_time:
+      # print(noteseq.notes[0])
+      # print(f'{noteseq.notes[0].start_time} < {seq_start_time}')
+      # noteseq.notes.pop()
+      noteseq.notes.remove(noteseq.notes[0])
+    for note in noteseq.notes:
+      note.start_time -= seq_start_time
+      note.end_time -= seq_start_time
   return noteseqs
 
 ## Input Filters
@@ -53,7 +69,7 @@ def midotrack2noteseq(tracks, host):
         rest = track[i:]
         rest = filter(lambda msg: not msg.is_meta, rest)
         ringing_interval = takewhile(lambda msg: msg.type != 'note_off' and msg.note != msg.note, rest)
-        print(ringing_interval)
+        # print(list(ringing_interval))
         ringing_interval = map(lambda msg: msg.time, ringing_interval)
         duration = sum(ringing_interval)
 
@@ -295,8 +311,10 @@ filters = {
   'midotrack2pianoroll': midotrack2pianoroll,
   'mido_no_0_velocity': mido_no_0_velocity,
   'midotrack2noteseq_performance_rnn': midotrack2noteseq_performance_rnn,
+  
 
   # Output
+  'drop_input_length': drop_input_length,
   'noteseq2midotrack': noteseq2midotrack,
   # 'noteseq2pianoroll': noteseq2pianoroll,
   # 'pianoroll2midotrack': pianoroll2midotrack,
