@@ -300,9 +300,6 @@ class Song():
 
     # TODO: Get Buffer Length:
     def get_buffer_length(self, unit='ticks'):
-      # to_time = lambda x: x.time if not x.is_meta else 0
-      # total_song_time = max(sum(map(to_time, track)) for track in self.data)
-      # total_song_time = self.from_ticks(total_song_time, 'bars')
       total_song_time = self.convert(self.data.length, 'seconds', 'bars')
       input_length = self.convert(self.host.get('input_length'), self.host.get('input_unit'), 'bars')
       return min(total_song_time, input_length)

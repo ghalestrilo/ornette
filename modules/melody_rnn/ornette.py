@@ -31,14 +31,11 @@ class OrnetteModule():
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'midotrack2noteseq')
         self.host.add_filter('output', 'drop_input_length')
-        self.host.add_filter('output', 'print_noteseqs')
         self.host.add_filter('output', 'noteseq2midotrack')
         self.host.add_filter('output', 'mido_track_sort_by_time')
         self.host.add_filter('output', 'mido_track_subtract_last_time')
 
     def generate(self, tracks=None, length_bars=4, output_tracks=[0]):
-        # output = []
-
         last_end_time = max([max([0, *(note.end_time for note in track.notes if any(track.notes))])
           for track
           in tracks])
@@ -51,22 +48,7 @@ class OrnetteModule():
             start_time=last_end_time,
             end_time=last_end_time + length_bars)
 
-        # generator_options.args['temperature'].float_value = 1.0
-        # generator_options.args['beam_size'].int_value = 1
-        # generator_options.args['branch_factor'].int_value = 1
-        # generator_options.args['steps_per_iteration'].int_value = 1
-        # generator_options.args['condition_on_primer'].bool_value = True
-        # generator_options.args['no_inject_primer_during_generation'].bool_value = True
-        # generator_options.args['inject_primer_during_generation'].bool_value = False
-
         output = [self.model.generate(tracks[voice], generator_options) for voice in output_tracks]
-
-        # for voice in output_tracks:
-        #   # Get last end time
-        #   notes = 
-        #   output.append(notes)
-        # for seq in output:
-        #   seq.notes = [n for n in seq.notes if n.start_time > last_end_time]
 
         return output
 
