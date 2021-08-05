@@ -54,7 +54,7 @@ class OrnetteModule():
         self.host.add_filter('output', 'mido_track_subtract_last_time')
 
     def generate(self, history=None, length_seconds=4, output_tracks=[1, 2]):
-        primer_sequence = history.to_sequence(qpm=120)
+        primer_sequence = history.to_sequence(qpm=120) # TODO: Test changing this to actual BPM
 
         generator_options = generator_pb2.GeneratorOptions()
         generator_options.generate_sections.add(

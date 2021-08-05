@@ -236,6 +236,9 @@ class Song():
       final_length = self.from_ticks(ticks, _to)
       return final_length
 
+    def get_time_signature(self):
+      return 4 * self.host.get('time_signature_numerator') / self.host.get('time_signature_denominator')
+
     def from_ticks(self, length, unit):
         host = self.host
         if unit not in units:
@@ -252,7 +255,7 @@ class Song():
         if (unit == 'beats'):
           return length
 
-        length = length / (4 * host.get('time_signature_numerator') / host.get('time_signature_denominator'))
+        length = length / self.get_time_signature()
         if (unit in ['measures', 'bars']): 
           return length
 
@@ -279,7 +282,7 @@ class Song():
         length = length * host.get('ticks_per_beat')
         if (unit == 'beats'): return int(round(length))
 
-        length = length * 4 * host.get('time_signature_numerator') / host.get('time_signature_denominator')
+        length = length * self.get_time_signature()
         if (unit in ['measures', 'bars']): return int(round(length))
         return None
 

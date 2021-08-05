@@ -40,13 +40,14 @@ class OrnetteModule():
           for track
           in tracks])
         length_bars += self.host.song.get_buffer_length()
-        print(f'last_end_time: {last_end_time}')
+        # print(f'last_end_time: {last_end_time}')
 
         generator_options = generator_pb2.GeneratorOptions()
         generator_options.generate_sections.add(
             start_time=last_end_time,
             end_time=last_end_time + length_bars)
 
+        # print(tracks)
         output = [self.model.generate(tracks[voice], generator_options) for voice in output_tracks]
 
         return output

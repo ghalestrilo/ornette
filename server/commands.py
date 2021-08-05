@@ -4,8 +4,6 @@
 # These can be passed via command-line or interactively via OSC
 
 def set(host, *args):
-    print(args)
-    # args = args[1:]
     key = args[0]
     value = list(args[1:])
     if len(value) == 1: value = value[0]
