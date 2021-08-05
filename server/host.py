@@ -18,7 +18,7 @@ from os import environ
 
 class Host:
     def __init__(self, args):
-      self.exec = args.exec
+      self.args = args
       self.lock = Lock()
       self.state = {}
       self.store = Store(self, args)
@@ -37,9 +37,10 @@ class Host:
 
     def start(self):
       try:
-        if self.exec:
-          run_batch(self, self.exec)
-        self.bridge.start()
+        if self.args.exec:
+          run_batch(self, self.args.exec)
+        if self.args.server:
+          self.bridge.start()
       except KeyboardInterrupt:
         self.close()
         return

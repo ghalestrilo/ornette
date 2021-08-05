@@ -39,6 +39,7 @@ args.add_argument('--rebuild', type=bool, default=False,
                   help="Force docker images to be rebuilt")
 args.add_argument('--exec', type=str, default=None,
                   help="Startup command to run on the server")
+args.add_argument("--server",     type=bool, default=True,        help="Whether to boot an OSC server when starting a model")
 options = args.parse_args()
 
 # Procedures
@@ -160,7 +161,8 @@ if __name__ == '__main__':
             f'bash -c "python /ornette \
           --module={options.modelname} \
           --checkpoint={options.checkpoint} \
-          --exec={options.exec or str("")}" \
+          --exec={options.exec or str("")} \
+          --server={options.server}" \
           ',
             network_mode='host',
             stream=True,

@@ -201,6 +201,19 @@ class Song():
         if chan: chan.play(message)
 
 
+    def crop(self, unit, _start, _end):
+      """ Crops the current song between a specified _start and _end times
+          unit: The cropping unit (one of 'ticks', 'bars', 'measures', 'beats', 'seconds')
+      """
+      start_time = self.to_ticks(_start, unit)
+      end_time = self.to_ticks(_end, unit)
+
+      for track in self.data.tracks[1:]:
+        for msg in track:
+          if msg.time < start_time: track.remove(msg)
+          if msg.time > end_time: track.remove(msg)
+
+
 
     # TODO: Units
     def get_measure_length(self, unit):
