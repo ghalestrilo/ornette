@@ -238,6 +238,7 @@ class Song():
 
     def get_time_signature(self):
       return 4 * self.host.get('time_signature_numerator') / self.host.get('time_signature_denominator')
+      # return 4
 
     def from_ticks(self, length, unit):
         host = self.host
