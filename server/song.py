@@ -208,11 +208,32 @@ class Song():
       start_time = self.to_ticks(_start, unit)
       end_time = self.to_ticks(_end, unit)
 
-      for track in self.data.tracks[1:]:
-        for msg in track:
-          if msg.time < start_time: track.remove(msg)
-          if msg.time > end_time: track.remove(msg)
+      
 
+      log = self.host.io.log
+
+
+      log(f'Cropping between {start_time} and {end_time} ticks ({end_time - start_time})')
+
+      for i, track in enumerate(self.data.tracks[1:]):
+        log(f'"{track.name}" initial length = {self.get_track_length(track)}')
+        time = 0
+        start_index = 0
+        end_index = 0
+        for msg_index, msg in enumerate(track):
+          time += msg.time
+          end_index = msg_index
+
+          if time <= start_time: start_index = msg_index
+          if time > end_time: break
+
+        track = track[start_index:end_index] # here, +2 with (1, 2) works
+        self.data.tracks[i + 1] = track
+
+        log(f'"{track.name}" final length = {self.get_track_length(track)}')
+
+    def get_track_length(self, track):
+      return sum(msg.time for msg in track if not msg.is_meta) 
 
 
     # TODO: Units

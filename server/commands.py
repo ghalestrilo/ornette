@@ -25,9 +25,10 @@ commands = (
     , "buffer":     lambda host, num: host.io.log(host.song.buffer(num))
     , "event":      lambda host, ev: host.push_event(ev)
     , "instrument": lambda host, addr, index, *inst: host.song.get_voice(index).set_instrument(inst)
-    , "play":       lambda host, pitch: host.bridge.play(pitch)
+    , "crop":       lambda host, unit, _start, _end: host.song.crop(unit, float(_start), float(_end))
 
     # General Control
+    , "play":       lambda host, pitch: host.bridge.play(pitch)
     , "quit":       lambda host: host.close()
     , "exit":       lambda host: host.close()
     , "kill":       lambda host: host.close()
