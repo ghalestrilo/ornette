@@ -27,6 +27,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 # Main
 if __name__ == "__main__":
     args = get_args()
+    print(args)
 
 
     if not args.batch_mode:

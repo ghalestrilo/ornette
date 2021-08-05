@@ -161,7 +161,7 @@ if __name__ == '__main__':
           --module={options.modelname} \
           --checkpoint={options.checkpoint} \
           --exec={options.exec or str("")} \
-          --no-server={options.no_server}" \
+          {"--no-server=True" if options.no_server else ""}" \
           ',
             network_mode='host',
             stream=True,
