@@ -40,11 +40,11 @@ def midotrack2noteseq(tracks, host):
 
     input_unit = host.get('input_unit')
 
-    print('printing tracks')
-    for track in tracks:
-      print(track)
-      for msg in track:
-        print(f' {msg}')
+    # print('printing tracks')
+    # for track in tracks:
+    #   print(track)
+    #   for msg in track:
+    #     print(f' {msg}')
 
 
     for track in tracks:
@@ -77,7 +77,7 @@ def midotrack2noteseq(tracks, host):
         # print(list(ringing_interval))
         ringing_interval = map(lambda msg: msg.time, ringing_interval)
         duration = sum(ringing_interval) + own_stop
-        print(f'duration: {duration}')
+        # print(f'duration: {duration}')
 
         # Create Notes
         if not message.is_meta:
@@ -345,5 +345,3 @@ filters = {
   # Logging
   'print_noteseqs': print_noteseqs,
 }
-
-

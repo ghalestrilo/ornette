@@ -50,6 +50,11 @@ class OrnetteModule():
         # print(tracks)
         output = [self.model.generate(tracks[voice], generator_options) for voice in output_tracks]
 
+        seq_final_length = max(note.end_time for track in tracks for note in track.notes)
+        print(f'LET before sequence: {last_end_time} \
+          | LET after sequence: {seq_final_length} \
+          | New Beats: {seq_final_length - last_end_time}')
+
         return output
 
     def close(self):
