@@ -19,6 +19,6 @@ def get_args():
     parser.add_argument("--batch-mode", type=bool, default=False,       help="Run in batch mode")
     
     parser.add_argument("--exec",       type=str,  default="",          help="Semicolon-separated commands to be executed by the server. If defined, once complete, the server will shut down.")
-    parser.add_argument("--server",     type=bool, default=True,        help="Whether to boot an OSC server when starting a model")
+    parser.add_argument("--no-server",  type=bool, default=False,       help="Run the model without starting an OSC server")
     
     return parser.parse_args()

@@ -39,7 +39,7 @@ class Host:
       try:
         if self.args.exec:
           run_batch(self, self.args.exec)
-        if self.args.server:
+        if not self.args.no_server:
           self.bridge.start()
       except KeyboardInterrupt:
         self.close()
