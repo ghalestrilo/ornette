@@ -261,13 +261,13 @@ def noteseq2midotrack_performance_rnn(noteseqs, host):
     coeff = host.get('time_coeff') # Time-stretching coefficient
 
     # Convert Notes to Messages
-    for i, notes in enumerate(noteseqs):
+    for i, noteseq in enumerate(noteseqs):
       track = []
       for (name, get_time) in [
             ('note_off', lambda x: x.end_time),
             ('note_on', lambda x: x.start_time)
           ]:
-        for note in notes:
+        for note in noteseq.notes:
           # print(note)
           time = get_time(note) * 1000
           ticks = host.song.to_ticks(time, host.get('output_unit'))
@@ -307,7 +307,7 @@ def mido_no_0_velocity(tracks, host):
       for msg in track:
         if msg.type in ['note_on', 'note_off'] and msg.velocity == 0:
         # if msg.type in ['note_on'] and msg.velocity == 0:
-          msg.velocity = 1
+          msg.velocity = 100
     return tracks
 
 

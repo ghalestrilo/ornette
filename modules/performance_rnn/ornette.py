@@ -32,11 +32,13 @@ class OrnetteModule():
         self.host.add_filter('input', 'mido_no_0_velocity')
         self.host.add_filter('input', 'midotrack2noteseq')
         self.host.add_filter('input', 'merge_noteseqs')
-        self.host.add_filter('output', 'drop_input_length')
         self.host.add_filter('output', 'print_noteseqs')
-        self.host.add_filter('output', 'noteseq2midotrack')
-        self.host.add_filter('output', 'mido_track_sort_by_time')
-        self.host.add_filter('output', 'mido_track_subtract_last_time')
+        # self.host.add_filter('output', 'drop_input_length')
+        self.host.add_filter('output', 'print_noteseqs')
+        # self.host.add_filter('output', 'noteseq2midotrack')
+        self.host.add_filter('output', 'noteseq2midotrack_performance_rnn')
+        # self.host.add_filter('output', 'mido_track_sort_by_time')
+        # self.host.add_filter('output', 'mido_track_subtract_last_time')
 
         self.model = PerformanceRnnSequenceGenerator(
             model=PerformanceRnnModel(config),

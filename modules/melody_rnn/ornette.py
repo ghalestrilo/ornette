@@ -39,7 +39,7 @@ class OrnetteModule():
         last_end_time = max([max([0, *(note.end_time for note in track.notes if any(track.notes))])
           for track
           in tracks])
-        length_bars += self.host.song.get_buffer_length()
+        # length_bars += self.host.song.get_buffer_length()
         # print(f'last_end_time: {last_end_time}')
 
         generator_options = generator_pb2.GeneratorOptions()
