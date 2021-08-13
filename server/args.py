@@ -20,5 +20,6 @@ def get_args():
     
     parser.add_argument("--exec",       type=str,  default="",          help="Semicolon-separated commands to be executed by the server. If defined, once complete, the server will shut down.")
     parser.add_argument("--no-server",  type=bool, default=False,       help="Run the model without starting an OSC server")
+    parser.add_argument("--no-module",  type=bool, default=False,       help="Run ornette without loading a model")
     
     return parser.parse_args()

@@ -40,6 +40,7 @@ args.add_argument('--rebuild', type=bool, default=False,
 args.add_argument('--exec', type=str, default=None,
                   help="Startup command to run on the server")
 args.add_argument("--no-server",     type=bool, default=False,        help="Run the model without starting an OSC server")
+args.add_argument("--no-module",     type=bool, default=False,        help="Run ornette without a model")
 options = args.parse_args()
 
 # Procedures
@@ -161,7 +162,8 @@ if __name__ == '__main__':
           --module={options.modelname} \
           --checkpoint={options.checkpoint} \
           --exec={options.exec or str("")} \
-          {"--no-server=True" if options.no_server else ""}" \
+          {"--no-server=True" if options.no_server else ""}  \
+          {"--no-module=True" if options.no_module else ""}" \
           ',
             network_mode='host',
             stream=True,

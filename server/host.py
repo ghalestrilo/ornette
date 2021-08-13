@@ -2,6 +2,7 @@ from bridge import Bridge
 from engine import Engine
 from song import Song
 from logger import Logger
+from dummy import DummyModule
 from store import Store
 from filters import Filters
 from threading import Lock
@@ -33,7 +34,10 @@ class Host:
       self.include_filters = self.filters.load_filter_defs
 
       self.reset()
-      self.model = data.load_model(self, args.checkpoint)
+      print(args.no_module)
+      if args.no_module:
+        self.io.log('Running ornette in dummy mode. Don\'t attempt to generate data')
+      self.model = DummyModule(self) if args.no_module else data.load_model(self, args.checkpoint)
 
     def start(self):
       try:
