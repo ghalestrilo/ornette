@@ -62,7 +62,7 @@ class Engine():
           self.curmsg = self.curmsg + 1
           time = msg.time # Here, msg.time returns in BEATS (because of mido)
           time = self.host.song.convert(time, 'beats', 'seconds') # Convert that to seconds
-          time = time * self.host.get('steps_per_quarter') # / 2 # Without this, playback happens too fast (IDK why)
+          time = time * self.host.get('steps_per_quarter') #/ 2 # Without this, playback happens too fast (IDK why)
           # print(f'msg.time: {msg.time} | wait: {time}s')
           should_stop = self.stopped.wait(time)
           self.host.song.perform(msg)
