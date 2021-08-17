@@ -73,8 +73,9 @@ class Song():
         """ Save the current MIDI data to a file """
         data = self.data
 
-        # TODO: Create wrapper for output dir
-        filename = join('/output', f'{filename}.mid')
+        if not any(filename.endswith(ext) for ext in ['.mid', '.midi']):
+          filename += '.mid'
+        filename = join('/output', filename)
 
         # TODO: throw an event instead of callling host
         host = self.host
@@ -142,6 +143,11 @@ class Song():
             if (ticks_so_far == 0 and msg.time > 0): offset = msg.time
             ticks_so_far = ticks_so_far + msg.time
           self.data.tracks.append(track)
+          
+          self.host.io.log(f'total ticks loaded: {self.total_ticks}')
+
+    def total_ticks(self):
+      return sum(self.to_ticks(msg.time, 'seconds') for msg in self.data if not msg.is_meta)
 
 
     def init_conductor(self):
@@ -208,12 +214,13 @@ class Song():
       start_time = self.to_ticks(_start, unit)
       end_time = self.to_ticks(_end, unit)
 
-      
-
       log = self.host.io.log
 
-
-      log(f'Cropping between {start_time} and {end_time} ticks ({end_time - start_time})')
+      if any (x < 0 or x > self.total_ticks() for x in [start_time, end_time]):
+        log(f'Cropping range ({start_time}:{end_time}) beyond song length (0:{self.total_ticks()})')
+        log('Crop will have no effect')
+      else:
+        log(f'Cropping between {start_time} and {end_time} ticks ({end_time - start_time})')
 
       for i, track in enumerate(self.data.tracks[1:]):
         log(f'"{track.name}" initial length = {self.get_track_length(track)}')
