@@ -1,5 +1,7 @@
 import argparse
+# import sys
 
+# def get_args(cliargs=sys.argv[1:]):
 def get_args():
       # Parse CLI Args
     parser = argparse.ArgumentParser()
@@ -22,4 +24,5 @@ def get_args():
     parser.add_argument("--no-server",  type=bool, default=False,       help="Run the model without starting an OSC server")
     parser.add_argument("--no-module",  type=bool, default=False,       help="Run ornette without loading a model")
     
+    # return parser.parse_args(cliargs)
     return parser.parse_args()

@@ -144,7 +144,7 @@ class Song():
             ticks_so_far = ticks_so_far + msg.time
           self.data.tracks.append(track)
           
-          self.host.io.log(f'total ticks loaded: {self.total_ticks}')
+          self.host.io.log(f'total ticks loaded: {self.total_ticks()}')
 
     def total_ticks(self):
       return sum(self.to_ticks(msg.time, 'seconds') for msg in self.data if not msg.is_meta)

@@ -98,7 +98,7 @@ def midotrack2noteseq(tracks, host):
     total_quantized_steps = host.get('input_length')
     total_quantized_steps = host.song.convert(total_quantized_steps, host.get('input_unit'), 'beats')
     total_quantized_steps = int(round(total_quantized_steps))
-    print(f'total_quantized_steps: {total_quantized_steps}')
+    # print(f'total_quantized_steps: {total_quantized_steps}')
 
     sequences = [NoteSequence(
         notes=seq.copy(),
@@ -108,8 +108,10 @@ def midotrack2noteseq(tracks, host):
         tempos=[{ 'time': 0, 'qpm': qpm }],
         total_quantized_steps=total_quantized_steps
     ) for seq in seqs]
-    print('printing sequences')
-    print(sequences)
+    # print('printing sequences')
+    # print(sequences)
+    end_times = [note.end_time for track in sequences for note in track.notes] + [0]
+    host.set('last_end_time', max(end_times))
     return sequences
 
 
