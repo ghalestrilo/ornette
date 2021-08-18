@@ -2,6 +2,7 @@ from bridge import Bridge
 from engine import Engine
 from song import Song
 from logger import Logger
+from dummy import DummyModule
 from store import Store
 from filters import Filters
 from threading import Lock
@@ -18,7 +19,7 @@ from os import environ
 
 class Host:
     def __init__(self, args):
-      self.exec = args.exec
+      self.args = args
       self.lock = Lock()
       self.state = {}
       self.store = Store(self, args)
@@ -33,13 +34,17 @@ class Host:
       self.include_filters = self.filters.load_filter_defs
 
       self.reset()
-      self.model = data.load_model(self, args.checkpoint)
+      print(args.no_module)
+      if args.no_module:
+        self.io.log('Running ornette in dummy mode. Don\'t attempt to generate data')
+      self.model = DummyModule(self) if args.no_module else data.load_model(self, args.checkpoint)
 
     def start(self):
       try:
-        if self.exec:
-          run_batch(self, self.exec)
-        self.bridge.start()
+        if self.args.exec:
+          run_batch(self, self.args.exec)
+        if not self.args.no_server:
+          self.bridge.start()
       except KeyboardInterrupt:
         self.close()
         return

@@ -71,6 +71,8 @@ class Store():
         if (field in ['bpm', 'qpm']):
           self.host.song.set_qpm(value)
 
+        if field in ['input_length', 'output_length']:
+          value = int(value)
 
         # Move to TrackData
         if (field == 'output_tracks'):

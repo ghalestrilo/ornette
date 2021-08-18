@@ -2,7 +2,7 @@ from note_seq import NoteSequence, PianorollSequence
 from note_seq.midi_io import note_sequence_to_pretty_midi
 from magenta.music.sequences_lib import is_relative_quantized_sequence, quantize_note_sequence
 from mido import MidiFile, Message
-from itertools import takewhile
+from itertools import takewhile, dropwhile
 
 # Magenta Filters
 
@@ -21,11 +21,11 @@ def drop_input_length(noteseqs, host):
   print(f'dropping notes before: {seq_start_time}')
   for noteseq in noteseqs:
     if not any(noteseq.notes): continue
-    while any(noteseq.notes) and noteseq.notes[0].start_time < seq_start_time:
-      noteseq.notes.remove(noteseq.notes[0])
     for note in noteseq.notes:
       note.start_time -= seq_start_time
-      note.end_time -= seq_start_time
+      # note.end_time -= seq_start_time
+    while any(noteseq.notes) and noteseq.notes[0].start_time < 0:
+      noteseq.notes.remove(noteseq.notes[0])
   return noteseqs
 
 ## Input Filters
@@ -40,7 +40,12 @@ def midotrack2noteseq(tracks, host):
 
     input_unit = host.get('input_unit')
 
-    # tracks = [[msg in track for msg in track if not isinstance(msg, str) ] for track in tracks]
+    # print('printing tracks')
+    # for track in tracks:
+    #   print(track)
+    #   for msg in track:
+    #     print(f' {msg}')
+
 
     for track in tracks:
       seqs.append([])
@@ -65,10 +70,14 @@ def midotrack2noteseq(tracks, host):
         # Calculate note duration
         rest = track[i:]
         rest = filter(lambda msg: not msg.is_meta, rest)
-        ringing_interval = takewhile(lambda msg: msg.type != 'note_off' and msg.note != msg.note, rest)
+        not_own_stop = lambda msg: msg.type != 'note_off' and msg.note != msg.note
+        ringing_interval = takewhile(not_own_stop, rest)
+        own_stop = list(dropwhile(not_own_stop, rest))
+        own_stop = own_stop[0].time if len(own_stop) else 0
         # print(list(ringing_interval))
         ringing_interval = map(lambda msg: msg.time, ringing_interval)
-        duration = sum(ringing_interval)
+        duration = sum(ringing_interval) + own_stop
+        # print(f'duration: {duration}')
 
         # Create Notes
         if not message.is_meta:
@@ -99,7 +108,8 @@ def midotrack2noteseq(tracks, host):
         tempos=[{ 'time': 0, 'qpm': qpm }],
         total_quantized_steps=total_quantized_steps
     ) for seq in seqs]
-    
+    print('printing sequences')
+    print(sequences)
     return sequences
 
 
@@ -251,13 +261,13 @@ def noteseq2midotrack_performance_rnn(noteseqs, host):
     coeff = host.get('time_coeff') # Time-stretching coefficient
 
     # Convert Notes to Messages
-    for i, notes in enumerate(noteseqs):
+    for i, noteseq in enumerate(noteseqs):
       track = []
       for (name, get_time) in [
             ('note_off', lambda x: x.end_time),
             ('note_on', lambda x: x.start_time)
           ]:
-        for note in notes:
+        for note in noteseq.notes:
           # print(note)
           time = get_time(note) * 1000
           ticks = host.song.to_ticks(time, host.get('output_unit'))
@@ -297,7 +307,7 @@ def mido_no_0_velocity(tracks, host):
       for msg in track:
         if msg.type in ['note_on', 'note_off'] and msg.velocity == 0:
         # if msg.type in ['note_on'] and msg.velocity == 0:
-          msg.velocity = 1
+          msg.velocity = 100
     return tracks
 
 
@@ -335,5 +345,3 @@ filters = {
   # Logging
   'print_noteseqs': print_noteseqs,
 }
-
-

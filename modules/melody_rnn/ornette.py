@@ -39,15 +39,21 @@ class OrnetteModule():
         last_end_time = max([max([0, *(note.end_time for note in track.notes if any(track.notes))])
           for track
           in tracks])
-        length_bars += self.host.song.get_buffer_length()
-        print(f'last_end_time: {last_end_time}')
+        # length_bars += self.host.song.get_buffer_length()
+        # print(f'last_end_time: {last_end_time}')
 
         generator_options = generator_pb2.GeneratorOptions()
         generator_options.generate_sections.add(
             start_time=last_end_time,
             end_time=last_end_time + length_bars)
 
+        # print(tracks)
         output = [self.model.generate(tracks[voice], generator_options) for voice in output_tracks]
+
+        seq_final_length = max(note.end_time for track in tracks for note in track.notes)
+        print(f'LET before sequence: {last_end_time} \
+          | LET after sequence: {seq_final_length} \
+          | New Beats: {seq_final_length - last_end_time}')
 
         return output
 

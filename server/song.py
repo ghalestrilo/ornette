@@ -73,8 +73,9 @@ class Song():
         """ Save the current MIDI data to a file """
         data = self.data
 
-        # TODO: Create wrapper for output dir
-        filename = join('/output', f'{filename}.mid')
+        if not any(filename.endswith(ext) for ext in ['.mid', '.midi']):
+          filename += '.mid'
+        filename = join('/output', filename)
 
         # TODO: throw an event instead of callling host
         host = self.host
@@ -142,6 +143,11 @@ class Song():
             if (ticks_so_far == 0 and msg.time > 0): offset = msg.time
             ticks_so_far = ticks_so_far + msg.time
           self.data.tracks.append(track)
+          
+          self.host.io.log(f'total ticks loaded: {self.total_ticks}')
+
+    def total_ticks(self):
+      return sum(self.to_ticks(msg.time, 'seconds') for msg in self.data if not msg.is_meta)
 
 
     def init_conductor(self):
@@ -201,6 +207,41 @@ class Song():
         if chan: chan.play(message)
 
 
+    def crop(self, unit, _start, _end):
+      """ Crops the current song between a specified _start and _end times
+          unit: The cropping unit (one of 'ticks', 'bars', 'measures', 'beats', 'seconds')
+      """
+      start_time = self.to_ticks(_start, unit)
+      end_time = self.to_ticks(_end, unit)
+
+      log = self.host.io.log
+
+      if any (x < 0 or x > self.total_ticks() for x in [start_time, end_time]):
+        log(f'Cropping range ({start_time}:{end_time}) beyond song length (0:{self.total_ticks()})')
+        log('Crop will have no effect')
+      else:
+        log(f'Cropping between {start_time} and {end_time} ticks ({end_time - start_time})')
+
+      for i, track in enumerate(self.data.tracks[1:]):
+        log(f'"{track.name}" initial length = {self.get_track_length(track)}')
+        time = 0
+        start_index = 0
+        end_index = 0
+        for msg_index, msg in enumerate(track):
+          time += msg.time
+          end_index = msg_index
+
+          if time <= start_time: start_index = msg_index
+          if time > end_time: break
+
+        track = track[start_index:end_index] # here, +2 with (1, 2) works
+        self.data.tracks[i + 1] = track
+
+        log(f'"{track.name}" final length = {self.get_track_length(track)}')
+
+    def get_track_length(self, track):
+      return sum(msg.time for msg in track if not msg.is_meta) 
+
 
     # TODO: Units
     def get_measure_length(self, unit):
@@ -236,6 +277,10 @@ class Song():
       final_length = self.from_ticks(ticks, _to)
       return final_length
 
+    def get_time_signature(self):
+      return 4 * self.host.get('time_signature_numerator') / self.host.get('time_signature_denominator')
+      # return 4
+
     def from_ticks(self, length, unit):
         host = self.host
         if unit not in units:
@@ -252,7 +297,7 @@ class Song():
         if (unit == 'beats'):
           return length
 
-        length = length / (4 * host.get('time_signature_numerator') / host.get('time_signature_denominator'))
+        length = length / self.get_time_signature()
         if (unit in ['measures', 'bars']): 
           return length
 
@@ -279,7 +324,7 @@ class Song():
         length = length * host.get('ticks_per_beat')
         if (unit == 'beats'): return int(round(length))
 
-        length = length * 4 * host.get('time_signature_numerator') / host.get('time_signature_denominator')
+        length = length * self.get_time_signature()
         if (unit in ['measures', 'bars']): return int(round(length))
         return None
 
