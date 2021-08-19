@@ -1,6 +1,6 @@
 import unittest
 import sys
-from os import path
+from os import path, listdir
 
 # Load server folder
 sys.path.append(path.abspath(path.join('server')))
@@ -19,7 +19,10 @@ class TestSong(unittest.TestCase):
     # @classmethod
     def setUp(self):
         self.host = Host(test_args)
-        self.file = 'dataset/clean_mtd-orig/MTD0391_Bach_BWV0847-01.mid'
+        self.datadir = 'dataset/clean_mtd-orig'
+        files = listdir(self.datadir)
+        self.file = path.join(self.datadir, files[10])
+        print(f'testing with file: {self.file}')
         # self.host.set('log_level', 0)
 
     # @classmethod
@@ -30,14 +33,16 @@ class TestSong(unittest.TestCase):
       """ IF a buffer longer than the current song is requested
           It should return the entire song
       """
-      song = Song(self.host)
       self.assertEqual('foo'.upper(), 'FOO')
 
     def test_crop_from_start(self):
       """ A crop should remove exactly the requested number of bars from the start of the song
       """
-      # song = Song(self.host, self.file)
-      self.assertEqual('foo'.upper(), 'FOO')
+      song = Song(self.host)
+      song.load(self.file)
+      song.crop('bars', 3, 4)
+      print(song.total_ticks())
+      self.assertEqual(song.total_ticks(), song.to_ticks(1, 'bars'))
 
     def test_crop_from_end(self):
       """ A crop should remove exactly the requested number of bars from the start of the song
