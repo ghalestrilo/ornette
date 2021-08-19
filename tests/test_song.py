@@ -1,6 +1,7 @@
 import unittest
 import sys
 from os import path, listdir
+from mido import Message
 
 # Load server folder
 sys.path.append(path.abspath(path.join('server')))
@@ -34,12 +35,18 @@ class TestSong(unittest.TestCase):
     def test_total_ticks(self):
       self.assertEqual(8159, self.song.total_ticks())
 
-    def test_drop_primer(self):
+    def test_drop_primer_no_generation(self):
       self.assertEqual(8159, self.song.total_ticks())
       self.song.drop_primer()
       self.assertEqual(0, self.song.total_ticks())
 
-  
+    def test_drop_primer(self):
+      self.assertEqual(8159, self.song.total_ticks())
+      self.song.drop_primer()
+      for i in range(10):
+        self.song.append(Message('note_on', note=64, time=480, velocity=80), 0)
+      self.assertEqual(4800, self.song.total_ticks())
+
     def test_crop_from_start(self):
       """ A crop should remove exactly the requested number of bars from the start of the song
       """
