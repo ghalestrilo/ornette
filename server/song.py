@@ -144,7 +144,13 @@ class Song():
             ticks_so_far = ticks_so_far + msg.time
           self.data.tracks.append(track)
           
+          self.host.set('primer_ticks', self.total_ticks())
           self.host.io.log(f'total ticks loaded: {self.total_ticks()}')
+
+    def drop_primer(self):
+      ''' Remove primer from generated output '''
+      primer_ticks = self.host.get('primer_ticks')
+      self.crop('ticks', primer_ticks)
 
     def total_ticks(self):
       return sum(self.to_ticks(msg.time, 'seconds') for msg in self.data if not msg.is_meta)
@@ -207,26 +213,32 @@ class Song():
         if chan: chan.play(message)
 
 
-    def crop(self, unit, _start, _end):
+    def crop(self, unit, _start=None, _end=None):
       """ Crops the current song between a specified _start and _end times
           unit: The cropping unit (one of 'ticks', 'bars', 'measures', 'beats', 'seconds')
       """
-      start_time = self.to_ticks(_start, unit)
-      end_time = self.to_ticks(_end, unit)
+      
+      start_time = self.to_ticks(_start or 0, unit)
+      end_time = self.to_ticks(_end or self.total_ticks(), unit)
 
       log = self.host.io.log
 
-      if any (x < 0 or x > self.total_ticks() for x in [start_time, end_time]):
-        log(f'Cropping range ({start_time}:{end_time}) beyond song length (0:{self.total_ticks()})')
-        log('Crop will have no effect')
-      else:
-        log(f'Cropping between {start_time} and {end_time} ticks ({end_time - start_time})')
+      if start_time > end_time:
+        log(f'Cropping start_time ({start_time}) is bigger than end_time ({end_time}), aborting.')
+        return
 
-      for i, track in enumerate(self.data.tracks[1:]):
+      start_time = max(start_time, 0)
+      end_time = min(end_time, self.total_ticks())
+
+      log(f'Cropping between {start_time} and {end_time} ticks ({end_time - start_time})')
+
+      for i, track in enumerate(self.data.tracks):
         log(f'"{track.name}" initial length = {self.get_track_length(track)}')
         time = 0
         start_index = 0
         end_index = 0
+
+        # Find start and end of crop
         for msg_index, msg in enumerate(track):
           time += msg.time
           end_index = msg_index
@@ -235,13 +247,12 @@ class Song():
           if time > end_time: break
 
         track = track[start_index:end_index] # here, +2 with (1, 2) works
-        self.data.tracks[i + 1] = track
+        self.data.tracks[i] = track
 
         log(f'"{track.name}" final length = {self.get_track_length(track)}')
 
     def get_track_length(self, track):
       return sum(msg.time for msg in track if not msg.is_meta) 
-
 
     # TODO: Units
     def get_measure_length(self, unit):
