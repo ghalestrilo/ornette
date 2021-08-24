@@ -47,12 +47,11 @@ class OrnetteModule():
 
         # TODO: Move to YAML
         self.host.include_filters('magenta')
-        #self.host.add_filter('input', 'midotrack2pianoroll')
         self.host.add_filter('input', 'midotrack2noteseq')
         self.host.add_filter('input', 'merge_noteseqs')
         self.host.add_filter('output', 'noteseq2midotrack')
         self.host.add_filter('output', 'mido_track_sort_by_time')
-        self.host.add_filter('output', 'mido_track_subtract_last_time')
+        self.host.add_filter('output', 'mido_track_subtract_previous_time')
 
     def generate(self, history=None, length_seconds=4, output_tracks=[1]):
         # primer_sequence = history.to_sequence(qpm=120) # TODO: Test changing this to actual BPM

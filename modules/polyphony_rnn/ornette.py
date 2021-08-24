@@ -56,7 +56,7 @@ class OrnetteModule():
       self.host.add_filter('output', 'drop_input_length')
       self.host.add_filter('output', 'noteseq2midotrack')
       self.host.add_filter('output', 'mido_track_sort_by_time')
-      self.host.add_filter('output', 'mido_track_subtract_last_time')
+      self.host.add_filter('output', 'mido_track_subtract_previous_time')
 
   def generate(self, tracks=None, length_bars=4, output_tracks=[0]):
       output = []
@@ -66,7 +66,7 @@ class OrnetteModule():
         for note in track.notes
         ])
       print(f'last_end_time: {last_end_time}')
-      self.host.set('last_end_time', last_end_time)
+      # self.host.set('last_end_time', last_end_time)
       # buffer_length = last_end_time
       buffer_length = self.host.song.get_buffer_length()
 

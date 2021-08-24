@@ -89,7 +89,6 @@ class Engine():
 
       # Prepare Input Buffer (<input_length> <input_unit>s)
       buflen = host.get('input_length')
-      # buflen = host.song.to_ticks(buflen, 'beats')
       buflen = host.song.to_ticks(buflen, host.get('input_unit'))
       with self.host.lock:
         buffer = host.song.buffer(buflen)
@@ -99,11 +98,7 @@ class Engine():
 
       # Generate sequence
       tracks = host.get('output_tracks')
-      # final_length = host.song.convert(length, unit, host.get('input_unit'))
       final_length = host.song.convert(length, unit, host.get('input_unit'))
-      # if final_length is None:
-      #   host.io.log(f'error: trying to generate length {final_length} ({length} {unit} to {host.get("input_unit")})')
-      #   return
 
       # Generate Output
       output = host.model.generate(buffer, final_length, tracks)

@@ -31,7 +31,8 @@ state = {
 
     # TODO: move to channel
     'output_tracks': [1], # Deprecate
-    'instrument': [ 's', 'superpiano', 'velocity', '0.4' ], # Deprecate
+    # 'instrument': [ 's', 'superpiano', 'velocity', '0.4' ], # Deprecate
+    'instrument': [ 's', 'reface', 'amp', '0.4' ], # Deprecate
 
     # TODO: move to song
     'output_data': mido.MidiFile(),       # Deprecate

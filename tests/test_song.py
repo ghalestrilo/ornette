@@ -8,18 +8,14 @@ sys.path.append(path.abspath(path.join('server')))
 
 from server.song import Song
 from server.host import Host
-from server.args import get_arg_parser
-
-# TODO: move to 
-test_args = get_arg_parser().parse_args(['--module','melody_rnn','--checkpoint','attention_rnn','--no-server','True','--no-module=True'])
-
+from tests.common import args
 
 # python -m unittest tests.song
 
 class TestSong(unittest.TestCase):
     # @classmethod
     def setUp(self):
-        self.host = Host(test_args)
+        self.host = Host(args)
         self.datadir = 'dataset/clean_mtd-orig'
         files = listdir(self.datadir)
         self.file = path.join(self.datadir, files[11])
