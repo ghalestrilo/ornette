@@ -93,18 +93,26 @@ class Engine():
       with self.host.lock:
         buffer = host.song.buffer(buflen)
 
+      # Calculate Generation Length
+      last_end_time = self.host.get('last_end_time')
+      requested_beats = self.host.song.convert(length, unit, self.host.get('output_unit'))
+      host.set('generation_requested_beats', requested_beats)
+      
+      
+
       # Apply Input Filters
       for _filter in host.filters.input: buffer = _filter(buffer, host)
 
       # Generate sequence
       tracks = host.get('output_tracks')
-      final_length = host.song.convert(length, unit, host.get('input_unit'))
-
-      # Generate Output
+      final_length = host.song.convert(length, unit, host.get('output_unit'))
       output = host.model.generate(buffer, final_length, tracks)
 
       # Apply Output Filters
       for _filter in host.filters.output: output = _filter(output, host)
+
+      # Update last_end_time
+      self.host.set('last_end_time', last_end_time + requested_beats)
 
       # Warn (TODO: validation methods)
       if len(output) != len(tracks):
@@ -119,6 +127,11 @@ class Engine():
       self.fresh_buffer.set()
       with self.host.lock: host.set('is_generating', False)
 
+    def get_quantized_steps(self):
+      self.host.song.get_buffer_length()
+      total_quantized_steps = self.host.song.get_buffer_length(unit='beats')
+      total_quantized_steps = int(round(total_quantized_steps))
+      return total_quantized_steps
 
     def must_generate(self):
       host = self.host

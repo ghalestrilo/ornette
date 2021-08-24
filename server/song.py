@@ -159,7 +159,7 @@ class Song():
     def init_conductor(self):
         host = self.host
         if len(self.data.tracks): return
-        track = MidiTrack('Conductor')
+        track = MidiTrack()
         track.append(MetaMessage('track_name', name=host.get('track_name')))
         track.append(MetaMessage('set_tempo', tempo=self.get_tempo()))
         track.append(MetaMessage('time_signature',

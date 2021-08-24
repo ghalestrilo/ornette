@@ -16,6 +16,7 @@ state = {
     # TODO: Move to Engine (Operation/Playback Variables)
     'is_generating': False, # Keep
     'time_shift_denominator': 100,
+    'generation_requested_beats': 0,
     'is_running': False,    # Deprecate?
     'playback': True,       # Deprecate?
     'return': 0,            # Deprecate?

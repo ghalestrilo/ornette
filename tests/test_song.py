@@ -12,8 +12,17 @@ from tests.common import args
 
 # python -m unittest tests.song
 
-class TestSong(unittest.TestCase):
-    # @classmethod
+class TestSongEmpty(unittest.TestCase):
+    def setUp(self):
+          self.host = Host(args)
+          self.song = Song(self.host)
+    
+    def test_buffer_length(self):
+      """ Buffer Length should be 0
+      """
+      self.assertEqual(self.song.get_buffer_length(), 0)
+
+class TestSongFile(unittest.TestCase):
     def setUp(self):
         self.host = Host(args)
         self.datadir = 'dataset/clean_mtd-orig'
@@ -30,6 +39,22 @@ class TestSong(unittest.TestCase):
 
     def test_total_ticks(self):
       self.assertEqual(8159, self.song.total_ticks())
+    
+    def test_buffer_length(self):
+      """ Buffer Length should be 
+      """
+      self.host.set('input_length', 4)
+      self.host.set('input_unit', 'beats')
+      self.assertEqual(self.song.get_buffer_length(unit='bars'), 1)
+    
+    def test_buffer_length_larger_than_song(self):
+      """ WHEN requested buffer is longer than entire song
+          SHOULD return total song ticks
+      """
+      self.host.set('input_length', 40000)
+      self.host.set('input_unit', 'bars')
+      ticks = int(round(self.song.get_buffer_length(unit='ticks')))
+      self.assertEqual(ticks, self.song.total_ticks())
 
     def test_drop_primer_no_generation(self):
       self.assertEqual(8159, self.song.total_ticks())
