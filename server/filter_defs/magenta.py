@@ -96,6 +96,7 @@ def midotrack2noteseq(tracks, host):
         total_quantized_steps=total_quantized_steps
     ) for seq in seqs]
     end_times = [note.end_time for track in sequences for note in track.notes] + [0]
+    host.set('last_end_time', max(end_times))
     return sequences
 
 
@@ -111,6 +112,13 @@ def debug_generation_request(noteseqs, host):
   return noteseqs
 
 
+
+
+
+
+
+
+
 def noteseq_trim_end(noteseqs, host):
   section_end = host.get('generation_requested_beats')
   host.io.log(f'section_end: {section_end}')
@@ -121,16 +129,17 @@ def noteseq_trim_end(noteseqs, host):
         rmnotes += [i]
       elif note.end_time > section_end: note.end_time = section_end
 
-    for i in reversed(rmnotes):
-        noteseq.notes.remove(noteseq.notes[i])
+    for i in reversed(rmnotes): noteseq.notes.remove(noteseq.notes[i])
   
   print_noteseqs(noteseqs, host)
   return noteseqs
 
 
 def noteseq_trim_start(noteseqs, host):
-  seq_start_time = host.song.get_buffer_length(unit='beats')
-  # seq_start_time = host.get('last_end_time')
+  # seq_start_time = host.song.get_buffer_length(unit=host.get('input_unit'))
+  # seq_start_time = host.get('last_end_time') * 20
+  seq_start_time = host.get('last_end_time')
+  # seq_start_time = 20
 
   print(f'dropping notes before: {seq_start_time}')
   for noteseq in noteseqs:
@@ -141,9 +150,15 @@ def noteseq_trim_start(noteseqs, host):
       note.end_time = round(note.end_time - seq_start_time, 8)
       if note.start_time < 0: rmnotes += [i]
     
-    for i in reversed(rmnotes):
-      noteseq.notes.remove(noteseq.notes[i])
+    for i in reversed(rmnotes): noteseq.notes.remove(noteseq.notes[i])
   return noteseqs
+
+
+
+
+
+
+
 
 
 
