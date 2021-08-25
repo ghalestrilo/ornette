@@ -44,13 +44,14 @@ def prep_module():
                 # if verbose: print(k, ' -> ', v)
 
 
-def load_model(host, checkpoint=None):
+def load_model(host, checkpoint=None, model_path='/model'):
     if checkpoint is None:
         host.io.log("Please provide a checkpoint for the model to load")
         exit(-1)
-
-    model_path = '/model'
-    load_folder(model_path)
+    
+    path = os.path.abspath(model_path)
+    print(os.listdir(path))
+    load_folder(path)
     from ornette import OrnetteModule
     return OrnetteModule(host, checkpoint=checkpoint)
 

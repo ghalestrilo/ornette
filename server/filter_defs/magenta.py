@@ -23,21 +23,6 @@ def print_noteseqs(noteseqs, host, label=""):
       print(f'pitch: {note.pitch}\t| velocity: {note.velocity}\t| start_time: {note.start_time:.4f}\t| end_time: {note.end_time:.4f}')
   return noteseqs
 
-def drop_input_length(noteseqs, host):
-  seq_start_time = host.song.get_buffer_length(unit='beats')
-
-  print(f'dropping notes before: {seq_start_time}')
-  for noteseq in noteseqs:
-    if not any(noteseq.notes): continue
-    rmnotes = []
-    for i, note in enumerate(noteseq.notes):
-      note.start_time = round(note.start_time - seq_start_time, 8)
-      note.end_time = round(note.end_time - seq_start_time, 8)
-      if note.start_time < 0: rmnotes += [i]
-    
-    for i in reversed(rmnotes):
-      noteseq.notes.remove(noteseq.notes[i])
-  return noteseqs
 
 ## Input Filters
 def midotrack2noteseq(tracks, host):
@@ -126,13 +111,41 @@ def debug_generation_request(noteseqs, host):
   return noteseqs
 
 
-def noteseq_trim_output(noteseqs, host):
-  # buflen = host.song.convert(host.get('output_length'), 'bars', host.get('output_unit'))
+def noteseq_trim_end(noteseqs, host):
+  section_end = host.get('generation_requested_beats')
+  host.io.log(f'section_end: {section_end}')
+  for noteseq in noteseqs:
+    rmnotes = []
+    for i, note in enumerate(noteseq.notes):
+      if note.start_time > section_end:
+        rmnotes += [i]
+      elif note.end_time > section_end: note.end_time = section_end
+
+    for i in reversed(rmnotes):
+        noteseq.notes.remove(noteseq.notes[i])
   
-  outlen = host.get('generation_requested_beats')
-  last_end_time = host.get('last_end_time')
-  host.io.log(f'generating interval: [{last_end_time}:{last_end_time + outlen}]')
+  print_noteseqs(noteseqs, host)
   return noteseqs
+
+
+def noteseq_trim_start(noteseqs, host):
+  seq_start_time = host.song.get_buffer_length(unit='beats')
+  # seq_start_time = host.get('last_end_time')
+
+  print(f'dropping notes before: {seq_start_time}')
+  for noteseq in noteseqs:
+    if not any(noteseq.notes): continue
+    rmnotes = []
+    for i, note in enumerate(noteseq.notes):
+      note.start_time = round(note.start_time - seq_start_time, 8)
+      note.end_time = round(note.end_time - seq_start_time, 8)
+      if note.start_time < 0: rmnotes += [i]
+    
+    for i in reversed(rmnotes):
+      noteseq.notes.remove(noteseq.notes[i])
+  return noteseqs
+
+
 
 
 ## Output Filters
@@ -238,7 +251,8 @@ filters = {
   'noteseq_scale': noteseq_scale,
 
   # Output
-  'drop_input_length': drop_input_length,
+  'noteseq_trim_start': noteseq_trim_start,
+  'noteseq_trim_end': noteseq_trim_end,
   'noteseq2midotrack': noteseq2midotrack,
 
   # Default filters

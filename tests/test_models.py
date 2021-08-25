@@ -1,4 +1,15 @@
 import unittest
+import sys
+import os
+
+from unittest.mock import MagicMock, ANY
+
+sys.path.append(os.path.abspath(os.path.join('server')))
+from server.data import load_model
+from server.host import Host
+from tests.common import args
+from math import ceil
+
 
 # python -m unittest tests.models
 
@@ -32,20 +43,46 @@ models = [  # Melody RNN
     {'name': 'polyphony_rnn', 'bundle': 'polyphony_rnn'},
 ]
 
+class TestModelCall(unittest.TestCase):
+    def setUp(self):
+      self.host = Host(args)
+      self.host.model.generate = MagicMock()
+      
+    def test_generate_call(self):
+      self.host.engine.generate(1,'bars')
+      self.host.model.generate.assert_called_with(ANY, 4, ANY)
 
 class TestModels(unittest.TestCase):
+    def setUp(self):
+      model = models[0]
+      self.host = Host(args)
+      self.model = load_model(self.host,model['bundle'],f'modules/{model["name"]}')
+      self.host.model = self.model
+      self.total_length = lambda: int(ceil(self.host.song.total_length()))
+
+    def test_resetting_and_generating(self):
+      """ WHEN resetting a song
+          SHOULD 
+      """
+      self.host.reset()
+      self.host.set('output_tracks', 2)
+      self.host.engine.generate(1,'bars')
+      self.assertEqual(1, self.total_length())
 
     # Mock tests
-    def test_upper(self):
-        self.assertEqual('foo'.upper(), 'FOO')
+    def test_consecutive_generation(self):
+      self.host.engine.generate(1,'bars')
+      self.host.engine.generate(1,'bars')
+      self.host.engine.generate(1,'bars')
+      self.host.engine.generate(1,'bars')
+      self.host.engine.generate(1,'bars')
+      self.assertEqual(5, self.total_length())
+
+    def test_different_sizes(self):
+      self.host.engine.generate(1,'bars')
+      self.host.engine.generate(2,'bars')
+      self.host.engine.generate(4,'bars')
+      self.assertEqual(7, self.total_length())
 
     def test_isupper(self):
-        self.assertTrue('FOO'.isupper())
-        self.assertFalse('Foo'.isupper())
-
-    def test_split(self):
-        s = 'hello world'
-        self.assertEqual(s.split(), ['hello', 'world'])
-        # check that s.split fails when the separator is not a string
-        with self.assertRaises(TypeError):
-            s.split(2)
+        self.assertEqual(True, True)

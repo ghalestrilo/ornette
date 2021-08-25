@@ -21,18 +21,18 @@ class OrnetteModule():
         self.host = host
         self.host.set('steps_per_quarter', config.steps_per_quarter)
         self.host.set('input_length', 16)
-        self.host.set('input_unit', 'beats')
-        self.host.set('output_unit', 'beats')
+        self.host.set('input_unit', 'seconds')
+        self.host.set('output_unit', 'seconds')
         self.host.set('output_tracks', [1])
 
         # TODO: Move to yaml
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'midotrack2noteseq')
         self.host.add_filter('input', 'debug_generation_request')
-        self.host.add_filter('input', 'print_noteseqs')
+        # self.host.add_filter('input', 'print_noteseqs')
         # self.host.add_filter('output', 'print_noteseqs')
-        self.host.add_filter('output', 'drop_input_length')
-        self.host.add_filter('output', 'noteseq_trim_output')
+        self.host.add_filter('output', 'noteseq_trim_start')
+        self.host.add_filter('output', 'noteseq_trim_end')
         self.host.add_filter('output', 'noteseq2midotrack')
         self.host.add_filter('output', 'mido_track_sort_by_time')
         self.host.add_filter('output', 'mido_track_subtract_previous_time')

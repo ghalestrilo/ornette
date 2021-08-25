@@ -100,18 +100,36 @@ class TestMagentaFilters(unittest.TestCase):
 
       self.assertEqual(errs, [])
 
-    def test_drop_input_length(self):
+    def test_noteseq_trim_start(self):
+      """ WHEN
+      """
       for x in range(100): self.host.song.append(Message('note_on', note=x, time=1000), 0)
       self.host.set('input_length', 4)
-      
-
       self.host.set('input_unit', 'beats')
-      notes_filtered = self.apply_filter(self.noteseq, 'drop_input_length').notes
+      # self.host.set('generation_requested_beats', 4)
+
+      notes_filtered = self.apply_filter(self.noteseq, 'noteseq_trim_start').notes
       orig_notes = self.orig_notes[-7:]
-      orig_notes = [(a,b,c-4,d-4) for (a,b,c,d) in orig_notes]
-      pprint(orig_notes)
+      orig_notes = [(n,v,s-4,e-4) for (n,v,s,e) in orig_notes]
       notes_manual_crop = make_noteseq(orig_notes, self.host.get('steps_per_quarter')).notes
       self.assertEqual(len(notes_filtered), len(notes_manual_crop))
+      self.assertSequenceEqual(notes_filtered, notes_manual_crop)
+
+    def test_noteseq_trim_end(self):
+      """ WHEN a sequence goes beyond the requested generation length
+          SHOULD be trimmed to the requested length
+      """ 
+      for x in range(100): self.host.song.append(Message('note_on', note=x, time=1000), 0)
+      self.host.set('input_length', 4)
+      self.host.set('input_unit', 'beats')
+      self.host.set('generation_requested_beats', 4)
+
+      notes_filtered = self.apply_filter(self.noteseq, 'noteseq_trim_end').notes
+      orig_notes = self.orig_notes[:7]
+      notes_manual_crop = make_noteseq(orig_notes, self.host.get('steps_per_quarter')).notes
+      notes_manual_crop[-1].end_time = 4.0
+      self.assertEqual(len(notes_filtered), len(notes_manual_crop))
+      print(f'{len(notes_filtered)} == {len(notes_manual_crop)}')
       self.assertSequenceEqual(notes_filtered, notes_manual_crop)
 
     def apply_filter(self, seq, filtername):

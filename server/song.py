@@ -155,6 +155,8 @@ class Song():
     def total_ticks(self):
       return sum(self.to_ticks(msg.time, 'seconds') for msg in self.data if not msg.is_meta)
 
+    def total_length(self, unit='bars'):
+      return self.from_ticks(self.total_ticks(), unit)
 
     def init_conductor(self):
         host = self.host
