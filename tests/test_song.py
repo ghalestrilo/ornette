@@ -57,16 +57,56 @@ class TestSongFile(unittest.TestCase):
       self.assertEqual(ticks, self.song.total_ticks())
 
     def test_drop_primer_no_generation(self):
-      self.assertEqual(8159, self.song.total_ticks())
       self.song.drop_primer()
       self.assertEqual(0, self.song.total_ticks())
+    
+    def test_drop_primer_no_repeat(self):
+      """ WHEN calling drop_primer twice in succession
+          SHOULD not crop output again
+      """
+      for i in range(10): self.add_message()
+      self.song.drop_primer()
+      self.assertEqual(4800, self.song.total_ticks())
+      self.song.drop_primer()
+      self.song.drop_primer()
+      self.song.drop_primer()
+      self.assertEqual(4800, self.song.total_ticks())
 
-    def test_drop_primer(self):
-      self.assertEqual(8159, self.song.total_ticks())
+    def add_message(self, time=480):
+      self.song.append(Message('note_on', note=64, time=time, velocity=80), 0)
+
+    def test_get_track_length_only_track(self):
+      """ WHEN there is only one track
+          SHOULD always equal song#total_ticks()
+      """
+      subject = lambda : self.song.get_track_length(self.song.data.tracks[0])
       self.song.drop_primer()
       for i in range(10):
+        self.add_message()
+        self.assertEqual(self.song.total_ticks(), subject())
+        self.assertEqual((i+1)*480, subject())
+
+    def test_get_track_length(self):
+      for i in range(10): self.add_message()
+      self.assertEqual(12959, self.song.get_track_length(self.song.data.tracks[0]))
+
+    def test_get_track_length_after_reset(self):
+      """ WHEN track has been reset
+          SHOULD return the correct value
+      """
+      subject = lambda : self.song.get_track_length(self.song.data.tracks[0])
+      self.song.reset()
+      self.song.data.tracks.append([])
+      self.assertEqual(0, subject())
+      for i in range(10): self.add_message()
+      self.assertEqual(4800, subject())
+
+    def test_drop_primer(self):
+      subject = lambda : self.song.total_ticks()
+      for i in range(10):
         self.song.append(Message('note_on', note=64, time=480, velocity=80), 0)
-      self.assertEqual(4800, self.song.total_ticks())
+      self.song.drop_primer()
+      self.assertEqual(4800, subject())
 
     def test_crop_from_start(self):
       """ A crop should remove exactly the requested number of bars from the start of the song

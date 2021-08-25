@@ -151,7 +151,9 @@ class Song():
     def drop_primer(self):
       ''' Remove primer from generated output '''
       primer_ticks = self.host.get('primer_ticks')
+      # if primer_ticks == 0: return
       self.crop('ticks', primer_ticks)
+      self.host.set('primer_ticks', 0)
 
     def total_ticks(self):
       return sum(self.to_ticks(msg.time, 'seconds') for msg in self.data if not msg.is_meta)
@@ -243,19 +245,20 @@ class Song():
 
         # Find start and end of crop
         for msg_index, msg in enumerate(track):
+          end_index = msg_index + 1
           time += msg.time
-          end_index = msg_index
-
-          if time <= start_time: start_index = msg_index
+          # self.host.io.log(f'time: {time} | message: ({msg_index}) {msg}')
+          if start_time >= time: start_index = msg_index
           if time > end_time: break
+
 
         track = track[start_index:end_index] # here, +2 with (1, 2) works
         self.data.tracks[i] = track
 
-        log(f'"{track.name}" final length = {self.get_track_length(track)}')
+        log(f'"{track.name}" final length = {self.get_track_length(track)} ({len(track)} messages)')
 
     def get_track_length(self, track):
-      return sum(msg.time for msg in track if not msg.is_meta) 
+      return sum(msg.time for msg in track if not msg.is_meta)
 
     # TODO: Units
     def get_measure_length(self, unit):
