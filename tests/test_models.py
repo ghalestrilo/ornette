@@ -43,14 +43,6 @@ models = [  # Melody RNN
     {'name': 'polyphony_rnn', 'bundle': 'polyphony_rnn'},
 ]
 
-class TestModelCall(unittest.TestCase):
-    def setUp(self):
-      self.host = Host(args)
-      self.host.model.generate = MagicMock()
-      
-    def test_generate_call(self):
-      self.generate(1,'bars')
-      self.host.model.generate.assert_called_with(ANY, 4, ANY)
 
 class TestModels(unittest.TestCase):
     def setUp(self):
@@ -93,3 +85,14 @@ class TestModels(unittest.TestCase):
 
     def test_isupper(self):
         self.assertEqual(True, True)
+
+
+
+class TestModelCall(unittest.TestCase):
+    def setUp(self):
+      self.host = Host(args)
+      self.host.model.generate = MagicMock()
+      
+    def test_generate_call(self):
+      self.host.engine.generate(1,'bars')
+      self.host.model.generate.assert_called_with(ANY, 4, ANY)
