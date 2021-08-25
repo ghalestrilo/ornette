@@ -29,13 +29,7 @@ def make_noteseq(list_of_tuples, spq):
         total_quantized_steps=6 * 4
       )
 
-class TestMagentaFilters(unittest.TestCase):
-    def setUp(self):
-      self.maxDiff = None
-      self.host = Host(args)
-      self.host.set('is_velocity_sensitive', True)
-      self.orig_notes = (
-        [ (65, 29, 1.5000, 3.0000)
+sample_track = [ (65, 29, 1.5000, 3.0000)
         , (63, 25, 3.0100, 3.7900)
         , (55, 45, 3.2000, 3.2900)
         , (46, 25, 3.2500, 3.8900)
@@ -50,14 +44,29 @@ class TestMagentaFilters(unittest.TestCase):
         , (37, 49, 5.5600, 5.7300)
         , (38, 45, 5.6600, 6.0000)
         ]
-      )
+
+class TestMagentaFilters(unittest.TestCase):
+    def setUp(self):
+      self.maxDiff = None
+      self.host = Host(args)
+      self.host.set('is_velocity_sensitive', True)
+      self.orig_notes = sample_track
       self.notes = make_note_sequence(self.orig_notes)
 
       steps_per_quarter = self.host.get('steps_per_quarter')
       self.noteseq = make_noteseq(self.orig_notes, steps_per_quarter)
+      self.host.set('input_length', 4)
+      self.host.set('input_unit', 'beats')
+      self.host.set('generation_requested_beats', 4)
+
+    def apply_filter(self, seq, filtername):
+      """ Apply filter to a single track, return the converted output
+      """
+      return filters[filtername]([seq], self.host)[0]
 
     def test_noteseq2midotrack_length(self):
-      """ Barcount of output sequence should be equal to the input
+      """ WHEN converting a section with noteseq2midotrack
+          SHOULD return the same number of bars
       """
       song = self.host.song
       input_length = max(note.end_time for note in self.notes)
@@ -97,48 +106,7 @@ class TestMagentaFilters(unittest.TestCase):
         # If no release was found
         if not note_matched: errs += [(i, press)]
 
-
       self.assertEqual(errs, [])
-
-    def test_noteseq_trim_start(self):
-      """ WHEN
-      """
-      for x in range(100): self.host.song.append(Message('note_on', note=x, time=1000), 0)
-      self.host.set('input_length', 4)
-      self.host.set('input_unit', 'beats')
-      # self.host.set('generation_requested_beats', 4)
-
-      notes_filtered = self.apply_filter(self.noteseq, 'noteseq_trim_start').notes
-      orig_notes = self.orig_notes[-7:]
-      orig_notes = [(n,v,s-4,e-4) for (n,v,s,e) in orig_notes]
-      notes_manual_crop = make_noteseq(orig_notes, self.host.get('steps_per_quarter')).notes
-      self.assertEqual(len(notes_filtered), len(notes_manual_crop))
-      self.assertSequenceEqual(notes_filtered, notes_manual_crop)
-
-    def test_noteseq_trim_end(self):
-      """ WHEN a sequence goes beyond the requested generation length
-          SHOULD be trimmed to the requested length
-      """ 
-      for x in range(100): self.host.song.append(Message('note_on', note=x, time=1000), 0)
-      self.host.set('input_length', 4)
-      self.host.set('input_unit', 'beats')
-      self.host.set('generation_requested_beats', 4)
-
-      notes_filtered = self.apply_filter(self.noteseq, 'noteseq_trim_end').notes
-      orig_notes = self.orig_notes[:7]
-      notes_manual_crop = make_noteseq(orig_notes, self.host.get('steps_per_quarter')).notes
-      notes_manual_crop[-1].end_time = 4.0
-      self.assertEqual(len(notes_filtered), len(notes_manual_crop))
-      print(f'{len(notes_filtered)} == {len(notes_manual_crop)}')
-      self.assertSequenceEqual(notes_filtered, notes_manual_crop)
-
-    def apply_filter(self, seq, filtername):
-      """ Apply filter to a single track, return the converted output
-      """
-      return filters[filtername]([seq], self.host)[0]
-
-
-
 
     # Large tests (create new case)
 
@@ -168,7 +136,6 @@ class TestMagentaFilters(unittest.TestCase):
       testfile = os.listdir(datadir)[0]
       
       mid = MidiFile(os.path.join(datadir, testfile))
-      self.maxDiff = None
       track = mid.tracks[0]
       track = [ msg for msg in track if not msg.is_meta and msg.type in ['note_on', 'note_off'] ]
       output = self.apply_filter(track, 'midotrack2noteseq')
@@ -183,3 +150,64 @@ class TestMagentaFilters(unittest.TestCase):
         if total_time != note.time:
           errs += [(i, total_time, note.time, note)]
       self.assertSequenceEqual(errs, [])
+
+
+
+class TestTrimFilters(unittest.TestCase):
+    def setUp(self):
+      self.maxDiff = None
+      self.host = Host(args)
+      self.host.set('is_velocity_sensitive', True)
+      self.host.set('input_length', 4)
+      self.host.set('input_unit', 'beats')
+      self.host.set('generation_requested_beats', 4)
+
+      # Test Subjects
+      self.orig_notes = sample_track
+      steps_per_quarter = self.host.get('steps_per_quarter')
+      self.notes = make_note_sequence(self.orig_notes)
+      self.noteseq = make_noteseq(self.orig_notes, steps_per_quarter)
+      self.notes_trimmed_at_start = self.apply_filter(self.noteseq, 'noteseq_trim_start')
+      self.notes_trimmed_at_end = self.apply_filter(self.noteseq, 'noteseq_trim_end')
+
+      # Test Truth Values
+      self.orig_notes_trimmed_at_start = [(n,v,s-4,e-4) for (n,v,s,e) in self.orig_notes[-7:]]
+      self.orig_notes_trimmed_at_start = make_noteseq(self.orig_notes_trimmed_at_start, self.host.get('steps_per_quarter'))
+      self.orig_notes_trimmed_at_end = self.orig_notes[:7]
+      self.orig_notes_trimmed_at_end = make_noteseq(self.orig_notes_trimmed_at_end, self.host.get('steps_per_quarter'))
+      self.orig_notes_trimmed_at_end.notes[-1].end_time = 4.0
+
+    def apply_filter(self, seq, filtername):
+      """ Apply filter to a single track, return the converted output
+      """
+      return filters[filtername]([seq], self.host)[0]
+
+    def test_noteseq_trim_start_notecount(self):
+      """ WHEN trimming the start of a sequence SHOULD return correct number of notes
+      """
+      self.assertEqual(len(self.notes_trimmed_at_start.notes), len(self.orig_notes_trimmed_at_start.notes))
+    
+    def test_noteseq_trim_start_sequence(self):
+      """ WHEN trimming the start of a sequence SHOULD return only the end of the original sequence
+      """
+      self.assertSequenceEqual(self.notes_trimmed_at_start.notes, self.orig_notes_trimmed_at_start.notes)
+
+    def test_noteseq_trim_start_displacement(self):
+      """ WHEN trimming the start of a sequence SHOULD left-shift the sequence exactly the requested length
+      """
+      self.assertEqual(self.notes_trimmed_at_start.notes[0].start_time, self.orig_notes_trimmed_at_start.notes[0].start_time)
+
+    def test_noteseq_trim_interchangeable(self):
+      """ WHEN trimming a sequence SHOULD return the same value if trimming start-first or end-first
+      """
+      end_first = self.apply_filter(self.notes_trimmed_at_end, 'noteseq_trim_start')
+      start_first = self.apply_filter(self.notes_trimmed_at_start, 'noteseq_trim_end')
+      self.assertEqual(len(start_first.notes), len(end_first.notes))
+      self.assertSequenceEqual(start_first.notes, end_first.notes)
+
+
+    # def test_noteseq_trim_end(self):
+    #   """ WHEN a sequence goes beyond the requested generation length SHOULD be trimmed to the requested length
+    #   """ 
+    #   self.assertEqual(len(self.notes_trimmed_at_start), len(self.orig_notes_trimmed_at_start))
+    #   self.assertSequenceEqual(self.notes_trimmed_at_start, self.orig_notes_trimmed_at_start)
