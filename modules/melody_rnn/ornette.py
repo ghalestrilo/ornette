@@ -10,6 +10,7 @@ class OrnetteModule():
     def __init__(self, host, checkpoint='attention_rnn'):
         self.config = default_configs[checkpoint]
         config = self.config
+        # checkpoint_file = host.data.get_bundle('melody_rnn', checkpoint)
         checkpoint_file = os.path.normpath(f'/ckpt/{checkpoint}')
         bundle_file = sequence_generator_bundle.read_bundle_file(
             checkpoint_file)
@@ -28,9 +29,6 @@ class OrnetteModule():
         # TODO: Move to yaml
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'midotrack2noteseq')
-        self.host.add_filter('input', 'debug_generation_request')
-        # self.host.add_filter('input', 'print_noteseqs')
-        # self.host.add_filter('output', 'print_noteseqs')
         self.host.add_filter('output', 'noteseq_trim_start')
         self.host.add_filter('output', 'noteseq_trim_end')
         self.host.add_filter('output', 'noteseq2midotrack')

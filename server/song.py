@@ -63,6 +63,7 @@ class Song():
         self.data = MidiFile(ticks_per_beat=host.get('ticks_per_beat'))
         host.set('playhead', 0)
         host.set('last_end_time', 0) # Channels
+        host.set('output_tracks', 2)
         if self.get_tempo() is None: host.set('tempo', mido.bpm2tempo(120))
 
     def empty(self):

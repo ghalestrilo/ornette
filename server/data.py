@@ -43,6 +43,7 @@ def prep_module():
                             checkpoint_name, checkpoint_url, False)
                 # if verbose: print(k, ' -> ', v)
 
+from importlib import reload
 
 def load_model(host, checkpoint=None, model_path='/model'):
     if checkpoint is None:
@@ -50,17 +51,19 @@ def load_model(host, checkpoint=None, model_path='/model'):
         exit(-1)
     
     path = os.path.abspath(model_path)
-    print(os.listdir(path))
     load_folder(path)
-    from ornette import OrnetteModule
-    return OrnetteModule(host, checkpoint=checkpoint)
-
-    # If YAML has filter keys, load them
-
+    import ornette
+    reload(ornette)
+    return ornette.OrnetteModule(host, checkpoint=checkpoint)
 
 
 
 
+def get_bundle(host, bundle_name):
+  print(f'module = {host.get("module")}')
+  checkpoint_path = [host.get('data_dir'), 'checkpoints', host.get('module'), bundle_name]
+  checkpoint_path = os.path.join(*checkpoint_path)
+  return checkpoint_path
 
 
 

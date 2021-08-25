@@ -7,8 +7,10 @@ from unittest.mock import MagicMock, ANY
 sys.path.append(os.path.abspath(os.path.join('server')))
 from server.data import load_model
 from server.host import Host
+from server import host, data
 from tests.common import args
 from math import ceil
+from importlib import reload
 
 
 # python -m unittest tests.models
@@ -44,47 +46,73 @@ models = [  # Melody RNN
 ]
 
 
+# models = [models[-1]] + models[:4]
+# models = models[:4]
+models = [models[-1]]
+
+base_sys_path = sys.path.copy()
+
 class TestModels(unittest.TestCase):
     def setUp(self):
-      model = models[0]
+      for model in models:
+        with self.subTest(model=model):
+          self.host = Host(args)
+          self.model = None
+          self.total_length = None
+          self.generate = None
+          self.initialize(models[0])
+
+    def initialize(self, model):
+      sys.path = base_sys_path.copy()
+      args.module = model["name"]
+      args.checkpoint = model["bundle"]
+      reload(host)
+      reload(data)
       self.host = Host(args)
-      self.model = load_model(self.host,model['bundle'],f'modules/{model["name"]}')
+      self.model = load_model(self.host,args.checkpoint,f'modules/{args.module}')
       self.host.model = self.model
       self.total_length = lambda: int(ceil(self.host.song.total_length()))
       self.generate = self.host.engine.generate
+      print(sys.path)
 
     def test_resetting_and_generating(self):
       """ WHEN resetting a song
           SHOULD generate without issues
       """
-      self.host.reset()
-      self.host.set('output_tracks', 2)
-      self.generate(1,'bars')
-      self.assertEqual(1, self.total_length())
+      for model in models:
+        with self.subTest(model=model):
+          self.initialize(model)
+          self.host.reset()
+          self.host.set('output_tracks', 2)
+          self.generate(1,'bars')
+          self.assertEqual(1, self.total_length())
 
     # Mock tests
     def test_consecutive_generation(self):
       """ WHEN Generating 1 at a time, 5 times
           SHOULD generate exactly 5 bars
       """
-      self.generate(1,'bars')
-      self.generate(1,'bars')
-      self.generate(1,'bars')
-      self.generate(1,'bars')
-      self.generate(1,'bars')
-      self.assertEqual(5, self.total_length())
+      for model in models:
+        with self.subTest(model=model):
+          self.initialize(model)
+          self.generate(1,'bars')
+          self.generate(1,'bars')
+          self.generate(1,'bars')
+          self.generate(1,'bars')
+          self.generate(1,'bars')
+          self.assertEqual(5, self.total_length())
 
     def test_different_sizes(self):
       """ WHEN Generating different-sized chunks
           SHOULD generate exactly the required amount
       """
-      self.generate(1,'bars')
-      self.generate(2,'bars')
-      self.generate(4,'bars')
-      self.assertEqual(7, self.total_length())
-
-    def test_isupper(self):
-        self.assertEqual(True, True)
+      for model in models:
+        with self.subTest(model=model):
+          self.initialize(model)
+          self.generate(1,'bars')
+          self.generate(2,'bars')
+          self.generate(4,'bars')
+          self.assertEqual(7, self.total_length())
 
 
 

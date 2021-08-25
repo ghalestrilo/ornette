@@ -131,17 +131,13 @@ def noteseq_trim_end(noteseqs, host):
 
     for i in reversed(rmnotes): noteseq.notes.remove(noteseq.notes[i])
   
-  print_noteseqs(noteseqs, host)
   return noteseqs
 
 
 def noteseq_trim_start(noteseqs, host):
-  # seq_start_time = host.song.get_buffer_length(unit=host.get('input_unit'))
-  # seq_start_time = host.get('last_end_time') * 20
   seq_start_time = host.get('last_end_time')
-  # seq_start_time = 20
 
-  print(f'dropping notes before: {seq_start_time}')
+  host.io.log(f'dropping notes before: {seq_start_time}')
   for noteseq in noteseqs:
     if not any(noteseq.notes): continue
     rmnotes = []

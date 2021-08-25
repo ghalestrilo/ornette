@@ -74,3 +74,6 @@ class Host:
     def task_ended(self):
       did_it_end = len(self.song.get_voice()) >= self.get('buffer_length')
       return did_it_end
+
+    def get_bundle(self, checkpoint):
+      return self.data.get_bundle(self, checkpoint)

@@ -4,6 +4,7 @@ state = {
     # Basic Config
     'module': None,
     'scclient': None,
+    'data_dir': '/data',
     'debug_output': True,
     'until_next_event': 0.25, # TODO: Remove after MIDI-based refactor
 
@@ -77,7 +78,7 @@ class Store():
           value = int(value)
 
         # Move to TrackData
-        if (field == 'output_tracks'):
+        if field == 'output_tracks' and hasattr(self.host, 'song'):
           try: value = list(value)
           except TypeError: value = [value]
           value = list(map(int,value))
