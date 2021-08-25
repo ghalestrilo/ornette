@@ -49,7 +49,7 @@ class TestModelCall(unittest.TestCase):
       self.host.model.generate = MagicMock()
       
     def test_generate_call(self):
-      self.host.engine.generate(1,'bars')
+      self.generate(1,'bars')
       self.host.model.generate.assert_called_with(ANY, 4, ANY)
 
 class TestModels(unittest.TestCase):
@@ -59,29 +59,36 @@ class TestModels(unittest.TestCase):
       self.model = load_model(self.host,model['bundle'],f'modules/{model["name"]}')
       self.host.model = self.model
       self.total_length = lambda: int(ceil(self.host.song.total_length()))
+      self.generate = self.host.engine.generate
 
     def test_resetting_and_generating(self):
       """ WHEN resetting a song
-          SHOULD 
+          SHOULD generate without issues
       """
       self.host.reset()
       self.host.set('output_tracks', 2)
-      self.host.engine.generate(1,'bars')
+      self.generate(1,'bars')
       self.assertEqual(1, self.total_length())
 
     # Mock tests
     def test_consecutive_generation(self):
-      self.host.engine.generate(1,'bars')
-      self.host.engine.generate(1,'bars')
-      self.host.engine.generate(1,'bars')
-      self.host.engine.generate(1,'bars')
-      self.host.engine.generate(1,'bars')
+      """ WHEN Generating 1 at a time, 5 times
+          SHOULD generate exactly 5 bars
+      """
+      self.generate(1,'bars')
+      self.generate(1,'bars')
+      self.generate(1,'bars')
+      self.generate(1,'bars')
+      self.generate(1,'bars')
       self.assertEqual(5, self.total_length())
 
     def test_different_sizes(self):
-      self.host.engine.generate(1,'bars')
-      self.host.engine.generate(2,'bars')
-      self.host.engine.generate(4,'bars')
+      """ WHEN Generating different-sized chunks
+          SHOULD generate exactly the required amount
+      """
+      self.generate(1,'bars')
+      self.generate(2,'bars')
+      self.generate(4,'bars')
       self.assertEqual(7, self.total_length())
 
     def test_isupper(self):
