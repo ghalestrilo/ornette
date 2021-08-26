@@ -66,6 +66,8 @@ class TestSongFile(unittest.TestCase):
     def test_drop_primer_no_generation(self):
       self.song.drop_primer()
       self.assertEqual(0, self.song.total_ticks())
+
+
     
     def test_drop_primer_no_repeat(self):
       """ WHEN calling drop_primer twice in succession
@@ -109,11 +111,21 @@ class TestSongFile(unittest.TestCase):
       self.assertEqual(4800, subject())
 
     def test_drop_primer(self):
+      """ WHEN music data has been generated SHOULD preserve the generated output """
       subject = lambda : self.song.total_ticks()
       for i in range(10):
         self.song.append(Message('note_on', note=64, time=480, velocity=80), 0)
       self.song.drop_primer()
       self.assertEqual(4800, subject())
+
+    def test_drop_primer_header_preserved(self):
+      """ WHEN a track was loaded SHOULD preserve initial meta_messages """
+      for msgtype in ['time_signature', 'set_tempo']:
+        with self.subTest(msgtype=msgtype):
+          self.setUp()
+          metamsg = next(msg for msg in self.song.data if msg.type == msgtype)
+          self.song.drop_primer()
+          self.assertIn(metamsg, self.song.data.tracks[0].messages)
 
     def test_crop_from_start(self):
       """ A crop should remove exactly the requested number of bars from the start of the song

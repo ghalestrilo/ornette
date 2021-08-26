@@ -7,6 +7,7 @@ from mido import MidiFile, MidiTrack, Message, MetaMessage, tempo2bpm
 import mido
 from math import floor
 from datetime import datetime
+from itertools import takewhile
 
 from channel import Channel
 
@@ -151,8 +152,15 @@ class Song():
     def drop_primer(self):
       ''' Remove primer from generated output '''
       primer_ticks = self.host.get('primer_ticks')
-      # if primer_ticks == 0: return
+      is_header_msg = lambda msg: msg.is_meta and msg.time == 0
+      headers = [list(takewhile(is_header_msg, track)) for track in self.data.tracks]
       self.crop('ticks', primer_ticks)
+      
+      # Re-append track header
+      for i, track in enumerate(self.data.tracks):
+        self.data.tracks[i].messages = headers[i] + track
+        if not self.data.tracks[i][-1].type == 'end_of_track':
+          self.data.tracks[i].append(MetaMessage('end_of_track'))
       self.host.set('primer_ticks', 0)
 
     def total_ticks(self):
@@ -247,10 +255,8 @@ class Song():
         for msg_index, msg in enumerate(track):
           end_index = msg_index + 1
           time += msg.time
-          # self.host.io.log(f'time: {time} | message: ({msg_index}) {msg}')
           if start_time >= time: start_index = msg_index
           if time > end_time: break
-
 
         track = track[start_index:end_index] # here, +2 with (1, 2) works
         self.data.tracks[i] = track

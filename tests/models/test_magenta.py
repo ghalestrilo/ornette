@@ -50,8 +50,9 @@ models = [  # Melody RNN
 # models = models[:4]
 # models = [models[-1]]
 
-models = [{'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade_attn'}]
+# models = [{'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade_attn'}]
 # models = [model for model in models if model['name'] == 'pianoroll_rnn_nade']
+models = [{'name': 'performance_rnn', 'bundle': 'performance_with_dynamics'}]
 
 base_sys_path = sys.path.copy()
 
