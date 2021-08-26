@@ -100,6 +100,17 @@ def midotrack2noteseq(tracks, host):
     return sequences
 
 
+def init_default_pitch(noteseqs, host):
+  for noteseq in noteseqs:
+    if not any(noteseq.notes):
+      note = noteseq.notes.add()
+      note.start_time = 0
+      note.end_time = 0
+      note.pitch = host.get('init_pitch')
+      note.velocity = 100
+  return noteseqs
+
+
 
 
 ## Debugging filters
@@ -117,7 +128,7 @@ def debug_generation_request(noteseqs, host):
 
 
 
-
+# Trimming Methods
 
 def noteseq_trim_end(noteseqs, host):
   section_end = host.get('generation_requested_beats')
@@ -260,6 +271,7 @@ filters = {
   'mido_no_0_velocity': mido_no_0_velocity,
   'merge_noteseqs': merge_noteseqs,
   'noteseq_scale': noteseq_scale,
+  'init_default_pitch': init_default_pitch,
 
   # Output
   'noteseq_trim_start': noteseq_trim_start,

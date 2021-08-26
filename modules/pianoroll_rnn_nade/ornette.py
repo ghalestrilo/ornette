@@ -28,15 +28,16 @@ from note_seq.protobuf import generator_pb2
 
 class OrnetteModule():
     def __init__(self, host, checkpoint='rnn-nade_attn'):
-        bundle_path = os.path.normpath(f'/ckpt/{checkpoint}')
+        bundle_path = host.get_bundle(checkpoint)
+        
         config = default_configs[checkpoint]
         bundle_file = sequence_generator_bundle.read_bundle_file(bundle_path)
 
         self.server_state = host.state
         self.host = host
-        self.host.set('output_unit', 'bars')
-        self.host.set('input_unit', 'bars')
-        self.host.set('output_tracks', [1,2])
+        self.host.set('output_unit', 'seconds')
+        self.host.set('input_unit', 'seconds')
+        self.host.set('output_tracks', [1])
         self.host.set('init_pitch', 55)
 
         self.model = PianorollRnnNadeSequenceGenerator(
@@ -49,14 +50,15 @@ class OrnetteModule():
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'midotrack2noteseq')
         self.host.add_filter('input', 'merge_noteseqs')
+        self.host.add_filter('input', 'init_default_pitch')
         self.host.add_filter('input', 'debug_generation_request')
+        self.host.add_filter('output', 'noteseq_trim_start')
         self.host.add_filter('output', 'noteseq2midotrack')
         self.host.add_filter('output', 'mido_track_sort_by_time')
         self.host.add_filter('output', 'mido_track_subtract_previous_time')
 
     def generate(self, history=None, length_seconds=4, output_tracks=[1]):
-        # primer_sequence = history.to_sequence(qpm=120) # TODO: Test changing this to actual BPM
-        primer_sequence = history[output_tracks[0]]
+        primer_sequence = history[0]
 
         generator_options = generator_pb2.GeneratorOptions()
         generator_options.generate_sections.add(

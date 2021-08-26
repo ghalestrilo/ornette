@@ -12,6 +12,13 @@ from tests.common import args
 
 # python -m unittest tests.song
 
+
+# TODO: Add these messages, create a new test case
+# <meta message time_signature numerator=4 denominator=4 clocks_per_click=24 notated_32nd_notes_per_beat=8 time=0>
+# <meta message key_signature key='Eb' time=0>
+# <meta message set_tempo tempo=500000 time=0>
+
+
 class TestSongEmpty(unittest.TestCase):
     def setUp(self):
           self.host = Host(args)

@@ -84,7 +84,7 @@ class OrnetteModule():
         start_time=last_end_time,
         end_time=last_end_time + length_bars + buffer_length)
 
-      output = [self.model.generate(tracks[index], generator_options) for index in output_tracks]
+      output = [self.model.generate(tracks[index], generator_options) for index in [0]]
       return output
 
   def close(self):

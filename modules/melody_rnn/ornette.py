@@ -10,8 +10,7 @@ class OrnetteModule():
     def __init__(self, host, checkpoint='attention_rnn'):
         self.config = default_configs[checkpoint]
         config = self.config
-        # checkpoint_file = host.data.get_bundle('melody_rnn', checkpoint)
-        checkpoint_file = os.path.normpath(f'/ckpt/{checkpoint}')
+        checkpoint_file = host.get_bundle(checkpoint)
         bundle_file = sequence_generator_bundle.read_bundle_file(
             checkpoint_file)
         self.model = MelodyRnnSequenceGenerator(model=MelodyRnnModel(config),

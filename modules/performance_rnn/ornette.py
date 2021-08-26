@@ -11,17 +11,14 @@ import os
 class OrnetteModule():
     def __init__(self, host, checkpoint='performance_with_dynamics'):
         config = default_configs[checkpoint]
-
-        # TODO: improve checkpoint-loading logic
-        bundle_path = os.path.normpath(f'/ckpt/{checkpoint}')
+        bundle_path = host.get_bundle(checkpoint)
         bundle_file = sequence_generator_bundle.read_bundle_file(bundle_path)
 
-        self.server_state = host.state
         self.host = host
 
-        self.host.set('input_unit', 'beats')
+        self.host.set('input_unit', 'seconds')
         self.host.set('input_length', 8)
-        self.host.set('output_unit', 'beats')
+        self.host.set('output_unit', 'seconds')
         self.host.set('output_length', 16)
 
         self.host.set('is_velocity_sensitive', True)
@@ -58,7 +55,7 @@ class OrnetteModule():
     def generate(self, tracks=None, length_seconds=4, output_tracks=[0]):
         output = []
 
-        for voice in output_tracks:
+        for voice in [output_tracks[0]]:
             # last_end_time = max([max([0, *(note.end_time for note in track.notes if any(track.notes))]) for track in tracks])
             last_end_time = self.host.get('last_end_time')
             # print(f'last_end_time  {last_end_time}')
@@ -69,7 +66,6 @@ class OrnetteModule():
                 start_time=last_end_time,
                 end_time=last_end_time + length_seconds)
 
-            # FIXME: Remove .notes
             seq = self.model.generate(tracks[voice], generator_options)
             # seq = seq.notes
             output.append(seq)

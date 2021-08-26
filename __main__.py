@@ -146,11 +146,11 @@ if __name__ == '__main__':
 
     # Define directories
     curdir = os.path.abspath(os.curdir)
-    ckptdir = os.path.join(os.path.expanduser(
-        '~'), '.ornette', 'checkpoints', options.modelname)
+    datadir = os.path.join(os.path.expanduser('~'), '.ornette')
+    ckptdir = os.path.join(datadir, 'checkpoints', options.modelname)
     hostdir = os.path.join(curdir, 'server')
     outdir = os.path.join(curdir, 'output')
-    datadir = os.path.join(curdir, 'dataset')
+    datasetdir = os.path.join(curdir, 'dataset')
     moduledir = os.path.join(curdir, 'modules', options.modelname)
 
     # Run Module
@@ -173,10 +173,10 @@ if __name__ == '__main__':
             volumes={
                 hostdir:   {'mode': 'ro', 'bind': '/ornette'},
                 outdir:    {'mode': 'rw', 'bind': '/output'},
-                datadir:   {'mode': 'ro', 'bind': '/dataset'},
+                datasetdir:   {'mode': 'ro', 'bind': '/dataset'},
                 moduledir: {'mode': 'ro', 'bind': '/model'},
-                ckptdir:   {
-                     'mode': 'rw', 'bind': '/ckpt'}
+                ckptdir:   {'mode': 'rw', 'bind': '/ckpt'},
+                datadir:   {'mode': 'ro', 'bind': '/data'}
             }
         )
 

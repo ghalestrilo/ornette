@@ -48,11 +48,14 @@ models = [  # Melody RNN
 
 # models = [models[-1]] + models[:4]
 # models = models[:4]
-models = [models[-1]]
+# models = [models[-1]]
+
+models = [{'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade_attn'}]
+# models = [model for model in models if model['name'] == 'pianoroll_rnn_nade']
 
 base_sys_path = sys.path.copy()
 
-class TestModels(unittest.TestCase):
+class TestModelGeneration(unittest.TestCase):
     def setUp(self):
       for model in models:
         with self.subTest(model=model):
@@ -87,6 +90,22 @@ class TestModels(unittest.TestCase):
           self.generate(1,'bars')
           self.assertEqual(1, self.total_length())
 
+    def test_generate_exact_barcount(self):
+      """ WHEN generating from a clean file
+          SHOULD generate exactly the requested amount of bars
+      """
+      subject = lambda: self.total_length()
+      for model in models:
+        with self.subTest(model=model):
+          self.initialize(model)
+          for i in range(8):
+            with self.subTest(barcount=i+1):
+              self.host.reset()
+              self.host.set('output_tracks', 2)
+              self.generate(i+1, 'bars')
+              self.assertEqual(i+1, subject())
+
+
     # Mock tests
     def test_consecutive_generation(self):
       """ WHEN Generating 1 at a time, 5 times
@@ -95,11 +114,7 @@ class TestModels(unittest.TestCase):
       for model in models:
         with self.subTest(model=model):
           self.initialize(model)
-          self.generate(1,'bars')
-          self.generate(1,'bars')
-          self.generate(1,'bars')
-          self.generate(1,'bars')
-          self.generate(1,'bars')
+          for i in range(5): self.generate(1,'bars')
           self.assertEqual(5, self.total_length())
 
     def test_different_sizes(self):
@@ -115,7 +130,7 @@ class TestModels(unittest.TestCase):
           self.assertEqual(7, self.total_length())
 
 
-
+# TODO: Move to test_engine
 class TestModelCall(unittest.TestCase):
     def setUp(self):
       self.host = Host(args)
