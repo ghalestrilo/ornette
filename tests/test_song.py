@@ -18,6 +18,8 @@ from tests.common import args
 # <meta message key_signature key='Eb' time=0>
 # <meta message set_tempo tempo=500000 time=0>
 
+primer_singletrack = 'dataset/clean_mtd-orig/MTD0391_Bach_BWV0847-01.mid'
+primer_multitrack = 'dataset/clean_bach10/01-AchGottundHerr.mid'
 
 class TestSongEmpty(unittest.TestCase):
     def setUp(self):
@@ -38,14 +40,16 @@ class TestSongEmpty(unittest.TestCase):
       self.assertEqual(5, subject())
 
 
+
 class TestSongFile(unittest.TestCase):
     def setUp(self):
         self.host = Host(args)
+        self.host.song = Song(self.host)
         self.datadir = 'dataset/clean_mtd-orig'
         files = listdir(self.datadir)
         self.file = path.join(self.datadir, files[11])
 
-        self.song = Song(self.host)
+        self.song = self.host.song
         self.song.load(self.file)
         print(f'testing with file: {self.file}')
 
@@ -83,9 +87,7 @@ class TestSongFile(unittest.TestCase):
           SHOULD not crop output again
       """
       for i in range(10): self.add_message()
-      self.song.show()
       self.song.drop_primer()
-      self.song.show()
       self.assertEqual(4800, self.song.total_ticks())
       self.song.drop_primer()
       self.song.drop_primer()
@@ -144,7 +146,6 @@ class TestSongFile(unittest.TestCase):
       """
       
       self.song.crop('bars', 3, 4)
-      print(self.song.total_ticks())
       self.assertLessEqual(self.song.to_ticks(1, 'bars'), self.song.total_ticks())
 
     def test_crop_from_start_preserve_header(self):
@@ -168,8 +169,63 @@ class TestSongFile(unittest.TestCase):
     #   # song = Song(self.host, self.file)
     #   self.assertEqual('foo'.upper(), 'FOO')
     
-    # def test_buffer(self):
-    #   """ IF a buffer longer than the current song is requested
-    #       It should return the entire song
-    #   """
-    #   self.assertEqual('foo'.upper(), 'FOO')
+
+class TestBuffer(unittest.TestCase):
+    def setUp(self):
+      self.host = Host(args)
+      self.song = Song(self.host)
+      self.host.song = self.song
+
+      # Load a song
+      self.datadir = 'dataset/clean_mtd-orig'
+      files = listdir(self.datadir)
+      self.file = path.join(self.datadir, files[11])
+      self.song.load(self.file)
+      # print(f'testing with file: {self.file}')
+    
+    def tearDown(self):
+        pass
+
+    def test_buffer_all_tracks(self):
+      """ WHEN generating a buffer SHOULD include all song tracks
+      """
+      subject = lambda: self.host.song.buffer(100000)
+      self.assertEqual(len(self.song.data.tracks), 1)
+      self.assertEqual(len(subject()), len(self.song.data.tracks))
+
+    def test_buffer_consistent(self):
+      """ WHEN generating a buffer with the same parameters SHOULD return the same buffer
+      """
+      subject = lambda: self.host.song.buffer(100000)
+      self.assertSequenceEqual(subject(), subject())
+    
+    def test_buffer_not_empty(self):
+      """ WHEN generating a buffer from tracks with data SHOULD return data
+      """
+      self.song.load(self.file)
+      self.assertEqual(len(self.song.data.tracks), 1)
+      buffer = self.host.song.buffer(100000)
+      self.assertGreater(len(buffer), 0)
+      for track in buffer: self.assertGreater(len(track), 0)
+      
+    def test_buffer_entire_song(self):
+      """ IF a buffer longer than the current song is requested
+          It should return the entire song
+      """
+      subject = lambda: self.host.song.buffer(100000)
+      notes = [[msg for msg in track] for track in self.song.data.tracks]
+      buffer = [[msg for msg in trk] for trk in subject()]
+      self.assertSequenceEqual(notes, buffer)
+
+    # TODO:
+    def test_buffer_one_sequence_longer_than_others(self):
+      """ WHEN one track has more messages than others SHOULD pad other sequences
+      """
+      subject = lambda: self.host.song.buffer(1000) # Few final notes
+      self.host.set('output_tracks', 1) # Add an empty track
+      for _ in range(10):  self.song.append(Message('note_on', note=64, time=200, velocity=80), 1)
+      self.assertEqual(2,len(subject()))
+      self.assertIn(subject()[0][-1], subject()[0])
+      self.assertSequenceEqual([], subject()[1])
+      self.assertEqual(True, True)
+

@@ -192,31 +192,13 @@ class Song():
             within a limit of <ticks>
         """
 
-        # TODO: take conductor into acccount
-        out = []
+        buffer_end = self.total_ticks()
+        buffer_start = max(0,buffer_end - ticks)
+        self.host.io.log(f'buffer: {buffer_start} to {buffer_end} ({buffer_end - buffer_start} of {ticks})')
+        ret = [self.crop_track(track,'ticks',buffer_start,buffer_end) for track in self.data.tracks]
 
-        for track in self.data.tracks:
-          curticks = 0
-          out.append([])
-
-          for msg in reversed(list(track)):
-            # print(f'msg: {msg}')
-            if curticks > ticks: break
-            if isinstance(msg,str): continue
-
-            # Only return note_on and note_off messages
-            # TODO: accumulate time from other messages
-            if msg.is_meta:
-              self.host.io.log(f'ignoring {msg}')
-              continue
-            if msg.type not in ['note_on', 'note_off']: continue
-            curticks += msg.time
-            out[-1].append(msg)
-
-        # return out
-        out = [list(reversed(x)) for x in out]
-        out = [list(self.data.tracks[0])] + out[1:]
-        return out
+        # return [self.crop_track(track,'ticks',buffer_start,buffer_end) for track in self.data.tracks]
+        return ret
 
 
     def get_channel(self, idx):
@@ -233,6 +215,38 @@ class Song():
         if chan: chan.play(message)
 
 
+
+
+
+
+
+
+    def crop_track(self, track, unit, start, end):
+      new_track = track.copy()
+      # Copy track headers
+      is_header_msg = lambda msg: msg.is_meta and msg.time == 0
+      header = list(takewhile(is_header_msg, track)).copy()
+      time = 0
+      start_index = 0
+      end_index = 0
+
+      # Find start and end of crop
+      for msg_index, msg in enumerate(new_track):
+        end_index = msg_index + 1
+        time += msg.time
+        if start >= time: start_index = msg_index + 1
+        if time > end: break
+
+      cropped_track = track[start_index:end_index].copy()
+
+      new_track.clear()
+      for msg in header: new_track.append(msg)
+      for msg in cropped_track: new_track.append(msg)
+
+      return new_track
+
+
+
     def crop(self, unit, _start=None, _end=None):
       """ Crops the current song between a specified _start and _end times
           unit: The cropping unit (one of 'ticks', 'bars', 'measures', 'beats', 'seconds')
@@ -243,41 +257,19 @@ class Song():
 
       log = self.host.io.log
 
-      # Copy track headers
-      is_header_msg = lambda msg: msg.is_meta and msg.time == 0
-      headers = [list(takewhile(is_header_msg, track)) for track in self.data.tracks]
-      print('headers')
-      print(headers)
-
       if start_time > end_time:
         log(f'Cropping start_time ({start_time}) is bigger than end_time ({end_time}), aborting.')
         return
 
+      # Set crop bounds
       start_time = max(start_time, 0)
       end_time = min(end_time, self.total_ticks())
 
       log(f'Cropping between {start_time} and {end_time} ticks ({end_time - start_time})')
 
       for i, track in enumerate(self.data.tracks):
-        log(f'"{track.name}" initial length = {self.get_track_length(track)}')
-        time = 0
-        start_index = 0
-        end_index = 0
+        self.data.tracks[i] = self.crop_track(track, unit, start_time, end_time)
 
-        # Find start and end of crop
-        for msg_index, msg in enumerate(track):
-          end_index = msg_index + 1
-          time += msg.time
-          if start_time >= time: start_index = msg_index + 1
-          if time > end_time: break
-
-        cropped_track = track[start_index:end_index].copy() # here, +2 with (1, 2) works
-
-        track.clear()
-        for msg in headers[i]: self.data.tracks[i].append(msg)
-        for msg in cropped_track: self.data.tracks[i].append(msg)
-
-        log(f'"{track.name}" final length = {self.get_track_length(track)} ({len(track)} messages)')
 
     def get_track_length(self, track):
       return sum(msg.time for msg in track if not msg.is_meta)
@@ -297,7 +289,7 @@ class Song():
     def show(self):
       data = self.data
       self.host.io.log(data)
-      self.host.io.log(f'total ticks: {self.host.song.total_ticks()}')
+      # self.host.io.log(f'total ticks: {self.host.song.total_ticks()}')
       for track in data.tracks:
         self.host.io.log(track)
         for msg in track:
