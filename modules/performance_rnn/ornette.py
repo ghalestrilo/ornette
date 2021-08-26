@@ -31,14 +31,13 @@ class OrnetteModule():
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'mido_no_0_velocity')
         self.host.add_filter('input', 'midotrack2noteseq')
-        self.host.add_filter('input', 'merge_noteseqs')
         self.host.add_filter('input', 'debug_generation_request')
         self.host.add_filter('output', 'print_noteseqs')
         self.host.add_filter('output', 'noteseq_trim_start')
         self.host.add_filter('output', 'noteseq_trim_end')
         self.host.add_filter('output', 'noteseq2midotrack')
         self.host.add_filter('output', 'mido_track_sort_by_time')
-        # self.host.add_filter('output', 'mido_track_subtract_previous_time')
+        self.host.add_filter('output', 'mido_track_subtract_previous_time')
 
 
         self.model = PerformanceRnnSequenceGenerator(
@@ -58,12 +57,14 @@ class OrnetteModule():
         print(f'length_seconds: {length_seconds}')
         last_end_time = self.host.get('last_end_time')
 
+        track_idx = output_tracks[0]
+
         generator_options = generator_pb2.GeneratorOptions()
         generator_options.generate_sections.add(
             start_time=last_end_time,
             end_time=last_end_time + length_seconds)
 
-        seq = self.model.generate(tracks[0], generator_options)
+        seq = self.model.generate(tracks[track_idx], generator_options)
 
         return [seq]
 

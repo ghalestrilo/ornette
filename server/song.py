@@ -64,7 +64,7 @@ class Song():
         self.data = MidiFile(ticks_per_beat=host.get('ticks_per_beat'))
         host.set('playhead', 0)
         host.set('last_end_time', 0) # Channels
-        host.set('output_tracks', 2)
+        host.set('output_tracks', [0])
         if self.get_tempo() is None: host.set('tempo', mido.bpm2tempo(120))
 
     def empty(self):
@@ -93,18 +93,23 @@ class Song():
         host = self.host
         if host is not None: host.bridge.notify_task_complete()
 
-    def append(self, message, track):
+    def append(self, message, track_number):
         """ Adds a message to a track """
+        tracks = self.data.tracks
         if self.empty(): self.init_conductor()
-        while not len(self.data.tracks) > track:
-          self.data.add_track(f'Track {len(self.data.tracks)}')
+        while not len(tracks) > track_number:
+          self.data.add_track(f'Track {len(tracks)}')
 
-        self.data.tracks[track].append(message)
+        track = tracks[track_number]
+
+        track.append(message)
+        track.append(MetaMessage('end_of_track', time=1))
 
         # TODO: Switch mode (append/extend)
         self.messages = [msg for msg in self.data]
+        self.check_end_of_tracks()
 
-    def load(self, filename, max_len=None, max_len_units=None):
+    def load(self, filename, max_len=None, max_len_units='ticks'):
         """ Load midi from a file onto the host's history
             optionally cropping it to a max_ticks length
         """
@@ -117,7 +122,9 @@ class Song():
           ticks_so_far = 0
           offset = 0
           
-          track = mido.MidiTrack()
+          # Create new track if necessary
+          if i >= len(self.data.tracks):
+            self.data.add_track(file_track.name)
 
           for msg in file_track:
             if max_len is not None: 
@@ -125,7 +132,7 @@ class Song():
               if ticks_so_far >= max_ticks:
                 continue
 
-            track.append(msg)
+            self.data.tracks[i].append(msg)
 
             tempo_set = False
 
@@ -144,23 +151,23 @@ class Song():
             
             if (ticks_so_far == 0 and msg.time > 0): offset = msg.time
             ticks_so_far = ticks_so_far + msg.time
-          self.data.tracks.append(track)
+
+          # self.data.tracks.append(track)
           
           self.host.set('primer_ticks', self.total_ticks())
           self.host.io.log(f'total ticks loaded: {self.total_ticks()}')
 
+    def check_end_of_tracks(self):
+      for i, track in enumerate(self.data.tracks):
+        end_of_tracks = [msg for msg in track if msg.type == 'end_of_track']
+        for eot in end_of_tracks: track.remove(eot)
+        if not any(track) or track[-1].type == 'end_of_track':
+          self.data.tracks[i].append(MetaMessage('end_of_track'))
+
     def drop_primer(self):
       ''' Remove primer from generated output '''
       primer_ticks = self.host.get('primer_ticks')
-      is_header_msg = lambda msg: msg.is_meta and msg.time == 0
-      headers = [list(takewhile(is_header_msg, track)) for track in self.data.tracks]
       self.crop('ticks', primer_ticks)
-      
-      # Re-append track header
-      for i, track in enumerate(self.data.tracks):
-        self.data.tracks[i].messages = headers[i] + track
-        if not self.data.tracks[i][-1].type == 'end_of_track':
-          self.data.tracks[i].append(MetaMessage('end_of_track'))
       self.host.set('primer_ticks', 0)
 
     def total_ticks(self):
@@ -232,9 +239,15 @@ class Song():
       """
       
       start_time = self.to_ticks(_start or 0, unit)
-      end_time = self.to_ticks(_end or self.total_ticks(), unit)
+      end_time = self.to_ticks(_end if _end else self.total_ticks(), unit)
 
       log = self.host.io.log
+
+      # Copy track headers
+      is_header_msg = lambda msg: msg.is_meta and msg.time == 0
+      headers = [list(takewhile(is_header_msg, track)) for track in self.data.tracks]
+      print('headers')
+      print(headers)
 
       if start_time > end_time:
         log(f'Cropping start_time ({start_time}) is bigger than end_time ({end_time}), aborting.')
@@ -255,11 +268,14 @@ class Song():
         for msg_index, msg in enumerate(track):
           end_index = msg_index + 1
           time += msg.time
-          if start_time >= time: start_index = msg_index
+          if start_time >= time: start_index = msg_index + 1
           if time > end_time: break
 
-        track = track[start_index:end_index] # here, +2 with (1, 2) works
-        self.data.tracks[i] = track
+        cropped_track = track[start_index:end_index].copy() # here, +2 with (1, 2) works
+
+        track.clear()
+        for msg in headers[i]: self.data.tracks[i].append(msg)
+        for msg in cropped_track: self.data.tracks[i].append(msg)
 
         log(f'"{track.name}" final length = {self.get_track_length(track)} ({len(track)} messages)')
 
@@ -278,7 +294,14 @@ class Song():
 
 
 
-
+    def show(self):
+      data = self.data
+      self.host.io.log(data)
+      self.host.io.log(f'total ticks: {self.host.song.total_ticks()}')
+      for track in data.tracks:
+        self.host.io.log(track)
+        for msg in track:
+          self.host.io.log(f'  {msg}')
 
     # Time Conversion
     def get_beat_length(self, length, unit):

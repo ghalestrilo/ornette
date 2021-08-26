@@ -23,7 +23,7 @@ class OrnetteModule():
         self.host.set('input_length', 16)
         self.host.set('input_unit', 'seconds')
         self.host.set('output_unit', 'seconds')
-        self.host.set('output_tracks', [1])
+        self.host.set('output_tracks', [0])
 
         # TODO: Move to yaml
         self.host.include_filters('magenta')
@@ -36,7 +36,7 @@ class OrnetteModule():
 
     def generate(self, tracks=None, length_beats=4, output_tracks=[0]):
         last_end_time = self.host.get('last_end_time')
-        self.host.io.log(f'length to generate: length_beats: {length_beats}')
+        # self.host.io.log(f'length to generate: length_beats: {length_beats}')
         generator_options = generator_pb2.GeneratorOptions()
         generator_options.generate_sections.add(
             start_time=last_end_time,

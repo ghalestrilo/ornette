@@ -83,9 +83,7 @@ class Engine():
       if unit is None: unit = self.host.get('output_unit')
 
       # Assert Song State
-      # host.song.init_conductor()
       with self.host.lock: host.song.init_conductor()
-      # print(host.song.data.tracks)
 
       # Prepare Input Buffer (<input_length> <input_unit>s)
       buflen = host.get('input_length')

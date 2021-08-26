@@ -23,11 +23,20 @@ class TestSongEmpty(unittest.TestCase):
     def setUp(self):
           self.host = Host(args)
           self.song = Song(self.host)
+          
     
     def test_buffer_length(self):
       """ Buffer Length should be 0
       """
       self.assertEqual(self.song.get_buffer_length(), 0)
+    
+    def test_load_track_count(self):
+      subject = lambda: len(self.song.data.tracks)
+      self.song.load('dataset/clean_mtd-orig/MTD0391_Bach_BWV0847-01.mid', 8000)
+      self.assertEqual(1, subject())
+      self.song.load('dataset/clean_bach10/01-AchGottundHerr.mid', 8000)
+      self.assertEqual(5, subject())
+
 
 class TestSongFile(unittest.TestCase):
     def setUp(self):
@@ -46,7 +55,7 @@ class TestSongFile(unittest.TestCase):
 
     def test_total_ticks(self):
       self.assertEqual(8159, self.song.total_ticks())
-    
+
     def test_buffer_length(self):
       """ Buffer Length should be 
       """
@@ -74,11 +83,14 @@ class TestSongFile(unittest.TestCase):
           SHOULD not crop output again
       """
       for i in range(10): self.add_message()
+      self.song.show()
       self.song.drop_primer()
+      self.song.show()
       self.assertEqual(4800, self.song.total_ticks())
       self.song.drop_primer()
       self.song.drop_primer()
       self.song.drop_primer()
+      self.song.show()
       self.assertEqual(4800, self.song.total_ticks())
 
     def add_message(self, time=480):
@@ -118,14 +130,14 @@ class TestSongFile(unittest.TestCase):
       self.song.drop_primer()
       self.assertEqual(4800, subject())
 
-    def test_drop_primer_header_preserved(self):
+    def test_drop_primer_preserve_header(self):
       """ WHEN a track was loaded SHOULD preserve initial meta_messages """
       for msgtype in ['time_signature', 'set_tempo']:
         with self.subTest(msgtype=msgtype):
           self.setUp()
           metamsg = next(msg for msg in self.song.data if msg.type == msgtype)
           self.song.drop_primer()
-          self.assertIn(metamsg, self.song.data.tracks[0].messages)
+          self.assertIn(metamsg, self.song.data.tracks[0])
 
     def test_crop_from_start(self):
       """ A crop should remove exactly the requested number of bars from the start of the song
@@ -134,6 +146,14 @@ class TestSongFile(unittest.TestCase):
       self.song.crop('bars', 3, 4)
       print(self.song.total_ticks())
       self.assertLessEqual(self.song.to_ticks(1, 'bars'), self.song.total_ticks())
+
+    def test_crop_from_start_preserve_header(self):
+      """ A crop should remove exactly the requested number of bars from the start of the song
+      """
+      subject = lambda: self.song.data.tracks[0][0:3]
+      header_before = subject().copy()
+      self.song.crop('bars', 3, 4)
+      self.assertSequenceEqual(header_before, subject())
 
     # def test_drop_primer(self):
       # Load primer, save length
