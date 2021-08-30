@@ -22,7 +22,7 @@ models = [  # Melody RNN
     # {'name': 'melody_rnn', 'bundle': 'lookback_rnn'},
 
     # Performance RNN
-    {'name': 'performance_rnn', 'bundle': 'performance_with_dynamics'},
+    # {'name': 'performance_rnn', 'bundle': 'performance_with_dynamics'},
     # {'name': 'performance_rnn', 'bundle': 'density_conditioned_performance_with_dynamics'},
     # {'name': 'performance_rnn', 'bundle': 'pitch_conditioned_performance_with_dynamics'},
     # {'name': 'performance_rnn', 'bundle': 'performance'},
@@ -37,7 +37,7 @@ models = [  # Melody RNN
     # {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade-bach'},
 
     # Polyphony RNN
-    # {'name': 'polyphony_rnn', 'bundle': 'polyphony_rnn'},
+    {'name': 'polyphony_rnn', 'bundle': 'polyphony_rnn'},
 ]
 
 
@@ -118,10 +118,10 @@ class TestModelGeneration(unittest.TestCase):
       """ WHEN Generating many times over SHOULD have 'end_of_track' at the end of every track """
       for model in models:
         self.initialize(model)
-        for repetition in range(10):
+        for repetition in range(2):
           with self.subTest(model=model, repetition=repetition):
             for _ in range(5): self.generate(1,'bars')
-            self.host.song.show()
+            # self.host.song.show()
             for i, track in enumerate(self.host.song.data.tracks):
               print(f'track {i}')
               self.assertGreaterEqual(len(track), 1)

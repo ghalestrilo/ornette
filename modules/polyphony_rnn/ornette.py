@@ -58,7 +58,6 @@ class OrnetteModule():
       self.host.add_filter('input', 'midotrack2noteseq')
       self.host.add_filter('input', 'merge_noteseqs')
       self.host.add_filter('input', 'debug_generation_request')
-      # self.host.add_filter('input', 'noteseq_trim_start')
       self.host.add_filter('output', 'noteseq_trim_start')
       self.host.add_filter('output', 'noteseq_trim_end')
       self.host.add_filter('output', 'noteseq2midotrack')
