@@ -32,12 +32,17 @@ class OrnetteModule():
         self.host.add_filter('input', 'mido_no_0_velocity')
         self.host.add_filter('input', 'midotrack2noteseq')
         self.host.add_filter('input', 'debug_generation_request')
+        # Here, the sequence already starts at ~1.0 to ~1.5
         self.host.add_filter('output', 'print_noteseqs')
         self.host.add_filter('output', 'noteseq_trim_start')
         self.host.add_filter('output', 'noteseq_trim_end')
+        self.host.add_filter('output', 'print_noteseqs')
         self.host.add_filter('output', 'noteseq2midotrack')
         self.host.add_filter('output', 'mido_track_sort_by_time')
         self.host.add_filter('output', 'mido_track_subtract_previous_time')
+
+        # This offset helps ensure the output of the model will fulfill the desired region. Excess is cropped
+        self.offset = 1
 
 
         self.model = PerformanceRnnSequenceGenerator(
@@ -51,20 +56,34 @@ class OrnetteModule():
             bundle=bundle_file,
             note_performance=config.note_performance)
 
+    def sample(self, track, generator_options):
+      seq = self.model.generate(track, generator_options)
+      for note in seq.notes:
+        note.start_time -= self.offset
+        note.end_time -= self.offset
+        if note.start_time < 0: seq.notes.remove(note)
+      return seq
+
+
     def generate(self, tracks=None, length_seconds=4, output_tracks=[0]):
 
         # last_end_time is always 0!
-        print(f'length_seconds: {length_seconds}')
         last_end_time = self.host.get('last_end_time')
+        print(f'let: {last_end_time} | ength_seconds: {length_seconds}')
 
         track_idx = output_tracks[0]
+        track = tracks[track_idx]
+
+        # Define Generation Range
+        start_time = last_end_time
+        end_time = last_end_time + length_seconds + self.offset
 
         generator_options = generator_pb2.GeneratorOptions()
-        generator_options.generate_sections.add(
-            start_time=last_end_time,
-            end_time=last_end_time + length_seconds)
+        generator_options.generate_sections.add(start_time=start_time, end_time=end_time)
 
-        seq = self.model.generate(tracks[track_idx], generator_options)
+        seq = self.sample(track, generator_options)
+
+        while len(seq.notes) < 2: seq = self.sample(track, generator_options)
 
         return [seq]
 

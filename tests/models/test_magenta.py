@@ -16,37 +16,32 @@ from importlib import reload
 # python -m unittest tests.models
 
 models = [  # Melody RNN
-    {'name': 'melody_rnn', 'bundle': 'basic_rnn'},
-    {'name': 'melody_rnn', 'bundle': 'mono_rnn'},
-    {'name': 'melody_rnn', 'bundle': 'attention_rnn'},
-    {'name': 'melody_rnn', 'bundle': 'lookback_rnn'},
+    # {'name': 'melody_rnn', 'bundle': 'basic_rnn'},
+    # {'name': 'melody_rnn', 'bundle': 'mono_rnn'},
+    # {'name': 'melody_rnn', 'bundle': 'attention_rnn'},
+    # {'name': 'melody_rnn', 'bundle': 'lookback_rnn'},
 
     # Performance RNN
-    {'name': 'performance_rnn', 'bundle': 'performance.mag'},
-    {'name': 'performance_rnn',
-     'bundle': 'density_conditioned_performance_with_dynamics'},
     {'name': 'performance_rnn', 'bundle': 'performance_with_dynamics'},
-    {'name': 'performance_rnn',
-     'bundle': 'pitch_conditioned_performance_with_dynamics'},
-    {'name': 'performance_rnn', 'bundle': 'performance'},
-    {'name': 'performance_rnn', 'bundle': 'polyphony_rnn'},
-    {'name': 'performance_rnn',
-     'bundle': 'multiconditioned_performance_with_dynamics'},
-    {'name': 'performance_rnn',
-     'bundle': 'performance_with_dynamics_and_modulo_encoding'},
+    # {'name': 'performance_rnn', 'bundle': 'density_conditioned_performance_with_dynamics'},
+    # {'name': 'performance_rnn', 'bundle': 'pitch_conditioned_performance_with_dynamics'},
+    # {'name': 'performance_rnn', 'bundle': 'performance'},
+    # {'name': 'performance_rnn', 'bundle': 'polyphony_rnn'},
+    # {'name': 'performance_rnn', 'bundle': 'multiconditioned_performance_with_dynamics'},
+    # {'name': 'performance_rnn', 'bundle': 'performance_with_dynamics_and_modulo_encoding'},
 
     # Pianoroll RNN
-    {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade_attn'},
-    {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade'},
-    {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade'},
-    {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade-bach'},
+    # {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade_attn'},
+    # {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade'},
+    # {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade'},
+    # {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade-bach'},
 
     # Polyphony RNN
-    {'name': 'polyphony_rnn', 'bundle': 'polyphony_rnn'},
+    # {'name': 'polyphony_rnn', 'bundle': 'polyphony_rnn'},
 ]
 
 
-models = models[:4] # melody_rnn
+# models = models[:4] # melody_rnn
 # models = [models[-1]] + models[:4]
 # models = [models[-1]]
 
@@ -110,7 +105,7 @@ class TestModelGeneration(unittest.TestCase):
     def test_repeated_generation(self):
       """ WHEN Generating 1 at a time, 5 times SHOULD generate exactly 5 bars """
       for model in models:
-        for repetition in range(10):
+        for repetition in range(2):
           with self.subTest(model=model, repetition=repetition):
             self.initialize(model)
             for _ in range(12): self.generate(1,'bars')

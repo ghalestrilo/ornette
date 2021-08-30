@@ -12,6 +12,7 @@ from unittest.mock import MagicMock, ANY
 class TestEngine(unittest.TestCase):
     def setUp(self):
       self.host = Host(args)
+      self.host.model.generate = MagicMock()
 
 
     def test_initial_last_end_time(self):
@@ -28,7 +29,7 @@ class TestEngine(unittest.TestCase):
       self.assertEqual(self.host.get('last_end_time'), 0)
 
     def test_generate_interval_successive_generations(self):
-      self.host.model.generate = MagicMock()
+      # self.host.model.generate = MagicMock()
       self.host.engine.generate(2,'bars')
       self.host.model.generate.assert_called_with(ANY, 8, ANY)
       self.host.engine.generate(3,'bars')
@@ -37,5 +38,9 @@ class TestEngine(unittest.TestCase):
 
 
     def test_get_quantized_steps(self):
+      self.host.engine.generate(3,'bars')
+      self.assertEqual(self.host.engine.get_quantized_steps(), 12)
+    
+    def test_generate_add_(self):
       self.host.engine.generate(3,'bars')
       self.assertEqual(self.host.engine.get_quantized_steps(), 12)

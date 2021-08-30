@@ -59,7 +59,7 @@ def midotrack2noteseq(tracks, host):
         # Calculate note duration
         rest = track[i:]
         rest = filter(lambda msg: not msg.is_meta, rest)
-        not_own_stop = lambda msg: msg.type != 'note_off' and msg.note != msg.note
+        not_own_stop = lambda msg: not (msg.type == 'note_off' and msg.note == msg.note)
         ringing_interval = takewhile(not_own_stop, rest)
         own_stop = list(dropwhile(not_own_stop, rest))
         own_stop = own_stop[0].time if len(own_stop) else 0
@@ -69,7 +69,7 @@ def midotrack2noteseq(tracks, host):
         # print(f'duration: {duration}')
 
         # Create Notes
-        if not message.is_meta:
+        if not message.is_meta and message.type.startswith('note'):
           note = NoteSequence.Note(
               instrument=0,
               program=0,

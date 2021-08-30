@@ -14,7 +14,7 @@ if args.file is None:
   print("No file provided")
   exit(1)
 
-
+print(args.file)
 mid = MidiFile(args.file)
 timesig = [msg for msg in mid if msg.type == 'time_signature']
 timesig = timesig[0].denominator if any(timesig) else 4
