@@ -28,6 +28,7 @@ class OrnetteModule():
         # TODO: Move to yaml
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'midotrack2noteseq')
+        # self.host.add_filter('input', 'print_noteseqs')
         self.host.add_filter('output', 'noteseq_trim_start')
         self.host.add_filter('output', 'noteseq_trim_end')
         self.host.add_filter('output', 'noteseq2midotrack')

@@ -64,7 +64,7 @@ class Song():
         self.data = MidiFile(ticks_per_beat=host.get('ticks_per_beat'))
         host.set('playhead', 0)
         host.set('last_end_time', 0) # Channels
-        host.set('output_tracks', [0])
+        # host.set('output_tracks', [0])
         if self.get_tempo() is None: host.set('tempo', mido.bpm2tempo(120))
 
     def empty(self):
@@ -155,7 +155,9 @@ class Song():
 
           # self.data.tracks.append(track)
           
-          self.host.set('primer_ticks', self.total_ticks())
+          total_ticks = self.total_ticks()
+          self.host.set('primer_ticks', total_ticks)
+          self.host.set('last_end_time', self.from_ticks(total_ticks, 'seconds'))
           self.host.io.log(f'total ticks loaded: {self.total_ticks()}')
 
     def check_end_of_tracks(self):

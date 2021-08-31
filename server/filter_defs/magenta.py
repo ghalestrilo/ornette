@@ -43,6 +43,9 @@ def midotrack2noteseq(tracks, host):
       # seq_start_time = list(filter(lambda msg: msg.type == 'note_on', track))[:1]
       seq_start_time = next(filter(lambda msg: msg.type == 'note_on', track), None)
       seq_start_time = seq_start_time.time if seq_start_time else 0
+      # FIXME: Drop notes before this one
+      # Sometimes a buffer will start with a note_off
+      # as a result, the note_off event will end up with negative time and fuck up the generator
 
       note_start_ticks = 0
 
@@ -56,20 +59,21 @@ def midotrack2noteseq(tracks, host):
         # Update note start time
         note_start_ticks += message.time
 
-        # Calculate note duration
-        rest = track[i:]
-        rest = filter(lambda msg: not msg.is_meta, rest)
-        not_own_stop = lambda msg: not (msg.type == 'note_off' and msg.note == msg.note)
-        ringing_interval = takewhile(not_own_stop, rest)
-        own_stop = list(dropwhile(not_own_stop, rest))
-        own_stop = own_stop[0].time if len(own_stop) else 0
-        # print(list(ringing_interval))
-        ringing_interval = map(lambda msg: msg.time, ringing_interval)
-        duration = sum(ringing_interval) + own_stop
-        # print(f'duration: {duration}')
+      # Create Notes
+        # if not message.is_meta and message.type.startswith('note'):
+        if not message.is_meta and message.type == 'note_on':
+          # Calculate note duration
+          rest = track[i:]
+          rest = filter(lambda msg: not msg.is_meta, rest)
+          not_own_stop = lambda msg: not (msg.type == 'note_off' and msg.note == msg.note)
+          ringing_interval = takewhile(not_own_stop, rest)
+          own_stop = list(dropwhile(not_own_stop, rest))
+          own_stop = own_stop[0].time if len(own_stop) else 0
+          # print(list(ringing_interval))
+          ringing_interval = map(lambda msg: msg.time, ringing_interval)
+          duration = sum(ringing_interval) + own_stop
+          # print(f'duration: {duration}')
 
-        # Create Notes
-        if not message.is_meta and message.type.startswith('note'):
           note = NoteSequence.Note(
               instrument=0,
               program=0,
@@ -155,8 +159,10 @@ def noteseq_trim_start(noteseqs, host):
     if not any(noteseq.notes): continue
     rmnotes = []
     for i, note in enumerate(noteseq.notes):
-      note.start_time = round(note.start_time - seq_start_time, 8)
-      note.end_time = round(note.end_time - seq_start_time, 8)
+      # note.start_time = round(note.start_time - seq_start_time, 8)
+      note.start_time = note.start_time - seq_start_time
+      # note.end_time = round(note.end_time - seq_start_time, 8)
+      note.end_time = note.end_time - seq_start_time
       if note.start_time < 0: rmnotes += [i]
     
     for i in reversed(rmnotes): noteseq.notes.remove(noteseq.notes[i])
@@ -267,6 +273,16 @@ def merge_noteseqs(noteseqs, host, conductor=True):
   output.notes.sort(key=lambda x: x.start_time)
   return [noteseqs[0], output]
 
+def print_midotracks(tracks, host):
+    data = tracks
+    host.io.log(data)
+    # host.io.log(f'total ticks: {host.song.total_ticks()}')
+    for track in data:
+      host.io.log(track)
+      for msg in track:
+        host.io.log(f'  {msg}')
+    return tracks
+
 filters = {
   # Input (Mido)
   'midotrack2noteseq': midotrack2noteseq,
@@ -287,5 +303,6 @@ filters = {
 
   # Logging
   'print_noteseqs': print_noteseqs,
+  'print_midotracks': print_midotracks,
   'debug_generation_request': debug_generation_request,
 }

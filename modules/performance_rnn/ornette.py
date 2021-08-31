@@ -30,8 +30,9 @@ class OrnetteModule():
         # TODO: Move to yaml
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'mido_no_0_velocity')
+        # self.host.add_filter('input', 'print_midotracks')
         self.host.add_filter('input', 'midotrack2noteseq')
-        self.host.add_filter('input', 'print_noteseqs')
+        # self.host.add_filter('input', 'print_noteseqs')
         self.host.add_filter('input', 'debug_generation_request')
         # Here, the sequence already starts at ~1.0 to ~1.5
         self.host.add_filter('output', 'noteseq_trim_start')
@@ -41,7 +42,7 @@ class OrnetteModule():
         self.host.add_filter('output', 'mido_track_subtract_previous_time')
 
         # This offset helps ensure the output of the model will fulfill the desired region. Excess is cropped
-        self.offset = 1
+        self.offset = 1.1
 
 
         self.model = PerformanceRnnSequenceGenerator(

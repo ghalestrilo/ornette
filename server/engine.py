@@ -77,7 +77,6 @@ class Engine():
       host = self.host
 
       with self.host.lock: host.set('is_generating', True)
-      self.host.io.log(f'length: {length} {unit} | final_length: ? {host.get("output_unit")}')
 
       # Default values for output length
       if length is None: length = self.host.get('output_length')
@@ -96,8 +95,6 @@ class Engine():
       last_end_time = self.host.get('last_end_time')
       requested_beats = self.host.song.convert(length, unit, self.host.get('output_unit'))
       host.set('generation_requested_beats', requested_beats)
-      
-      
 
       # Apply Input Filters
       for _filter in host.filters.input: buffer = _filter(buffer, host)
@@ -105,7 +102,6 @@ class Engine():
       # Generate sequence
       tracks = host.get('output_tracks')
       final_length = host.song.convert(length, unit, host.get('output_unit'))
-      self.host.io.log(f'length: {length} {unit} | final_length: {final_length} {host.get("output_unit")}')
       output = [[]]
       i = 0
       while max(len([msg for msg in out if msg.type.startswith('note_on')]) for out in output) < 2:
@@ -117,7 +113,6 @@ class Engine():
         for _filter in host.filters.output: output = _filter(output, host)
 
       # Update last_end_time
-      self.host.io.log(f'new last end time: {last_end_time + requested_beats}')
       self.host.set('last_end_time', last_end_time + requested_beats)
 
       # Warn (TODO: validation methods)
@@ -131,6 +126,7 @@ class Engine():
                 host.song.append(msg, track_index)
 
       self.fresh_buffer.set()
+      host.song.check_end_of_tracks()
       with self.host.lock: host.set('is_generating', False)
 
     def get_quantized_steps(self):
