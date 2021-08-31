@@ -85,6 +85,7 @@ class Song():
             host.io.log(f'[error] No data to write in file: {filename}')
             return
         host.io.log(f'Saving data to: {filename}')
+        host.io.log(f'Total length: {self.total_ticks()} ticks = {self.total_length("bars")} bars = {self.total_length("seconds")}s')
 
         data.save(normpath(filename))
         while not os.path.exists(filename): pass

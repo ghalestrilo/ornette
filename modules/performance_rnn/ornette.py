@@ -17,7 +17,7 @@ class OrnetteModule():
         self.host = host
 
         self.host.set('input_unit', 'seconds')
-        self.host.set('input_length', 8)
+        self.host.set('input_length', 3)
         self.host.set('output_unit', 'seconds')
         self.host.set('output_length', 16)
 
@@ -31,6 +31,7 @@ class OrnetteModule():
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'mido_no_0_velocity')
         self.host.add_filter('input', 'midotrack2noteseq')
+        self.host.add_filter('input', 'print_noteseqs')
         self.host.add_filter('input', 'debug_generation_request')
         # Here, the sequence already starts at ~1.0 to ~1.5
         self.host.add_filter('output', 'noteseq_trim_start')

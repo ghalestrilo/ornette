@@ -95,9 +95,10 @@ def midotrack2noteseq(tracks, host):
         tempos=[{ 'time': 0, 'qpm': qpm }],
         total_quantized_steps=total_quantized_steps
     ) for seq in seqs]
-    end_times = [note.end_time for track in sequences for note in track.notes] + [0]
-    host.set('last_end_time', max(end_times))
-    return sequences
+    # end_times = [note.end_time for track in sequences for note in track.notes] + [0]
+    
+    # return sequences
+    return noteseq_trim_end(sequences,host)
 
 
 def init_default_pitch(noteseqs, host):
@@ -132,7 +133,8 @@ def debug_generation_request(noteseqs, host):
 
 def noteseq_trim_end(noteseqs, host):
   section_end = host.get('generation_requested_beats')
-  host.io.log(f'section_end: {section_end}')
+  # host.io.log(f'section_end: {section_end}')
+  host.io.log(f'dropping notes after: {section_end}')
   for noteseq in noteseqs:
     rmnotes = []
     for i, note in enumerate(noteseq.notes):

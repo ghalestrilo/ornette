@@ -77,6 +77,7 @@ class Engine():
       host = self.host
 
       with self.host.lock: host.set('is_generating', True)
+      self.host.io.log(f'length: {length} {unit} | final_length: ? {host.get("output_unit")}')
 
       # Default values for output length
       if length is None: length = self.host.get('output_length')
@@ -104,12 +105,19 @@ class Engine():
       # Generate sequence
       tracks = host.get('output_tracks')
       final_length = host.song.convert(length, unit, host.get('output_unit'))
-      output = host.model.generate(buffer, final_length, tracks)
+      self.host.io.log(f'length: {length} {unit} | final_length: {final_length} {host.get("output_unit")}')
+      output = [[]]
+      i = 0
+      while max(len([msg for msg in out if msg.type.startswith('note_on')]) for out in output) < 2:
+        i = i+1
+        self.host.io.log(f'retrying generation ({i})')
+        output = host.model.generate(buffer, final_length, tracks)
 
-      # Apply Output Filters
-      for _filter in host.filters.output: output = _filter(output, host)
+        # Apply Output Filters
+        for _filter in host.filters.output: output = _filter(output, host)
 
       # Update last_end_time
+      self.host.io.log(f'new last end time: {last_end_time + requested_beats}')
       self.host.set('last_end_time', last_end_time + requested_beats)
 
       # Warn (TODO: validation methods)
