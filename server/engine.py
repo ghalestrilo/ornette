@@ -83,33 +83,37 @@ class Engine():
       if unit is None: unit = self.host.get('output_unit')
 
       # Assert Song State
-      # host.song.init_conductor()
       with self.host.lock: host.song.init_conductor()
-      # print(host.song.data.tracks)
 
       # Prepare Input Buffer (<input_length> <input_unit>s)
       buflen = host.get('input_length')
-      # buflen = host.song.to_ticks(buflen, 'beats')
       buflen = host.song.to_ticks(buflen, host.get('input_unit'))
       with self.host.lock:
         buffer = host.song.buffer(buflen)
+
+      # Calculate Generation Length
+      last_end_time = self.host.get('last_end_time')
+      requested_beats = self.host.song.convert(length, unit, self.host.get('output_unit'))
+      host.set('generation_requested_beats', requested_beats)
 
       # Apply Input Filters
       for _filter in host.filters.input: buffer = _filter(buffer, host)
 
       # Generate sequence
       tracks = host.get('output_tracks')
-      # final_length = host.song.convert(length, unit, host.get('input_unit'))
-      final_length = host.song.convert(length, unit, host.get('input_unit'))
-      # if final_length is None:
-      #   host.io.log(f'error: trying to generate length {final_length} ({length} {unit} to {host.get("input_unit")})')
-      #   return
+      final_length = host.song.convert(length, unit, host.get('output_unit'))
+      output = [[]]
+      i = 0
+      while max(len([msg for msg in out if msg.type.startswith('note_on')]) for out in output) < 2:
+        i = i+1
+        self.host.io.log(f'retrying generation ({i})')
+        output = host.model.generate(buffer, final_length, tracks)
 
-      # Generate Output
-      output = host.model.generate(buffer, final_length, tracks)
+        # Apply Output Filters
+        for _filter in host.filters.output: output = _filter(output, host)
 
-      # Apply Output Filters
-      for _filter in host.filters.output: output = _filter(output, host)
+      # Update last_end_time
+      self.host.set('last_end_time', last_end_time + requested_beats)
 
       # Warn (TODO: validation methods)
       if len(output) != len(tracks):
@@ -122,8 +126,14 @@ class Engine():
                 host.song.append(msg, track_index)
 
       self.fresh_buffer.set()
+      host.song.check_end_of_tracks()
       with self.host.lock: host.set('is_generating', False)
 
+    def get_quantized_steps(self):
+      self.host.song.get_buffer_length()
+      total_quantized_steps = self.host.song.get_buffer_length(unit='beats')
+      total_quantized_steps = int(round(total_quantized_steps))
+      return total_quantized_steps
 
     def must_generate(self):
       host = self.host

@@ -26,6 +26,7 @@ commands = (
     , "event":      lambda host, ev: host.push_event(ev)
     , "instrument": lambda host, addr, index, *inst: host.song.get_voice(index).set_instrument(inst)
     , "crop":       lambda host, unit, _start, _end: host.song.crop(unit, float(_start), float(_end))
+    , "drop_primer":lambda host: host.song.drop_primer()
 
     # General Control
     , "play":       lambda host, pitch: host.bridge.play(pitch)

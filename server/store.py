@@ -4,6 +4,7 @@ state = {
     # Basic Config
     'module': None,
     'scclient': None,
+    'data_dir': '/data',
     'debug_output': True,
     'until_next_event': 0.25, # TODO: Remove after MIDI-based refactor
 
@@ -16,6 +17,7 @@ state = {
     # TODO: Move to Engine (Operation/Playback Variables)
     'is_generating': False, # Keep
     'time_shift_denominator': 100,
+    'generation_requested_beats': 0,
     'is_running': False,    # Deprecate?
     'playback': True,       # Deprecate?
     'return': 0,            # Deprecate?
@@ -31,7 +33,8 @@ state = {
 
     # TODO: move to channel
     'output_tracks': [1], # Deprecate
-    'instrument': [ 's', 'superpiano', 'velocity', '0.4' ], # Deprecate
+    # 'instrument': [ 's', 'superpiano', 'velocity', '0.4' ], # Deprecate
+    'instrument': [ 's', 'reface', 'amp', '0.4' ], # Deprecate
 
     # TODO: move to song
     'output_data': mido.MidiFile(),       # Deprecate
@@ -75,7 +78,7 @@ class Store():
           value = int(value)
 
         # Move to TrackData
-        if (field == 'output_tracks'):
+        if field == 'output_tracks' and hasattr(self.host, 'song'):
           try: value = list(value)
           except TypeError: value = [value]
           value = list(map(int,value))

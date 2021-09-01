@@ -6,6 +6,14 @@ from itertools import takewhile, dropwhile
 
 # Magenta Filters
 
+def noteseq_scale(noteseqs, host):
+  scaling_factor = host.get('scaling_factor')
+  for noteseq in noteseqs:
+    for note in noteseq.notes:
+      note.start_time *= scaling_factor
+      note.end_time *= scaling_factor
+  return noteseqs
+
 def print_noteseqs(noteseqs, host, label=""):
   """ Prints a NoteSeq and returns it """
   print(f'[{label}] printing sequences')
@@ -15,18 +23,6 @@ def print_noteseqs(noteseqs, host, label=""):
       print(f'pitch: {note.pitch}\t| velocity: {note.velocity}\t| start_time: {note.start_time:.4f}\t| end_time: {note.end_time:.4f}')
   return noteseqs
 
-def drop_input_length(noteseqs, host):
-  seq_start_time = host.song.get_buffer_length()
-
-  print(f'dropping notes before: {seq_start_time}')
-  for noteseq in noteseqs:
-    if not any(noteseq.notes): continue
-    for note in noteseq.notes:
-      note.start_time -= seq_start_time
-      # note.end_time -= seq_start_time
-    while any(noteseq.notes) and noteseq.notes[0].start_time < 0:
-      noteseq.notes.remove(noteseq.notes[0])
-  return noteseqs
 
 ## Input Filters
 def midotrack2noteseq(tracks, host):
@@ -40,13 +36,6 @@ def midotrack2noteseq(tracks, host):
 
     input_unit = host.get('input_unit')
 
-    # print('printing tracks')
-    # for track in tracks:
-    #   print(track)
-    #   for msg in track:
-    #     print(f' {msg}')
-
-
     for track in tracks:
       seqs.append([])
       # First create start_times, then end_times
@@ -54,6 +43,9 @@ def midotrack2noteseq(tracks, host):
       # seq_start_time = list(filter(lambda msg: msg.type == 'note_on', track))[:1]
       seq_start_time = next(filter(lambda msg: msg.type == 'note_on', track), None)
       seq_start_time = seq_start_time.time if seq_start_time else 0
+      # FIXME: Drop notes before this one
+      # Sometimes a buffer will start with a note_off
+      # as a result, the note_off event will end up with negative time and fuck up the generator
 
       note_start_ticks = 0
 
@@ -67,20 +59,21 @@ def midotrack2noteseq(tracks, host):
         # Update note start time
         note_start_ticks += message.time
 
-        # Calculate note duration
-        rest = track[i:]
-        rest = filter(lambda msg: not msg.is_meta, rest)
-        not_own_stop = lambda msg: msg.type != 'note_off' and msg.note != msg.note
-        ringing_interval = takewhile(not_own_stop, rest)
-        own_stop = list(dropwhile(not_own_stop, rest))
-        own_stop = own_stop[0].time if len(own_stop) else 0
-        # print(list(ringing_interval))
-        ringing_interval = map(lambda msg: msg.time, ringing_interval)
-        duration = sum(ringing_interval) + own_stop
-        # print(f'duration: {duration}')
+      # Create Notes
+        # if not message.is_meta and message.type.startswith('note'):
+        if not message.is_meta and message.type == 'note_on':
+          # Calculate note duration
+          rest = track[i:]
+          rest = filter(lambda msg: not msg.is_meta, rest)
+          not_own_stop = lambda msg: not (msg.type == 'note_off' and msg.note == msg.note)
+          ringing_interval = takewhile(not_own_stop, rest)
+          own_stop = list(dropwhile(not_own_stop, rest))
+          own_stop = own_stop[0].time if len(own_stop) else 0
+          # print(list(ringing_interval))
+          ringing_interval = map(lambda msg: msg.time, ringing_interval)
+          duration = sum(ringing_interval) + own_stop
+          # print(f'duration: {duration}')
 
-        # Create Notes
-        if not message.is_meta:
           note = NoteSequence.Note(
               instrument=0,
               program=0,
@@ -95,10 +88,8 @@ def midotrack2noteseq(tracks, host):
 
 
     # Calculate Input Buffer Size
-    total_quantized_steps = host.get('input_length')
-    total_quantized_steps = host.song.convert(total_quantized_steps, host.get('input_unit'), 'beats')
+    total_quantized_steps = host.song.convert(host.get('input_length'), host.get('input_unit'), 'beats')
     total_quantized_steps = int(round(total_quantized_steps))
-    print(f'total_quantized_steps: {total_quantized_steps}')
 
     sequences = [NoteSequence(
         notes=seq.copy(),
@@ -108,47 +99,84 @@ def midotrack2noteseq(tracks, host):
         tempos=[{ 'time': 0, 'qpm': qpm }],
         total_quantized_steps=total_quantized_steps
     ) for seq in seqs]
-    print('printing sequences')
-    print(sequences)
-    return sequences
+    # end_times = [note.end_time for track in sequences for note in track.notes] + [0]
+    
+    # return sequences
+    return noteseq_trim_end(sequences,host)
+
+
+def init_default_pitch(noteseqs, host):
+  for noteseq in noteseqs:
+    if not any(noteseq.notes):
+      note = noteseq.notes.add()
+      note.start_time = 0
+      note.end_time = 0
+      note.pitch = host.get('init_pitch')
+      note.velocity = 100
+  return noteseqs
+
+
+
+
+## Debugging filters
+
+def debug_generation_request(noteseqs, host):
+  # buflen = host.song.convert(host.get('output_length'), 'bars', host.get('output_unit'))
+  outlen = host.get('generation_requested_beats')
+  last_end_time = host.get('last_end_time')
+  host.io.log(f'generating interval: [{last_end_time}:{last_end_time + outlen}]')
+  return noteseqs
 
 
 
 
 
 
-def midotrack2pianoroll(tracks, host):
-    init_pitch = host.get('init_pitch')
-    primer_sequence = []
-    step_length = 1 / host.get('steps_per_quarter')
 
-    qpm = 120 # IMPORTANT: The input qpm must be fixed to 120, otherwise the models will generate output in a wrong scale of times
+# Trimming Methods
 
-    # Create empty PianorollSequence
-    noteseq = NoteSequence(
-      quantization_info={ 'steps_per_quarter': host.get('steps_per_quarter') },
-      tempos=[{ 'time': 0, 'qpm': qpm }], 
-    )
-    pianorollseq = PianorollSequence(quantized_sequence=noteseq)
-    for i, own_note in enumerate(tracks[0]):
-      if own_note.is_meta: continue # FIXME: This is bullshit, the song#buffer method should take care of this
-      partner_note = tracks[1][i]
-      own_note = own_note.note
-      tuple_ = (own_note, partner_note) if partner_note else (own_note,)
-      primer_sequence.append(tuple_)
-      pianorollseq.append(tuple_)
+def noteseq_trim_end(noteseqs, host):
+  section_end = host.get('generation_requested_beats')
+  # host.io.log(f'section_end: {section_end}')
+  host.io.log(f'dropping notes after: {section_end}')
+  for noteseq in noteseqs:
+    rmnotes = []
+    for i, note in enumerate(noteseq.notes):
+      if note.start_time > section_end:
+        rmnotes += [i]
+      elif note.end_time > section_end: note.end_time = section_end
 
-    if not any(primer_sequence):
-      primer_sequence = [(init_pitch,)]
-      pianorollseq.append((init_pitch,))
+    for i in reversed(rmnotes): noteseq.notes.remove(noteseq.notes[i])
+  
+  return noteseqs
 
-    # Get last end time
-    last_end_time = (len(primer_sequence) * step_length
-      if primer_sequence != None and any(primer_sequence)
-      else 0)
-    host.set('last_end_time', last_end_time)
 
-    return pianorollseq
+def noteseq_trim_start(noteseqs, host):
+  seq_start_time = host.get('last_end_time')
+
+  host.io.log(f'dropping notes before: {seq_start_time}')
+  for noteseq in noteseqs:
+    if not any(noteseq.notes): continue
+    rmnotes = []
+    for i, note in enumerate(noteseq.notes):
+      # note.start_time = round(note.start_time - seq_start_time, 8)
+      note.start_time = note.start_time - seq_start_time
+      # note.end_time = round(note.end_time - seq_start_time, 8)
+      note.end_time = note.end_time - seq_start_time
+      if note.start_time < 0: rmnotes += [i]
+    
+    for i in reversed(rmnotes): noteseq.notes.remove(noteseq.notes[i])
+  return noteseqs
+
+
+
+
+
+
+
+
+
+
 
 ## Output Filters
 def noteseq2midotrack(noteseqs, host):
@@ -167,8 +195,8 @@ def noteseq2midotrack(noteseqs, host):
           ]:
         for note in notes:
           time = get_time(note)
-          if time < buffer_size: continue # Skip input sequence
-          time = time - buffer_size
+          # if time < buffer_size: continue # Skip input sequence
+          # time = time - buffer_size
           ticks = host.song.to_ticks(time, host.get('output_unit'))
           ticks = int(round(ticks))
 
@@ -190,114 +218,35 @@ def mido_track_sort_by_time(tracks, host):
 
   return tracks
 
-def mido_track_subtract_last_time(tracks, host):
+from functools import reduce
+def _sub_last_time(seq, msg):
+  last_msg_time = sum(msg.time for msg in seq)
+  numsg = Message(msg.type, note=msg.note, channel=msg.channel, time=msg.time - last_msg_time, velocity=msg.velocity)
+  return seq + [numsg]
+
+def mido_track_subtract_previous_time(tracks, host):
   """ Some models save accumulated time instead of note length """
-  # Adjust note time
-  for track in tracks:
-    last_time = track[0].time if len(track) else 0
-    for msg in track:
-      dur = msg.time - last_time
-      msg.time = dur
-      last_time += dur
-  
+  tracks = [reduce(_sub_last_time, track, []) for track in tracks]
   return tracks
 
 
+def _shift_time(track):
+  times = [0] + [msg.time for msg in track]
+  for i, msg in enumerate(track):
+    msg.time = times[i]
+  return track
+
+def mido_track_add_note_offs(tracks, host):
+  _make_note_off = lambda msg: Message('note_off', note=msg.note, channel=msg.channel, time=0, velocity=msg.velocity)
+  _add_note_offs = lambda track: [n for sublist in ([note, _make_note_off(note)] for note in track) for n in sublist]
+  
+
+  return [_add_note_offs(track) for track in tracks]
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-## Input Filters
-def midotrack2noteseq_performance_rnn(tracks, host):
-    seqs = []
-    velocity_sensitive = host.get('is_velocity_sensitive')
-    coeff = host.get('time_coeff') # Time-stretching coefficient
-    for track in tracks:
-      seqs.append([])
-      last_end_time = 0
-      for message in track:
-        
-        # AttributeError:
-        # 'str' object has no attribute 'time'
-        if isinstance(message, str): continue
-
-        next_start_time = last_end_time + host.song.from_ticks(message.time, host.get('input_unit'))
-        if not message.is_meta:
-          note = NoteSequence.Note(
-              instrument=0,
-              program=0,
-              start_time=last_end_time / coeff,
-              end_time=next_start_time / coeff,
-              velocity=message.velocity,
-              pitch=message.note
-              )
-          if velocity_sensitive and message.velocity:
-            note.velocity = message.velocity
-          seqs[-1].append(note)
-        last_end_time = next_start_time
-
-    return [NoteSequence(
-        notes=seq,
-        quantization_info={
-            'steps_per_quarter': host.get('steps_per_quarter')},
-        tempos=[{ 'time': 0, 'qpm': host.get('bpm') }],
-    ) for seq in seqs]
-
-
-## Output Filters
-def noteseq2midotrack_performance_rnn(noteseqs, host):
-    output = []
-    velocity_sensitive = host.get('is_velocity_sensitive')
-    coeff = host.get('time_coeff') # Time-stretching coefficient
-
-    # Convert Notes to Messages
-    for i, noteseq in enumerate(noteseqs):
-      track = []
-      for (name, get_time) in [
-            ('note_off', lambda x: x.end_time),
-            ('note_on', lambda x: x.start_time)
-          ]:
-        for note in noteseq.notes:
-          # print(note)
-          time = get_time(note) * 1000
-          ticks = host.song.to_ticks(time, host.get('output_unit'))
-          ticks = int(round(ticks / 1000))
-
-          track.append(Message(name,
-            note=note.pitch,
-            channel=host.get('output_tracks')[i],
-            velocity=note.velocity if velocity_sensitive else 100,
-            time=ticks * coeff
-            ))
-
-      if not any(track): continue
-
-      # Sort messages by time
-      track.sort(key = lambda msg: msg.time)
-      
-      # Calculate relative time
-      timediff = [track[0].time] + [msg.time for msg in track]
-      for i, message in enumerate(track):
-        message.time -= timediff[i]
-
-        # FIXME: Returned/Generated messages are too short
-        # message.time *= 2
-        message.time = int(round(max(0, message.time)))
-
-
-      output.append(track.copy())
-
-    return output
 
 def mido_no_0_velocity(tracks, host):
     """ 0-velocity messages crash PerformanceRNN
@@ -324,24 +273,36 @@ def merge_noteseqs(noteseqs, host, conductor=True):
   output.notes.sort(key=lambda x: x.start_time)
   return [noteseqs[0], output]
 
+def print_midotracks(tracks, host):
+    data = tracks
+    host.io.log(data)
+    # host.io.log(f'total ticks: {host.song.total_ticks()}')
+    for track in data:
+      host.io.log(track)
+      for msg in track:
+        host.io.log(f'  {msg}')
+    return tracks
+
 filters = {
   # Input (Mido)
   'midotrack2noteseq': midotrack2noteseq,
-  'midotrack2pianoroll': midotrack2pianoroll,
   'mido_no_0_velocity': mido_no_0_velocity,
-  'midotrack2noteseq_performance_rnn': midotrack2noteseq_performance_rnn,
   'merge_noteseqs': merge_noteseqs,
-  
+  'noteseq_scale': noteseq_scale,
+  'init_default_pitch': init_default_pitch,
 
   # Output
-  'drop_input_length': drop_input_length,
+  'noteseq_trim_start': noteseq_trim_start,
+  'noteseq_trim_end': noteseq_trim_end,
   'noteseq2midotrack': noteseq2midotrack,
-  # 'noteseq2pianoroll': noteseq2pianoroll,
-  # 'pianoroll2midotrack': pianoroll2midotrack,
+
+  # Default filters
   'mido_track_sort_by_time': mido_track_sort_by_time,
-  'mido_track_subtract_last_time': mido_track_subtract_last_time,
-  'noteseq2midotrack_performance_rnn': noteseq2midotrack_performance_rnn,
+  'mido_track_subtract_previous_time': mido_track_subtract_previous_time,
+  'mido_track_add_note_offs': mido_track_add_note_offs,
 
   # Logging
   'print_noteseqs': print_noteseqs,
+  'print_midotracks': print_midotracks,
+  'debug_generation_request': debug_generation_request,
 }

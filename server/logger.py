@@ -24,6 +24,7 @@ class Logger:
           if (field == 'song'):
             data = self.host.song.data
             self.host.io.log(data)
+            self.host.io.log(f'total ticks: {self.host.song.total_ticks()}')
             for track in data.tracks:
               self.host.io.log(track)
 

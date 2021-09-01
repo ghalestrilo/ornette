@@ -18,6 +18,9 @@ Uses flags to define operation.
 """
 import os
 
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+tf.autograph.set_verbosity(5, alsologtostdout=True)
 from magenta.models.polyphony_rnn import polyphony_model
 from magenta.models.polyphony_rnn import polyphony_sequence_generator
 from magenta.models.shared import sequence_generator
@@ -25,15 +28,15 @@ from magenta.models.shared import sequence_generator_bundle
 import note_seq
 from note_seq.protobuf import generator_pb2
 from note_seq.protobuf import music_pb2
-import tensorflow.compat.v1 as tf
 from note_seq import NoteSequence
 
-tf.disable_v2_behavior()
+
 
 class OrnetteModule():
   def __init__(self, host, checkpoint='polyphony_rnn'):
       config          = polyphony_model.default_configs['polyphony']
-      checkpoint_file = os.path.normpath(f'/ckpt/{checkpoint}')
+      checkpoint_file = host.get_bundle(checkpoint)
+      # checkpoint_file = os.path.normpath(f'/ckpt/{checkpoint}')
       bundle_file     = sequence_generator_bundle.read_bundle_file(checkpoint_file)
       self.model      = polyphony_sequence_generator.PolyphonyRnnSequenceGenerator(
         model=polyphony_model.PolyphonyRnnModel(config),
@@ -42,8 +45,9 @@ class OrnetteModule():
         bundle=bundle_file)
       self.server_state = host.state
       self.host = host
-      self.host.set('output_unit', 'measures')
-      self.host.set('input_unit', 'measures')
+      self.host.set('output_unit', 'seconds')
+      self.host.set('input_unit', 'seconds')
+      self.host.set('input_length', 1)
       self.last_end_time = 0
       self.host.set('output_tracks', [1])
       self.host.set('steps_per_quarter', 4)
@@ -53,21 +57,16 @@ class OrnetteModule():
       self.host.include_filters('magenta')
       self.host.add_filter('input', 'midotrack2noteseq')
       self.host.add_filter('input', 'merge_noteseqs')
-      self.host.add_filter('output', 'drop_input_length')
+      self.host.add_filter('input', 'debug_generation_request')
+      self.host.add_filter('output', 'noteseq_trim_start')
+      self.host.add_filter('output', 'noteseq_trim_end')
       self.host.add_filter('output', 'noteseq2midotrack')
       self.host.add_filter('output', 'mido_track_sort_by_time')
-      self.host.add_filter('output', 'mido_track_subtract_last_time')
+      self.host.add_filter('output', 'mido_track_subtract_previous_time')
 
   def generate(self, tracks=None, length_bars=4, output_tracks=[0]):
       output = []
-      # last_end_time = max([max([0, *(note.end_time for note in track.notes if any(track.notes))]) for track in tracks])
-      last_end_time = max([0] + [note.end_time if any(track.notes) else 0
-        for track in tracks
-        for note in track.notes
-        ])
-      print(f'last_end_time: {last_end_time}')
-      self.host.set('last_end_time', last_end_time)
-      # buffer_length = last_end_time
+      last_end_time = self.host.get('last_end_time')
       buffer_length = self.host.song.get_buffer_length()
 
       generator_options = generator_pb2.GeneratorOptions()
@@ -84,7 +83,7 @@ class OrnetteModule():
         start_time=last_end_time,
         end_time=last_end_time + length_bars + buffer_length)
 
-      output = [self.model.generate(tracks[index], generator_options) for index in output_tracks]
+      output = [self.model.generate(tracks[index], generator_options) for index in [0]]
       return output
 
   def close(self):

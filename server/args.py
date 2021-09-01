@@ -1,7 +1,7 @@
 import argparse
+# import sys
 
-def get_args():
-      # Parse CLI Args
+def get_arg_parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--max_seq',    type=int,  default=256,         help='maximum buffer length')
@@ -21,5 +21,7 @@ def get_args():
     parser.add_argument("--exec",       type=str,  default="",          help="Semicolon-separated commands to be executed by the server. If defined, once complete, the server will shut down.")
     parser.add_argument("--no-server",  type=bool, default=False,       help="Run the model without starting an OSC server")
     parser.add_argument("--no-module",  type=bool, default=False,       help="Run ornette without loading a model")
-    
-    return parser.parse_args()
+    return parser
+
+def get_args():
+    return get_arg_parser().parse_args()
