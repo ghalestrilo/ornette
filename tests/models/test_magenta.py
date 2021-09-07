@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, ANY
 sys.path.append(os.path.abspath(os.path.join('server')))
 from server.data import load_model
 from server.host import Host
+from server.song import Song
 from server import host, data
 from tests.common import args
 from math import ceil
@@ -15,29 +16,32 @@ from importlib import reload
 
 # python -m unittest tests.models
 
+output = lambda *path: os.path.abspath(os.path.join(os.path.curdir, 'output', *path))
+dataset = lambda *path: os.path.abspath(os.path.join(os.path.curdir, 'dataset', *path))
+
 models = [  # Melody RNN
-    # {'name': 'melody_rnn', 'bundle': 'basic_rnn'},
-    # {'name': 'melody_rnn', 'bundle': 'mono_rnn'},
-    # {'name': 'melody_rnn', 'bundle': 'attention_rnn'},
-    # {'name': 'melody_rnn', 'bundle': 'lookback_rnn'},
+    # {'name': 'melody_rnn', 'bundle': 'basic_rnn', 'primer': None },
+    # {'name': 'melody_rnn', 'bundle': 'mono_rnn', 'primer': None },
+    {'name': 'melody_rnn', 'bundle': 'attention_rnn', 'primer': dataset('clean_lakh', 'Scorpions_-_Johnny_B._Goode.mid') },
+    # {'name': 'melody_rnn', 'bundle': 'lookback_rnn', 'primer': None },
 
     # Performance RNN
-    # {'name': 'performance_rnn', 'bundle': 'performance_with_dynamics'},
-    # {'name': 'performance_rnn', 'bundle': 'density_conditioned_performance_with_dynamics'},
-    # {'name': 'performance_rnn', 'bundle': 'pitch_conditioned_performance_with_dynamics'},
-    # {'name': 'performance_rnn', 'bundle': 'performance'},
-    # {'name': 'performance_rnn', 'bundle': 'polyphony_rnn'},
-    # {'name': 'performance_rnn', 'bundle': 'multiconditioned_performance_with_dynamics'},
-    # {'name': 'performance_rnn', 'bundle': 'performance_with_dynamics_and_modulo_encoding'},
+    # {'name': 'performance_rnn', 'bundle': 'performance_with_dynamics', 'primer': None },
+    # {'name': 'performance_rnn', 'bundle': 'density_conditioned_performance_with_dynamics', 'primer': None },
+    # {'name': 'performance_rnn', 'bundle': 'pitch_conditioned_performance_with_dynamics', 'primer': None },
+    # {'name': 'performance_rnn', 'bundle': 'performance', 'primer': None },
+    # {'name': 'performance_rnn', 'bundle': 'polyphony_rnn', 'primer': None },
+    # {'name': 'performance_rnn', 'bundle': 'multiconditioned_performance_with_dynamics', 'primer': None },
+    # {'name': 'performance_rnn', 'bundle': 'performance_with_dynamics_and_modulo_encoding', 'primer': None },
 
     # Pianoroll RNN
-    # {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade_attn'},
-    # {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade'},
-    # {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade'},
-    # {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade-bach'},
+    # {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade_attn', 'primer': None },
+    # {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade', 'primer': None },
+    # {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade', 'primer': None },
+    # {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade-bach', 'primer': None },
 
     # Polyphony RNN
-    {'name': 'polyphony_rnn', 'bundle': 'polyphony_rnn'},
+    # {'name': 'polyphony_rnn', 'bundle': 'polyphony_rnn', 'primer': None },
 ]
 
 
@@ -45,21 +49,25 @@ models = [  # Melody RNN
 # models = [models[-1]] + models[:4]
 # models = [models[-1]]
 
-# models = [{'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade_attn'}]
+# models = [{'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade_attn', 'primer': None }]
 # models = [model for model in models if model['name'] == 'pianoroll_rnn_nade']
-# models = [{'name': 'performance_rnn', 'bundle': 'performance_with_dynamics'}]
+# models = [{'name': 'performance_rnn', 'bundle': 'performance_with_dynamics', 'primer': None }]
 
 base_sys_path = sys.path.copy()
 
 class TestModelGeneration(unittest.TestCase):
     def setUp(self):
       for model in models:
-        with self.subTest(model=model):
-          self.host = Host(args)
-          self.model = None
-          self.total_length = None
-          self.generate = None
-          self.initialize(models[0])
+        for primer in [None, model['primer']]:
+          with self.subTest(model=model):
+            self.host = Host(args)
+            # if primer:
+            #   self.host.song = Song(self.host)
+            #   self.host.song.load(primer)
+            self.model = None
+            self.total_length = None
+            self.generate = None
+            self.initialize(models[0])
 
     def initialize(self, model):
       sys.path = base_sys_path.copy()
@@ -108,8 +116,8 @@ class TestModelGeneration(unittest.TestCase):
         for repetition in range(2):
           with self.subTest(model=model, repetition=repetition):
             self.initialize(model)
-            for _ in range(12): self.generate(1,'bars')
-            self.assertEqual(12, self.total_length())
+            for _ in range(16): self.generate(1,'bars')
+            self.assertEqual(16, self.total_length())
     
 
 
@@ -151,12 +159,65 @@ class TestModelGeneration(unittest.TestCase):
           self.assertEqual(7, self.total_length())
 
 
-# TODO: Move to test_engine
-class TestModelCall(unittest.TestCase):
+# # TODO: Move to test_engine
+# class TestModelCall(unittest.TestCase):
+#     def setUp(self):
+#       self.host = Host(args)
+#       self.host.model.generate = MagicMock()
+#       
+#     def test_generate_call(self):
+#       self.host.engine.generate(1,'bars')
+#       self.host.model.generate.assert_called_with(ANY, 4, ANY)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class TestModelGenerationFromPrimer(unittest.TestCase):
     def setUp(self):
+      for model in models:
+        with self.subTest(model=model):
+          self.host = Host(args)
+          self.model = None
+          self.total_length = None
+          self.generate = None
+          self.initialize(models[0])
+
+    def initialize(self, model):
+      sys.path = base_sys_path.copy()
+      args.module = model["name"]
+      args.checkpoint = model["bundle"]
+      reload(host)
+      reload(data)
       self.host = Host(args)
-      self.host.model.generate = MagicMock()
+      self.model = load_model(self.host,args.checkpoint,f'modules/{args.module}')
+      self.host.model = self.model
+      self.total_length = lambda: int(ceil(self.host.song.total_length()))
+      self.generate = self.host.engine.generate
+      self.host.set('input_length', 4)
       
-    def test_generate_call(self):
-      self.host.engine.generate(1,'bars')
-      self.host.model.generate.assert_called_with(ANY, 4, ANY)
+      primer = model['primer']
+      self.host.song = Song(self.host)
+      self.host.song.load(primer, 4, 'bars')
+    
+    def test_repeated_generation(self):
+      """ WHEN Generating 1 at a time, 5 times SHOULD generate exactly 5 bars """
+      for model in models:
+        for repetition in range(2):
+          with self.subTest(model=model, repetition=repetition):
+            self.host.song.show()
+            self.assertEqual(4, self.host.song.total_length('bars'))
+            self.initialize(model)
+            for _ in range(16): self.generate(1,'bars')
+            self.host.song.drop_primer()
+            self.assertEqual(16, self.total_length())

@@ -67,16 +67,16 @@ class OrnetteModule():
 
     def generate(self, tracks=None, length_seconds=4, output_tracks=[0]):
 
-        # last_end_time is always 0!
-        last_end_time = self.host.get('last_end_time')
-        print(f'let: {last_end_time} | ength_seconds: {length_seconds}')
+        # generation_start is always 0!
+        generation_start = self.host.get('generation_start')
+        print(f'let: {generation_start} | ength_seconds: {length_seconds}')
 
         track_idx = output_tracks[0]
         track = tracks[track_idx]
 
         # Define Generation Range
-        start_time = last_end_time
-        end_time = last_end_time + length_seconds + self.offset
+        start_time = generation_start
+        end_time = generation_start + length_seconds + self.offset
 
         generator_options = generator_pb2.GeneratorOptions()
         generator_options.generate_sections.add(start_time=start_time, end_time=end_time)

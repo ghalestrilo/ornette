@@ -123,8 +123,8 @@ def init_default_pitch(noteseqs, host):
 def debug_generation_request(noteseqs, host):
   # buflen = host.song.convert(host.get('output_length'), 'bars', host.get('output_unit'))
   outlen = host.get('generation_requested_beats')
-  last_end_time = host.get('last_end_time')
-  host.io.log(f'generating interval: [{last_end_time}:{last_end_time + outlen}]')
+  generation_start = host.get('generation_start')
+  host.io.log(f'generating interval: [{generation_start}:{generation_start + outlen}]')
   return noteseqs
 
 
@@ -152,7 +152,7 @@ def noteseq_trim_end(noteseqs, host):
 
 
 def noteseq_trim_start(noteseqs, host):
-  seq_start_time = host.get('last_end_time')
+  seq_start_time = host.get('generation_start')
 
   host.io.log(f'dropping notes before: {seq_start_time}')
   for noteseq in noteseqs:
@@ -184,7 +184,7 @@ def noteseq2midotrack(noteseqs, host):
     velocity_sensitive = host.get('is_velocity_sensitive')
     noteseqs = [seq.notes for seq in noteseqs]
 
-    buffer_size = host.get('last_end_time')
+    buffer_size = host.get('generation_start')
 
     # Convert Notes to Messages
     for (i, notes) in enumerate(noteseqs):

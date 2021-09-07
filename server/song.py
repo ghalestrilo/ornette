@@ -14,7 +14,7 @@ from channel import Channel
 # TODO: Make FastEnum
 units = ['measures', 'bars', 'seconds', 'ticks', 'beats']
 
-# - last_end_time
+# - generation_start
 # - history
 # - ticks_per_beat
 # - track_name
@@ -63,7 +63,7 @@ class Song():
         host = self.host
         self.data = MidiFile(ticks_per_beat=host.get('ticks_per_beat'))
         host.set('playhead', 0)
-        host.set('last_end_time', 0) # Channels
+        host.set('generation_start', 0) # Channels
         # host.set('output_tracks', [0])
         if self.get_tempo() is None: host.set('tempo', mido.bpm2tempo(120))
 
@@ -101,14 +101,10 @@ class Song():
         while not len(tracks) > track_number:
           self.data.add_track(f'Track {len(tracks)}')
 
-        track = tracks[track_number]
-
-        track.append(message)
-        track.append(MetaMessage('end_of_track', time=1))
-
-        # TODO: Switch mode (append/extend)
-        self.messages = [msg for msg in self.data]
-        self.check_end_of_tracks()
+        for msg in tracks[track_number]:
+          if msg.type == 'end_of_track': tracks[track_number].remove(msg)
+        tracks[track_number].append(message)
+        tracks[track_number].append(MetaMessage('end_of_track', time=0))
 
     def load(self, filename, max_len=None, max_len_units='ticks'):
         """ Load midi from a file onto the host's history
@@ -121,6 +117,8 @@ class Song():
 
         for i, file_track in enumerate(mid.tracks):
           ticks_so_far = 0
+          # first_note_found = False
+          # first_note_ticks = 0
           offset = 0
           
           # Create new track if necessary
@@ -154,27 +152,32 @@ class Song():
             ticks_so_far = ticks_so_far + msg.time
 
           # self.data.tracks.append(track)
+          if any(self.data.tracks) and any(self.data.tracks[0]):
+            for msg in self.data.tracks[0]:
+              if msg.type == 'end_of_track':
+                msg.time = 0
           
           total_ticks = self.total_ticks()
           self.host.set('primer_ticks', total_ticks)
-          self.host.set('last_end_time', self.from_ticks(total_ticks, 'seconds'))
+          self.host.set('generation_start', self.from_ticks(total_ticks, 'seconds'))
           self.host.io.log(f'total ticks loaded: {self.total_ticks()}')
 
-    def check_end_of_tracks(self):
-      for i, track in enumerate(self.data.tracks):
-        end_of_tracks = [msg for msg in track if msg.type == 'end_of_track']
-        for eot in end_of_tracks: track.remove(eot)
-        if not any(track) or track[-1].type == 'end_of_track':
-          self.data.tracks[i].append(MetaMessage('end_of_track'))
+
 
     def drop_primer(self):
       ''' Remove primer from generated output '''
       primer_ticks = self.host.get('primer_ticks')
+      # unit = 'beats'
+      unit = self.host.get('input_unit')
       self.crop('ticks', primer_ticks)
       self.host.set('primer_ticks', 0)
+      self.host.set('generation_start', self.total_length(unit))
+      
+      self.pad(self.host.get('generation_start'), unit)
 
     def total_ticks(self):
-      return sum(self.to_ticks(msg.time, 'seconds') for msg in self.data if not msg.is_meta)
+      # return int(round(sum(self.to_ticks(msg.time, 'seconds') for msg in self.data if not msg.is_meta)))
+      return int(round(sum(self.to_ticks(msg.time, 'seconds') for msg in self.data if hasattr(msg, 'time'))))
 
     def total_length(self, unit='bars'):
       return self.from_ticks(self.total_ticks(), unit)
@@ -199,8 +202,6 @@ class Song():
         buffer_start = max(0,buffer_end - ticks)
         self.host.io.log(f'buffer: {buffer_start} to {buffer_end} ({buffer_end - buffer_start} of {ticks})')
         ret = [self.crop_track(track,'ticks',buffer_start,buffer_end) for track in self.data.tracks]
-
-        # return [self.crop_track(track,'ticks',buffer_start,buffer_end) for track in self.data.tracks]
         return ret
 
 
@@ -271,11 +272,13 @@ class Song():
       log(f'Cropping between {start_time} and {end_time} ticks ({end_time - start_time})')
 
       for i, track in enumerate(self.data.tracks):
+        if i == 0 and self.host.get('preserve_conductor') == True: continue
         self.data.tracks[i] = self.crop_track(track, unit, start_time, end_time)
 
 
     def get_track_length(self, track):
-      return sum(msg.time for msg in track if not msg.is_meta)
+      # return sum(msg.time for msg in track if not msg.is_meta)
+      return sum([msg.time for msg in track if hasattr(msg, 'time')])
 
     # TODO: Units
     def get_measure_length(self, unit):
@@ -385,11 +388,10 @@ class Song():
       host.io.log(f'   model input:  {host.get("input_length")} {host.get("input_unit")} ')
       host.io.log(f'   model output: {host.get("output_length")} {host.get("output_unit")} ')
 
-    # TODO: Get Buffer Length:
     def get_buffer_length(self, unit='bars', truncate=False):
 
       # Total Song Time
-      total_song_time = self.convert(self.data.length, 'seconds', unit)
+      total_song_time = self.from_ticks(self.total_ticks(), unit)
 
       # Requested Input
       input_length = self.convert(self.host.get('input_length'), self.host.get('input_unit'), unit)
@@ -411,3 +413,30 @@ class Song():
       if voice_index is None:
         voice_index = self.host.get('output_tracks')[0]
       return self.host.get('output_tracks')[voice_index]
+
+
+
+
+
+
+    # TODO: WIP
+
+    def pad(self, length, unit):
+      """ places `end_of_track` messages that ensure tracks match expected length """
+      total_expected_ticks = self.to_ticks(length, unit)
+      
+      for i, track in enumerate(self.data.tracks):
+        end_of_tracks = [msg for msg in track if msg.type == 'end_of_track']
+        for eot in end_of_tracks: track.remove(eot)
+        total_track_ticks = self.get_track_length(track)
+
+        # if not any(track) or track[-1].type != 'end_of_track':
+        padlen = max(0, total_expected_ticks - total_track_ticks) if i else 0
+        self.host.io.log(f'track {i} padlen = {padlen} ticks')
+
+        self.data.tracks[i].append(MetaMessage('end_of_track', time=padlen))
+
+
+    def check_end_of_tracks(self):
+      # total_expected_ticks = self.to_ticks(self.host.get('generation_start'), 'beats')
+      self.pad(self.host.get('generation_start'), 'beats')

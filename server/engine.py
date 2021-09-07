@@ -73,61 +73,6 @@ class Engine():
 
       self.host.set('is_running', False)
 
-    def generate(self, length=None, unit=None, respond=False):
-      host = self.host
-
-      with self.host.lock: host.set('is_generating', True)
-
-      # Default values for output length
-      if length is None: length = self.host.get('output_length')
-      if unit is None: unit = self.host.get('output_unit')
-
-      # Assert Song State
-      with self.host.lock: host.song.init_conductor()
-
-      # Prepare Input Buffer (<input_length> <input_unit>s)
-      buflen = host.get('input_length')
-      buflen = host.song.to_ticks(buflen, host.get('input_unit'))
-      with self.host.lock:
-        buffer = host.song.buffer(buflen)
-
-      # Calculate Generation Length
-      last_end_time = self.host.get('last_end_time')
-      requested_beats = self.host.song.convert(length, unit, self.host.get('output_unit'))
-      host.set('generation_requested_beats', requested_beats)
-
-      # Apply Input Filters
-      for _filter in host.filters.input: buffer = _filter(buffer, host)
-
-      # Generate sequence
-      tracks = host.get('output_tracks')
-      final_length = host.song.convert(length, unit, host.get('output_unit'))
-      output = [[]]
-      i = 0
-      while max(len([msg for msg in out if msg.type.startswith('note_on')]) for out in output) < 2:
-        i = i+1
-        self.host.io.log(f'retrying generation ({i})')
-        output = host.model.generate(buffer, final_length, tracks)
-
-        # Apply Output Filters
-        for _filter in host.filters.output: output = _filter(output, host)
-
-      # Update last_end_time
-      self.host.set('last_end_time', last_end_time + requested_beats)
-
-      # Warn (TODO: validation methods)
-      if len(output) != len(tracks):
-          host.io.log(f'Expected model to generate {len(tracks)} tracks, but got {len(output)}')
-
-      # Save Output to track
-      with self.host.lock:
-        for track_messages, track_index in zip(output, tracks):
-            for msg in track_messages:
-                host.song.append(msg, track_index)
-
-      self.fresh_buffer.set()
-      host.song.check_end_of_tracks()
-      with self.host.lock: host.set('is_generating', False)
 
     def get_quantized_steps(self):
       self.host.song.get_buffer_length()
@@ -156,6 +101,76 @@ class Engine():
 
 
 
+    def generate(self, length=None, unit=None, respond=False):
+      host = self.host
+
+      with self.host.lock: host.set('is_generating', True)
+
+      # Default values for output length
+      if length is None: length = self.host.get('output_length')
+      if unit is None: unit = self.host.get('output_unit')
+
+      # Assert Song State
+      with self.host.lock: host.song.init_conductor()
+
+      # Prepare Input Buffer (<input_length> <input_unit>s)
+      buflen = host.get('input_length')
+      buflen = host.song.to_ticks(buflen, host.get('input_unit'))
+      with self.host.lock:
+        buffer = host.song.buffer(buflen)
+
+      # Calculate Generation Length
+      generation_start = self.host.get('generation_start')
+      requested_beats = self.host.song.convert(length, unit, self.host.get('output_unit'))
+      host.set('generation_requested_beats', requested_beats)
+
+      # Apply Input Filters
+      for _filter in host.filters.input: buffer = _filter(buffer, host)
+
+      # Generate sequence
+      tracks = host.get('output_tracks')
+      final_length = host.song.convert(length, unit, host.get('output_unit'))
+
+
+      # Guarantee at least 2 notes are generated per segment
+      i = 0
+      output = [[]]
+      count_notes = lambda seq: len([msg for msg in seq if msg.type.startswith('note_on')])
+      while all(map(lambda seq: count_notes(seq) < 2, output)):
+        i = i + 1
+        self.host.io.log(f'retrying generation ({i})')
+        output = host.model.generate(buffer, final_length, tracks)
+
+        # Apply Output Filters
+        for _filter in host.filters.output: output = _filter(output, host)
+        if not self.host.get('guarantee_two_notes'): break
+
+      # Before updating generation_start: pad all sequences (so new messages line up)
+      self.host.song.pad(generation_start, unit)
+
+      # Update generation_start
+      self.host.set('generation_start', generation_start + requested_beats)
+
+      # Warn (TODO: validation methods)
+      if len(output) != len(tracks):
+          host.io.log(f'Expected model to generate {len(tracks)} tracks, but got {len(output)}')
+
+      # Save Output to track
+      requested_ticks = self.host.song.to_ticks(length, unit)
+      with self.host.lock:
+        for track_messages, track_index in zip(output, tracks):
+            ticks = 0
+            for msg in track_messages:
+                if hasattr(msg, 'time'): ticks += msg.time
+                if ticks > requested_ticks: msg.time -= (ticks - requested_ticks)
+                host.song.append(msg, track_index)
+                if ticks > requested_ticks: break
+
+      self.host.song.pad(requested_beats, unit)
+
+      self.fresh_buffer.set()
+      host.song.check_end_of_tracks()
+      with self.host.lock: host.set('is_generating', False)
 
 
 

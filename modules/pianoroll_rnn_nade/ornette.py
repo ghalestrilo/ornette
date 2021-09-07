@@ -62,8 +62,8 @@ class OrnetteModule():
 
         generator_options = generator_pb2.GeneratorOptions()
         generator_options.generate_sections.add(
-            start_time=self.host.get('last_end_time'),
-            end_time=self.host.get('last_end_time') + length_seconds)
+            start_time=self.host.get('generation_start'),
+            end_time=self.host.get('generation_start') + length_seconds)
 
         seq = self.model.generate(primer_sequence, generator_options)
 
