@@ -97,11 +97,6 @@ class Engine():
       return must
 
 
-
-    def generate_until(self, length, unit):
-      return
-
-
     def generate(self, length=None, unit=None, respond=False):
       host = self.host
 

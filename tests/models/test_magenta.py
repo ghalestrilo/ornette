@@ -22,7 +22,7 @@ dataset = lambda *path: os.path.abspath(os.path.join(os.path.curdir, 'dataset', 
 models = [  # Melody RNN
     # {'name': 'melody_rnn', 'bundle': 'basic_rnn', 'primer': None },
     # {'name': 'melody_rnn', 'bundle': 'mono_rnn', 'primer': None },
-    {'name': 'melody_rnn', 'bundle': 'attention_rnn', 'primer': dataset('clean_lakh', 'Scorpions_-_Johnny_B._Goode.mid') },
+    # {'name': 'melody_rnn', 'bundle': 'attention_rnn', 'primer': dataset('clean_lakh', 'Scorpions_-_Johnny_B._Goode.mid') },
     # {'name': 'melody_rnn', 'bundle': 'lookback_rnn', 'primer': None },
 
     # Performance RNN
@@ -35,10 +35,10 @@ models = [  # Melody RNN
     # {'name': 'performance_rnn', 'bundle': 'performance_with_dynamics_and_modulo_encoding', 'primer': None },
 
     # Pianoroll RNN
-    # {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade_attn', 'primer': 'dataset/clean_jsb-chorales/000206b_.mid' },
-    # {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade', 'primer': None },
-    # {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade', 'primer': 'dataset/clean_jsb-chorales/000206b_.mid' },
-    # {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade-bach', 'primer': None },
+    {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade_attn', 'primer': dataset('clean_jsb-chorales','000206b_.mid') },
+    # {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade', 'primer': dataset('clean_jsb-chorales','000206b_.mid') },
+    # {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade', 'primer': dataset('clean_jsb-chorales','000206b_.mid') },
+    # {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade-bach', 'primer': dataset('clean_jsb-chorales','000206b_.mid') },
 
     # Polyphony RNN
     # {'name': 'polyphony_rnn', 'bundle': 'polyphony_rnn', 'primer': 'dataset/clean_jsb-chorales/000206b_.mid' },
@@ -229,7 +229,6 @@ class TestAllPrimers(unittest.TestCase):
     def setUp(self):
       for model in models:
         with self.subTest(model=model):
-          self.host = Host(args)
           self.model = None
           self.total_length = None
           self.generate = None
@@ -238,6 +237,7 @@ class TestAllPrimers(unittest.TestCase):
           args.checkpoint = model["bundle"]
           reload(host)
           reload(data)
+          self.host = Host(args)
           self.model = load_model(self.host,args.checkpoint,f'modules/{args.module}')
           self.host.model = self.model
           self.host.song = Song(self.host)

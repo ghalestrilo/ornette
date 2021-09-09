@@ -16,6 +16,7 @@ commands = (
 
     # Engine
     , "generate":  lambda host, length, unit='beats': host.engine.generate(int(length), unit, True)
+    , 'generate_to':  lambda host, length, unit='bars': host.engine.generate_to(int(length), unit)
     , "start":     lambda host: host.engine.start()
     , "stop":      lambda host: host.engine.stop()
 

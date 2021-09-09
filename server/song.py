@@ -184,6 +184,7 @@ class Song():
       ''' Remove primer from generated output '''
       primer_ticks = self.host.get('primer_ticks')
       # unit = 'beats'
+      self.host.io.log('dropping primer')
       unit = self.host.get('input_unit')
       self.crop('ticks', primer_ticks)
       self.host.set('primer_ticks', 0)
