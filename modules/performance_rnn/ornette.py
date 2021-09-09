@@ -20,20 +20,16 @@ class OrnetteModule():
         self.host.set('input_length', 3)
         self.host.set('output_unit', 'seconds')
         self.host.set('output_length', 16)
-
+        self.host.set('force_120_bpm_generation', True)
         self.host.set('is_velocity_sensitive', True)
         self.host.set('steps_per_quarter', config.steps_per_quarter)
         self.host.set('output_tracks', [1])
 
-        # self.host.set('scaling_factor', 2)
-
         # TODO: Move to yaml
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'mido_no_0_velocity')
-        # self.host.add_filter('input', 'print_midotracks')
         self.host.add_filter('input', 'midotrack2noteseq')
-        # self.host.add_filter('input', 'print_noteseqs')
-        self.host.add_filter('input', 'debug_generation_request')
+
         # Here, the sequence already starts at ~1.0 to ~1.5
         self.host.add_filter('output', 'noteseq_trim_start')
         self.host.add_filter('output', 'noteseq_trim_end')
@@ -52,7 +48,6 @@ class OrnetteModule():
             num_velocity_bins=config.num_velocity_bins,
             control_signals=config.control_signals,
             optional_conditioning=config.optional_conditioning,
-            # checkpoint=os.path.normpath(f'/ckpt/{checkpoint}'),
             bundle=bundle_file,
             note_performance=config.note_performance)
 
@@ -83,7 +78,6 @@ class OrnetteModule():
 
         seq = self.sample(track, generator_options)
 
-        while len(seq.notes) < 2: seq = self.sample(track, generator_options)
 
         return [seq]
 

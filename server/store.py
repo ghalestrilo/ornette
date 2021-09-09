@@ -49,6 +49,7 @@ state = {
     'pulses_per_quarter': 24,
     'steps_per_quarter': 4,
     'preserve_conductor': True, # This prepares the system for Type 1 files. Set to False when working with Type 0
+    'force_120_bpm_generation': False,
 
     # Batch execution control
     'batch_mode': False,

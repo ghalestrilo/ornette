@@ -26,7 +26,7 @@ models = [  # Melody RNN
     # {'name': 'melody_rnn', 'bundle': 'lookback_rnn', 'primer': None },
 
     # Performance RNN
-    # {'name': 'performance_rnn', 'bundle': 'performance_with_dynamics', 'primer': None },
+    # {'name': 'performance_rnn', 'bundle': 'performance_with_dynamics', 'primer': 'dataset/clean_piano-e-comp/MIDI-Unprocessed_17_R2_2008_01-04_ORIG_MID--AUDIO_17_R2_2008_wav--2.midi' },
     # {'name': 'performance_rnn', 'bundle': 'density_conditioned_performance_with_dynamics', 'primer': None },
     # {'name': 'performance_rnn', 'bundle': 'pitch_conditioned_performance_with_dynamics', 'primer': None },
     # {'name': 'performance_rnn', 'bundle': 'performance', 'primer': None },
@@ -35,13 +35,13 @@ models = [  # Melody RNN
     # {'name': 'performance_rnn', 'bundle': 'performance_with_dynamics_and_modulo_encoding', 'primer': None },
 
     # Pianoroll RNN
-    # {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade_attn', 'primer': None },
+    # {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade_attn', 'primer': 'dataset/clean_jsb-chorales/000206b_.mid' },
     # {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade', 'primer': None },
-    # {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade', 'primer': None },
+    # {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade', 'primer': 'dataset/clean_jsb-chorales/000206b_.mid' },
     # {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade-bach', 'primer': None },
 
     # Polyphony RNN
-    # {'name': 'polyphony_rnn', 'bundle': 'polyphony_rnn', 'primer': None },
+    # {'name': 'polyphony_rnn', 'bundle': 'polyphony_rnn', 'primer': 'dataset/clean_jsb-chorales/000206b_.mid' },
 ]
 
 
@@ -211,13 +211,24 @@ class TestModelGenerationFromPrimer(unittest.TestCase):
       self.host.song.load(primer, 4, 'bars')
     
     def test_repeated_generation(self):
-      """ WHEN Generating 1 at a time, 5 times SHOULD generate exactly 5 bars """
+      """ WHEN Generating 1 bar at a time, 16 times SHOULD generate exactly 16 bars """
       for model in models:
         for repetition in range(2):
           with self.subTest(model=model, repetition=repetition):
+            self.host.song.reset()
+            self.initialize(model)
             self.host.song.show()
             self.assertEqual(4, self.host.song.total_length('bars'))
             self.initialize(model)
             for _ in range(16): self.generate(1,'bars')
             self.host.song.drop_primer()
             self.assertEqual(16, self.total_length())
+
+
+class TestAllPrimers(unittest.TestCase):
+    def test_generate_ok(self):
+      for model in models:
+        dataset = model['primer'].split('/')[0]
+
+        with self.subTest(model=model):
+          self.assertGreater(len(os.listdir(dataset)), 0)

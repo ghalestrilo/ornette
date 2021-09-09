@@ -98,7 +98,8 @@ class Engine():
 
 
 
-
+    def generate_until(self, length, unit):
+      return
 
 
     def generate(self, length=None, unit=None, respond=False):
@@ -183,8 +184,16 @@ class Engine():
 
 
 
+    max_retries = 50
+    def generate_to(self, length, unit='bars'):
+      i = 0
+      while self.host.song.total_length(unit) < length:
+        self.generate()
+        i += 1
+        if i > self.max_retries: break
 
-
+      # trim excess
+      return
 
 
 

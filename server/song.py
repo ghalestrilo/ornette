@@ -114,26 +114,39 @@ class Song():
 
         self.host.set('ticks_per_beat', mid.ticks_per_beat)
         self.reset()
+        max_ticks = self.to_ticks(max_len or 0, max_len_units)
 
+        tempo_set = False
         for i, file_track in enumerate(mid.tracks):
-          ticks_so_far = 0
-          # first_note_found = False
-          # first_note_ticks = 0
-          offset = 0
+          ticks_so_far = 0  # Ticks from first note event onwards
+          useless_ticks = 0 # Ticks from beginning, before first note event
+          first_note_found = False
           
           # Create new track if necessary
           if i >= len(self.data.tracks):
             self.data.add_track(file_track.name)
 
           for msg in file_track:
+            # Detect first note_on event
+            if not first_note_found and msg.type == 'note_on':
+              first_note_found = True
+              msg.time = 0
+            
+            # Accumulate time
+            if first_note_found:
+              ticks_so_far += msg.time
+            else:
+              useless_ticks += msg.time
+
+            # Stop reading
             if max_len is not None: 
-              max_ticks = self.to_ticks(max_len, max_len_units) + offset
-              if ticks_so_far >= max_ticks:
+              if i == 0 and (useless_ticks + ticks_so_far): continue
+              if first_note_found and ticks_so_far >= max_ticks:
                 continue
 
-            self.data.tracks[i].append(msg)
-
-            tempo_set = False
+            # Copy everything from first note on
+            if first_note_found or msg.time == 0:
+              self.data.tracks[i].append(msg)
 
             if msg.is_meta:
                 if msg.type == 'track_name':
@@ -148,19 +161,22 @@ class Song():
                     self.host.set('steps_per_quarter', msg.notated_32nd_notes_per_beat)
                 continue
             
-            if (ticks_so_far == 0 and msg.time > 0): offset = msg.time
-            ticks_so_far = ticks_so_far + msg.time
 
-          # self.data.tracks.append(track)
-          if any(self.data.tracks) and any(self.data.tracks[0]):
-            for msg in self.data.tracks[0]:
-              if msg.type == 'end_of_track':
-                msg.time = 0
-          
-          total_ticks = self.total_ticks()
-          self.host.set('primer_ticks', total_ticks)
-          self.host.set('generation_start', self.from_ticks(total_ticks, 'seconds'))
-          self.host.io.log(f'total ticks loaded: {self.total_ticks()}')
+        # Correct conductor header
+        if any(self.data.tracks) and any(self.data.tracks[0]):
+          for msg in self.data.tracks[0]:
+            if msg.type == 'end_of_track':
+              msg.time = 0
+        
+        # self.crop(max_len_units, 0, max_len)
+        if max_len:
+          self.pad(max_len, max_len_units)
+        else:
+          self.check_end_of_tracks()
+        total_ticks = self.total_ticks()
+        self.host.set('primer_ticks', total_ticks)
+        self.host.set('generation_start', self.from_ticks(total_ticks, 'seconds'))
+        self.host.io.log(f'total ticks loaded: {self.total_ticks()}')
 
 
 
@@ -244,8 +260,23 @@ class Song():
       cropped_track = track[start_index:end_index].copy()
 
       new_track.clear()
-      for msg in header: new_track.append(msg)
-      for msg in cropped_track: new_track.append(msg)
+      for msg in header: new_track.append(msg.copy())
+      for msg in cropped_track: new_track.append(msg.copy())
+
+      # print('self.get_track_length(new_track)')
+      # print(self.get_track_length(new_track), self.to_ticks(end, unit))
+      desired_length_ticks = self.to_ticks(end, unit) - self.to_ticks(start, unit)
+      excess = 1
+      while excess:
+        if any(new_track):
+          excess = self.get_track_length(new_track) - desired_length_ticks
+          excess = max(0, excess)
+          
+          if new_track[-1].time >= excess:
+            new_track[-1].time -= excess
+          else: new_track.remove(new_track[-1])
+        else: 
+          break
 
       return new_track
 
@@ -430,13 +461,22 @@ class Song():
         for eot in end_of_tracks: track.remove(eot)
         total_track_ticks = self.get_track_length(track)
 
-        # if not any(track) or track[-1].type != 'end_of_track':
+        # New implementation
         padlen = max(0, total_expected_ticks - total_track_ticks) if i else 0
-        self.host.io.log(f'track {i} padlen = {padlen} ticks')
-
         self.data.tracks[i].append(MetaMessage('end_of_track', time=padlen))
+        # if padlen < 0: 
+        #   if note_on:
+        #     remove note on
+        #     add end_of_track
+        #  else tracck[-1].time -= padlen
+        # else:
+        # self.data.tracks[i].append(MetaMessage('end_of_track', time=padlen))
+
+        # Old implemnetation
+        # padlen = max(0, total_expected_ticks - total_track_ticks) if i else 0
+        # self.host.io.log(f'track {i} padlen = {padlen} ticks')
+        # self.data.tracks[i].append(MetaMessage('end_of_track', time=padlen))
 
 
     def check_end_of_tracks(self):
-      # total_expected_ticks = self.to_ticks(self.host.get('generation_start'), 'beats')
       self.pad(self.host.get('generation_start'), 'beats')

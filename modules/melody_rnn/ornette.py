@@ -21,18 +21,19 @@ class OrnetteModule():
         self.host = host
         self.host.set('steps_per_quarter', config.steps_per_quarter)
         self.host.set('input_length', 4)
-        self.host.set('input_unit', 'seconds')
-        self.host.set('output_unit', 'seconds')
+        self.host.set('input_unit', 'beats')
+        self.host.set('output_unit', 'beats')
         self.host.set('output_tracks', [1])
 
         # TODO: Move to yaml
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'midotrack2noteseq')
-        self.host.add_filter('input', 'print_noteseqs')
+        self.host.add_filter('input', 'noteseq_trim_buffer')
+        self.host.add_filter('input', 'debug_generation_request')
 
-        self.host.add_filter('output', 'print_noteseqs')
-        self.host.add_filter('output', 'noteseq_trim_start')
-        self.host.add_filter('output', 'noteseq_trim_end')
+        # self.host.add_filter('output', 'print_noteseqs')
+        # self.host.add_filter('output', 'noteseq_trim_start')
+        # self.host.add_filter('output', 'noteseq_trim_end')
 
 
         self.host.add_filter('output', 'noteseq2midotrack')
@@ -40,12 +41,17 @@ class OrnetteModule():
         self.host.add_filter('output', 'mido_track_subtract_previous_time')
 
     def generate(self, tracks=None, length_beats=4, output_tracks=[1]):
-        generation_start = self.host.get('generation_start')
-        self.host.io.log(f'range to generate: {generation_start} -> {generation_start + length_beats}')
+        # self.host.io.log('INPUT ABOVE ^^^^^^^^^^^^^^^^')
+
+        # generation_start = self.host.get('generation_start')
+        generation_start = self.host.get('input_length')
+        # self.host.io.log(f'range to generate: {generation_start} -> {generation_start + length_beats}')
         generator_options = generator_pb2.GeneratorOptions()
         generator_options.generate_sections.add(start_time=generation_start, end_time=generation_start + length_beats)
 
         output = [self.model.generate(tracks[voice], generator_options) for voice in output_tracks]
+
+        # self.host.io.log('OUTPUT BELOW vvvvvvvvvvvvvvv')
 
         return output
 

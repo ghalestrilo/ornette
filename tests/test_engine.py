@@ -91,3 +91,32 @@ class TestGenerationRange(unittest.TestCase):
       self.host.model.generate.assert_called()
       self.assertEqual(self.host.get('generation_start'), 3*4)
       self.assertEqual(self.host.song.total_length('bars'), 3)
+
+
+
+
+
+class TestGenerateTo(unittest.TestCase):
+  # mock.assert_has_calls(calls, any_order=True)
+    def setUp(self):
+      self.host = Host(args)
+      self.host.song = Song(self.host)
+      self.host.model.generate = MagicMock()
+      self.host.set('guarantee_two_notes', False)
+      beatlen = self.host.song.to_ticks(1, 'beats')
+      self.generated_output = self.create_note_sequence(50, beatlen)
+    
+    def create_note_sequence(self, notecount, beatlen):
+      return [[mido.Message('note_on' if i % 2 == 0 else 'note_off', note= 60 + (i % 20), time = beatlen) for i in range(notecount*2)]]
+
+    def test_output_shorter_than_expected(self):
+      for beatlen in [50, 100, 69, 134]:
+      # for beatlen in [69, 134]:
+      # for beatlen in range(1,199):
+        for length in [4,8,9,16]:
+          with self.subTest(length=length, beatlen=beatlen):
+            self.host.song.reset()
+            self.host.model.generate.return_value = self.create_note_sequence(8,beatlen)
+            self.host.engine.generate_to(length)
+            # self.host.song.show()
+            self.assertEquals(self.host.song.total_length('bars'),length)

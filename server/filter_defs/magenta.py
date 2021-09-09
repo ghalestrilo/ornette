@@ -30,7 +30,9 @@ def midotrack2noteseq(tracks, host):
         State: Tested, converts neatly
     """
     seqs = []
-    qpm = 120 # IMPORTANT: The input qpm must be fixed to 120, otherwise the models will generate output in a wrong scale of times
+    # qpm = 120 # IMPORTANT: The input qpm must be fixed to 120, otherwise the models will generate output in a wrong scale of times
+    qpm = host.song.get_bpm() # IMPORTANT: The input qpm must be fixed to 120, otherwise the models will generate output in a wrong scale of times
+    if host.get('force_120_bpm_generation'): qpm = 120
     velocity_sensitive = host.get('is_velocity_sensitive')
     steps_per_quarter = host.get('steps_per_quarter')
 
@@ -103,6 +105,19 @@ def midotrack2noteseq(tracks, host):
     
     # return sequences
     return noteseq_trim_end(sequences,host)
+
+
+
+def noteseq_trim_buffer(seqs, host):
+  # generation_start = host.get('generation_start')
+  generation_start = host.get('input_length')
+  for seq in seqs:
+    for note in seq.notes:
+      if note.end_time > generation_start:
+        note.end_time = generation_start
+      if note.start_time > generation_start:
+        seq.notes.remove(note)
+  return seqs
 
 
 def init_default_pitch(noteseqs, host):
@@ -290,6 +305,7 @@ filters = {
   'merge_noteseqs': merge_noteseqs,
   'noteseq_scale': noteseq_scale,
   'init_default_pitch': init_default_pitch,
+  'noteseq_trim_buffer': noteseq_trim_buffer,
 
   # Output
   'noteseq_trim_start': noteseq_trim_start,

@@ -14,8 +14,6 @@ os.mkdir(output_path)
 ## Output: A set of Two-track MIDI files (conductor + melody)
 max_samples = None
 max_samples = 200
-
-
 stretch_to_120_bpm = False 
 
 
@@ -66,7 +64,7 @@ for f in t:
     mid.tracks = [conductor_track, melody_track]
     if len(mid.tracks) != 2: continue
     next(msg for msg in mid.tracks[1] if not msg.is_meta).time = 0
-    f = '_'.join(f.split(' '))
+    f = f.replace('\'','').replace('\\','').replace(' ','_') # Remove problematic chars from track name
     f = os.path.join(output_path, f)
     t.write(f'( {len(mid.tracks)} tracks) {f}')
     mid.save(f)
