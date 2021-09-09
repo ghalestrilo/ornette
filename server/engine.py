@@ -187,12 +187,15 @@ class Engine():
     max_retries = 50
     def generate_to(self, length, unit='bars'):
       i = 0
-      while self.host.song.total_length(unit) < length:
+      primer_length = self.host.get('primer_ticks')
+      primer_length = self.host.song.from_ticks(primer_length, unit)
+      while self.host.song.total_length(unit) < length + primer_length:
         self.generate()
         i += 1
         if i > self.max_retries: break
 
       # trim excess
+      self.host.song.crop(unit,0,length + primer_length)
       return
 
 

@@ -6,8 +6,9 @@ docker run -it -e "TERM=xterm-256color" \
   -v $HOME/.ornette/checkpoints:/checkpoints \
   -v $HOME/.ornette/checkpoints/melody_rnn:/ckpt \
   ornette/melody_rnn \
-  bash -c "python -m unittest tests.models.test_magenta.TestModelGenerationFromPrimer"
+  bash -c "python -m unittest tests.models.test_magenta.TestAllPrimers --failfast"
   
+  # bash -c "python -m unittest tests.models.test_magenta.TestModelGenerationFromPrimer"
   # bash -c "python -m unittest tests/models/test_magenta.py"
   
 

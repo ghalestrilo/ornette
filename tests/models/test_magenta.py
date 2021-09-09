@@ -226,9 +226,34 @@ class TestModelGenerationFromPrimer(unittest.TestCase):
 
 
 class TestAllPrimers(unittest.TestCase):
-    def test_generate_ok(self):
+    def setUp(self):
       for model in models:
-        dataset = model['primer'].split('/')[0]
-
         with self.subTest(model=model):
-          self.assertGreater(len(os.listdir(dataset)), 0)
+          self.host = Host(args)
+          self.model = None
+          self.total_length = None
+          self.generate = None
+          sys.path = base_sys_path.copy()
+          args.module = model["name"]
+          args.checkpoint = model["bundle"]
+          reload(host)
+          reload(data)
+          self.model = load_model(self.host,args.checkpoint,f'modules/{args.module}')
+          self.host.model = self.model
+          self.host.song = Song(self.host)
+
+    def test_generate_ok(self):
+      unit = 'bars'
+      for model in models:
+        dataset = '/' + os.path.join(*model['primer'].split('/')[:-1])
+        self.assertTrue(os.path.exists(dataset))
+        for primer in os.listdir(dataset):
+          with self.subTest(model=model, primer=primer):
+            self.host.song.load(os.path.join(dataset,primer))
+            self.host.engine.generate_to(16, unit)
+            self.host.song.drop_primer()
+
+            real_length = self.host.song.total_length(unit)
+            real_length = int(round(real_length))
+            self.assertEquals(real_length, 16)
+            # self.assertGreater(len(os.listdir(dataset)), 1)

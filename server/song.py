@@ -288,7 +288,7 @@ class Song():
       """
       
       start_time = self.to_ticks(_start or 0, unit)
-      end_time = self.to_ticks(_end if _end else self.total_ticks(), unit)
+      end_time = self.to_ticks(_end, unit) if _end else self.total_ticks()
 
       log = self.host.io.log
 
