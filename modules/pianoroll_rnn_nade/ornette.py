@@ -35,8 +35,9 @@ class OrnetteModule():
 
         self.server_state = host.state
         self.host = host
-        self.host.set('output_unit', 'seconds')
-        self.host.set('input_unit', 'seconds')
+        self.host.set('output_unit', 'beats')
+        self.host.set('input_unit', 'beats')
+        self.host.set('force_120_bpm_generation', True)
         self.host.set('output_tracks', [1])
         self.host.set('init_pitch', 55)
 

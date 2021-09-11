@@ -165,6 +165,7 @@ class Engine():
       self.host.song.pad(requested_beats, unit)
 
       self.fresh_buffer.set()
+      self.host.song.show()
       host.song.check_end_of_tracks()
       with self.host.lock: host.set('is_generating', False)
 

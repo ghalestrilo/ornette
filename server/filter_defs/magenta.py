@@ -237,7 +237,8 @@ def mido_track_sort_by_time(tracks, host):
 from functools import reduce
 def _sub_last_time(seq, msg):
   last_msg_time = sum(msg.time for msg in seq)
-  numsg = Message(msg.type, note=msg.note, channel=msg.channel, time=msg.time - last_msg_time, velocity=msg.velocity)
+  # numsg = Message(msg.type, note=msg.note, channel=msg.channel, time=int(round(msg.time - last_msg_time)), velocity=msg.velocity)
+  numsg = Message(msg.type, note=msg.note, channel=msg.channel, time=int(round(msg.time - last_msg_time)), velocity=msg.velocity)
   return seq + [numsg]
 
 def mido_track_subtract_previous_time(tracks, host):

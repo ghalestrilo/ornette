@@ -274,7 +274,10 @@ class Song():
           excess = max(0, excess)
           
           if new_track[-1].time >= excess:
-            new_track[-1].time -= excess
+            old_time = new_track[-1].time
+            new_track[-1].time = int(round(new_track[-1].time - excess))
+            if old_time == new_track[-1].time: break
+            # if old_time == new_track[-1].time: excess = 0
           else: new_track.remove(new_track[-1])
         else: 
           break
@@ -464,19 +467,7 @@ class Song():
 
         # New implementation
         padlen = max(0, total_expected_ticks - total_track_ticks) if i else 0
-        self.data.tracks[i].append(MetaMessage('end_of_track', time=padlen))
-        # if padlen < 0: 
-        #   if note_on:
-        #     remove note on
-        #     add end_of_track
-        #  else tracck[-1].time -= padlen
-        # else:
-        # self.data.tracks[i].append(MetaMessage('end_of_track', time=padlen))
-
-        # Old implemnetation
-        # padlen = max(0, total_expected_ticks - total_track_ticks) if i else 0
-        # self.host.io.log(f'track {i} padlen = {padlen} ticks')
-        # self.data.tracks[i].append(MetaMessage('end_of_track', time=padlen))
+        self.data.tracks[i].append(MetaMessage('end_of_track', time=int(round(padlen))))
 
 
     def check_end_of_tracks(self):

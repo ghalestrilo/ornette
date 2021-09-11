@@ -13,7 +13,7 @@ os.mkdir(output_path)
 ## This script filters the Lakh dataset leaving behind only the melodies it can find
 ## Output: A set of Two-track MIDI files (conductor + melody)
 max_samples = None
-max_samples = 200
+# max_samples = 200
 stretch_to_120_bpm = False 
 
 

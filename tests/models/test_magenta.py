@@ -35,13 +35,13 @@ models = [  # Melody RNN
     # {'name': 'performance_rnn', 'bundle': 'performance_with_dynamics_and_modulo_encoding', 'primer': None },
 
     # Pianoroll RNN
-    {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade_attn', 'primer': dataset('clean_jsb-chorales','000206b_.mid') },
+    # {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade_attn', 'primer': dataset('clean_jsb-chorales','000206b_.mid') },
     # {'name': 'pianoroll_rnn_nade', 'bundle': 'rnn-nade', 'primer': dataset('clean_jsb-chorales','000206b_.mid') },
     # {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade', 'primer': dataset('clean_jsb-chorales','000206b_.mid') },
     # {'name': 'pianoroll_rnn_nade', 'bundle': 'pianoroll_rnn_nade-bach', 'primer': dataset('clean_jsb-chorales','000206b_.mid') },
 
     # Polyphony RNN
-    # {'name': 'polyphony_rnn', 'bundle': 'polyphony_rnn', 'primer': 'dataset/clean_jsb-chorales/000206b_.mid' },
+    {'name': 'polyphony_rnn', 'bundle': 'polyphony_rnn', 'primer':  dataset('clean_jsb-chorales','000206b_.mid') },
 ]
 
 
@@ -225,6 +225,34 @@ class TestModelGenerationFromPrimer(unittest.TestCase):
             self.assertEqual(16, self.total_length())
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class TestAllPrimers(unittest.TestCase):
     def setUp(self):
       for model in models:
@@ -246,6 +274,7 @@ class TestAllPrimers(unittest.TestCase):
       unit = 'bars'
       for model in models:
         dataset = '/' + os.path.join(*model['primer'].split('/')[:-1])
+        print(os.path.exists(dataset))
         self.assertTrue(os.path.exists(dataset))
         for primer in os.listdir(dataset):
           with self.subTest(model=model, primer=primer):
@@ -256,4 +285,6 @@ class TestAllPrimers(unittest.TestCase):
             real_length = self.host.song.total_length(unit)
             real_length = int(round(real_length))
             self.assertEquals(real_length, 16)
+            for track in self.host.song.data.tracks:
+              for msg in track: self.assertIsInstance(msg.time,int)
             # self.assertGreater(len(os.listdir(dataset)), 1)
