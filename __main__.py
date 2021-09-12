@@ -5,7 +5,8 @@ import os
 
 from bullet import Bullet
 from bullet import colors
-
+from requests.exceptions import HTTPError
+# from docker.errors import NotFoundError
 
 server_port = "5005"
 modelname = "$1"
@@ -183,7 +184,11 @@ if __name__ == '__main__':
         for line in instance.logs(stream=True):
             print(line.strip().decode('utf-8'))
     except KeyboardInterrupt:
+      try:
         instance.kill()
 
-    if instance and instance.status == 'running':
-        instance.kill()
+        if instance and instance.status == 'running':
+            instance.kill()
+      # except (HTTPError, NotFoundError):
+      except (HTTPError, NotFoundError):
+        pass
