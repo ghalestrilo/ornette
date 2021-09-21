@@ -45,14 +45,16 @@ class OrnetteModule():
         bundle=bundle_file)
       self.server_state = host.state
       self.host = host
-      self.host.set('output_unit', 'beats')
-      self.host.set('input_unit', 'beats')
-      self.host.set('input_length', 1)
+      self.host.set('output_unit', 'seconds')
+      self.host.set('input_unit', 'seconds')
+      self.host.set('input_length', 2)
+      self.host.set('input_length', 2)
       self.generation_start = 0
       self.host.set('output_tracks', [1])
       self.host.set('steps_per_quarter', 4)
       self.host.set('trigger_generate', 0.1)
-      self.host.set('force_120_bpm_generation', True)
+
+      # self.host.set('gen_offset', 1)
       
       
       # TODO: Move to yaml

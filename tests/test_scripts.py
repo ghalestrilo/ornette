@@ -64,6 +64,16 @@ class TestPreprocessScript(unittest.TestCase):
           self.assertAlmostEqual(desired_seconds, get_file_length(self.output(filename)),delta=1)
           # self.assertEqual(desired_seconds, get_file_length(output_file))
 
+    def test_consistency(self):
+      """ After preprocessing, preprocessing again should not affect sample """
+      for (_, filename) in files:
+        with self.subTest(input_file=filename):
+          length_before = get_file_length(self.output(filename))
+          tempo_before = get_file_tempo(self.output(filename))
+
+          preprocess(self.output(filename), self.output(filename))
+          self.assertAlmostEqual(length_before, get_file_length(self.output(filename)), delta=0.1)
+          self.assertEqual(tempo_before, get_file_tempo(self.output(filename)))
 
 
 

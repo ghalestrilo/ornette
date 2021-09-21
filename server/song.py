@@ -75,6 +75,10 @@ class Song():
         """ Save the current MIDI data to a file """
         data = self.data
 
+        for track in data.tracks:
+          for msg in track:
+            if hasattr(msg,'time'): msg.time = int(round(msg.time))
+
         if not any(filename.endswith(ext) for ext in ['.mid', '.midi']):
           filename += '.mid'
         filename = join('/output', filename)
