@@ -992,38 +992,59 @@ tmp_df.head()
 
 
 # %%
+# title = 'Impact of Input/Output Length Pair over Key Metrics'
+title = 'Impacto da Configuração sobre a Média entre Métricas'
+labels = ['Modelo', 'Configuração']
+subtitles = ['Overlap Médio entre Métricas', 'KL-Divergência Médio entre Métricas']
+# subtitles = ['Overlap Mean', 'KL-Divergence Mean']
 
 
+cbar_kws={"shrink": .3 }
 if 'heatmap_metrics_per_model_config' in plots_to_make or True:
     tmp_df = df_mean_metrics.copy()
+    tmp_df['config'] = tmp_df['config'].apply(lambda x: x.replace('_',':'))
+    tmp_df['subject'] = tmp_df['model'].astype(str) + '\n(' + tmp_df['checkpoint'].astype(str) + ')'
     subplots = (
-        [ ('overlap_mean', 'overlap_std', 'Overlap Mean')
-        , ('kl_mean'     , 'kl_std'     , 'KL-Divergence Mean')
+        [ ('overlap_mean', 'overlap_std', subtitles[0])
+        , ('kl_mean'     , 'kl_std'     , subtitles[1])
         ]
     )
 
     # Process Average/STDs
-    subplots = [(pd.pivot_table(tmp_df, values=column_mean, index=['model', 'checkpoint'], columns=['config'])
-        , pd.pivot_table(tmp_df, values=column_std, index=['model', 'checkpoint'], columns=['config'])
+    # Make Heatmaps
+    plt.figure()
+
+    # fig, axs = plt.subplots(2, figsize=(36,8), sharex='col', sharey='row', dpi=150)
+    # subplots = [(pd.pivot_table(tmp_df, values=column_mean, index=['model', 'checkpoint'], columns=['config'])
+    #     , pd.pivot_table(tmp_df, values=column_std, index=['model', 'checkpoint'], columns=['config'])
+    #     , title
+    #     )
+    #     for (column_mean, column_std, title)
+    #     in subplots]
+    fig, axs = plt.subplots(1,2, figsize=(12,25), dpi=150, sharex='col', sharey='row')
+    subplots = [(pd.pivot_table(tmp_df, values=column_mean, index=['config'], columns=['subject'])
+        , pd.pivot_table(tmp_df, values=column_std, index=['config'], columns=['subject'])
         , title
         )
         for (column_mean, column_std, title)
         in subplots]
 
-    # Make Heatmaps
-    plt.figure()
-    fig, axs = plt.subplots(2, figsize=(36,8), sharex='col', sharey='row', dpi=150)
-    fig.suptitle('Impact of Input/Output Length Pair over Key Metrics')
-    gs = fig.add_gridspec(2, 1, hspace=0, wspace=0)
+    
+    fig.suptitle(title)
+    # gs = fig.add_gridspec(1, 2, hspace=0, wspace=0)
     for i, (mean_df, std_df, title) in enumerate(subplots):
         cmap = ['Greens', 'Greens_r'][i]
 
         ax = axs[i]
         ax.set_title(title)
-        sns.heatmap(mean_df, annot=mean_df,   cmap=cmap, linewidths=0.5, ax=ax, annot_kws={'va':'bottom'})
-        sns.heatmap(mean_df, annot=std_df, cmap=cmap, linewidths=0.5, ax=ax, annot_kws={'va':'top'}, cbar=False)
+        g = sns.heatmap(mean_df, annot=mean_df, cmap=cmap, linewidths=0.5, ax=ax, annot_kws={'va':'bottom'}, cbar_kws=cbar_kws)
+        g.set_xlabel(labels[0])
+        g.set_ylabel(labels[1])
+        g = sns.heatmap(mean_df, annot=std_df, cmap=cmap, linewidths=0.5, ax=ax, annot_kws={'va':'top'}, cbar=False)
+        g.set_xlabel(labels[0])
+        g.set_ylabel(labels[1])
 
-    # plt.savefig('output/images/metric_mean_std_config_heatmap.png')
+    plt.savefig('output/images/metric_mean_std_config_heatmap.png')
     plt.show()
 
 # %% [markdown]
@@ -1032,6 +1053,29 @@ if 'heatmap_metrics_per_model_config' in plots_to_make or True:
 # %%
 # Best Config per Model:Checkpoint
 
+title = 'Pontuação Métrica por Modelo - Melhores Configurações'
+# subtitles = ['Overlap', 'KL-Divergência']
+labels = ['Métrica', 'Pontuação']
+metric_types = {
+  'Overlap': 'Overlap',
+  'KL-Divergence': 'KL-Divergência'
+}
+metricnames = {
+  'bar_pitch_class_histogram': "PCH/Bar",
+  'bar_used_pitch': "PC/Bar",
+  'total_used_note': "NC",
+  'note_length_transition_matrix': "NLTM",
+  'pitch_class_transition_matrix': "PCTM",
+  'total_used_pitch': "PC",
+  'IOI': "IOI",
+  'bar_used_note': "NC/Bar",
+  'pitch_shift': "PS",
+  'pitch_range': "PR",
+  'total_pitch_class_histogram': "PCH",
+  'note_length_hist': "NLH",
+}
+
+
 # IMPORTANT:
 # Determine best configuration for each model:checkpoint
 maxes = df_mean_metrics.loc[df_mean_metrics.groupby(['model','checkpoint'])['overlap_mean'].idxmax()]
@@ -1039,8 +1083,11 @@ maxes['seconds_per_bar'] = maxes['time'] / maxes['out_len'] / 10
 cols = ['model', 'checkpoint', 'config']
 maxes['model_config'] = maxes[cols].apply(lambda row: ':'.join(row.values.astype(str)), axis=1)
 maxes.to_pickle(output('df_best_configs'))
-maxes = maxes.drop(columns=['model','checkpoint','config','in_len','iteration'])
 maxes.set_index('model_config', drop=True)
+# maxes = maxes.rename(columns=metricnames)
+maxes['config'] = maxes['config'].apply(lambda x: x.replace('_',':'))
+maxes['model_config'] = maxes[cols].apply(lambda row: '\n'.join(row.values.astype(str)), axis=1)
+maxes = maxes.drop(columns=['model','checkpoint','in_len','iteration'])
 
 subplots = (
     [ ('_overlap', 'Best Model Configuration: Metric Overlap against Dataset')
@@ -1054,36 +1101,56 @@ maxes = maxes[['model_config'] + metrics]
 maxes = maxes.melt(id_vars=["model_config"], var_name="metric", value_name="score").dropna()
 maxes['metric_type'] = maxes['metric'].astype(str).str.contains(subplots[0][0]).apply(lambda x: 'Overlap' if x == True else 'KL-Divergence')
 maxes['metric'] = filter_metric_names(maxes['metric'])
+maxes['metric'] = maxes['metric'].apply(lambda x: metricnames[x])
+
 
 # Best Config of Each - Scatter Plot
 sns.set_theme(style="darkgrid")
-g = sns.catplot(data=maxes, y="metric", x="score", hue="model_config", col='metric_type',  kind="swarm", height=6, aspect=1,
+tmp_df = maxes.copy()
+tmp_df['metric_type'] = tmp_df['metric_type'].apply(lambda t: metric_types[t])
+# tmp_df.rename(columns=metricnames)
+g = sns.catplot(data=tmp_df, y="metric", x="score", hue="model_config", col='metric_type',  kind="swarm", height=6, aspect=1,
 order=maxes.metric.value_counts().index)
-locs, labels = plt.xticks()
-g.set_xticklabels(labels, rotation=90)
+locs, labels_ = plt.xticks()
+g.set_xticklabels(labels_)
 g.set_titles('{col_name}')
 g.fig.suptitle('Metric Performance per Model - Best Configuration of Each')
 g.fig.subplots_adjust(top=0.88)
 g.fig.set_dpi(120)
+g.set_ylabels(labels[0])
+g.set_xlabels(labels[1])
 plt.savefig(figure_output('best-config-of-each-scatter-plot'))
 plt.show()
 
+# %% 
+# ### Heatmap per metric
+# title = 'Metric Performance per Model - Best Configuration of Each'
+title = 'Pontuação Métrica por Modelo - Melhores Configurações'
+labels = ['Métrica', 'Pontuação']
+metric_types = {
+  'Overlap': 'Overlap',
+  'KL-Divergence': 'KL-Divergência'
+}
+
 # Best Config of Each - Heatmaps
-fig, axs = plt.subplots(2, figsize=(16,8), sharex='col', sharey='row', dpi=120)
-fig.suptitle('Metric Performance per Model - Best Configuration of Each')
+fig, axs = plt.subplots(2, figsize=(18,8), sharex='col', sharey='row', dpi=120)
+fig.suptitle(title)
 gs = fig.add_gridspec(2, 1, hspace=0, wspace=0)
 for i, metric_type in enumerate(reversed(maxes['metric_type'].unique())):
     ax = axs[i]
     ax.set_title(f'{metric_type}')
     cmap = ['Greens', 'Greens_r'][i]
-    tmp_df = maxes.groupby('metric_type').get_group(metric_type)
+    tmp_df = maxes.copy()
+    tmp_df['metric_type'] = tmp_df['metric_type'].apply(lambda t: metric_types[t])
+    tmp_df = tmp_df.groupby('metric_type').get_group(metric_types[metric_type])
     tmp_df = pd.pivot_table(tmp_df, values='score', index=['model_config'], columns=['metric'])
-    sns.heatmap(data=tmp_df, ax=axs[i], annot=True, cmap=cmap)
+    g = sns.heatmap(data=tmp_df, ax=axs[i], annot=True, cmap=cmap)
+    g.set_xlabel(labels[0])
 plt.savefig(figure_output('best-config-of-each-heatmap'))
 plt.show()
 
 # %% [markdown]
-# ### Point Plot: Metric Overlap x Subject Configuration
+# ### Heatmap per Metric
 
 # %%
 # Initialize DF
