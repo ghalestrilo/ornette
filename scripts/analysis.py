@@ -62,7 +62,7 @@ extra_bars = 4        # Additional bars to generate at the end, to ensure we hav
 
 max_primers = 15      # How many dataset samples should be used as primers for sequence
 
-# generation_path = '2021-08-17-0'
+generation_path = '2021-09-19-3'
 
 
 skip_dataset_prior_extraction = False
@@ -702,6 +702,7 @@ if 'generation' not in skip_preprocessing:
 
 
 # Run Preprocessing
+# prep_list = prep_list[:730]
 iterator = tqdm(prep_list)
 for (in_filename, out_filename, out_path, start_bar) in iterator:
     write = tqdm.write
@@ -710,6 +711,12 @@ for (in_filename, out_filename, out_path, start_bar) in iterator:
     if not os.path.exists(in_filename):
         tqdm.write(f'No Input: {in_filename}')
         continue
+    iterator.set_description(in_filename)
+    # try:
+    #     preprocess(in_filename, out_filename, logfile, start_bar, sample_length*2)
+    # except Exception as e:
+    #     print(e)
+    
     preprocess(in_filename, out_filename, logfile, start_bar, sample_length*2)
 
 if 'generation' not in skip_preprocessing: df_gen.to_pickle(output('df_gen'))
@@ -947,10 +954,11 @@ df_time['config'] = df_time["in_len"].astype(str) + '_' + df_time["out_len"].ast
 df_time['subject'] = df_time["model"].astype(str) + '_' + df_time["checkpoint"].astype(str)
 
 # Lineplot: All configurations
-tmp_df = df_mean_metrics.merge(df_time[['model','checkpoint','config','real_time_capable', 'subject']], on=['model', 'checkpoint', 'config'])
-fig = plt.figure(figsize=(12,8), dpi=120)
+tmp_df = df_mean_metrics.merge(df_time[['model','checkpoint','config','real_time_capable', 'subject', 'bar_generation_ms']], on=['model', 'checkpoint', 'config'])
+fig = plt.figure(figsize=(18,8), dpi=120)
 sns.set_theme(style='darkgrid')
-g = sns.lineplot(data=tmp_df, y='time', x='config', hue='subject', err_style="bars", ci=68, markers=True, dashes=False, style="real_time_capable")
+tmp_df['config'] = tmp_df['config'].apply(lambda x: x.replace('_',':'))
+g = sns.lineplot(data=tmp_df, y='bar_generation_ms', x='config', hue='subject', err_style="bars", ci=68, markers=True, dashes=False, style="real_time_capable")
 plt.title('All Configurations')
 g.set_ylabel('Generation time per bar (ms)')
 plt.savefig(figure_output('lineplot_all_configurations'))
@@ -961,9 +969,12 @@ if 'real_time_capable' not in df_mean_metrics.columns and filter_bpm:
     df_mean_metrics = tmp_df.loc[tmp_df['real_time_capable'] == 'True']
 
 # Lineplot: Selected Configurations
-fig = plt.figure(figsize=(12,8), dpi=120)
+fig = plt.figure(figsize=(16,8), dpi=120)
 df_mean_metrics['subject'] = df_mean_metrics['model'].astype(str) + ':' + df_mean_metrics['checkpoint'].astype(str) + ':' + df_mean_metrics['checkpoint'].astype(str)
-g = sns.lineplot(data=df_mean_metrics, y='time', x='config', hue="subject", err_style="bars", ci=68, markers=True, dashes=False)
+tmp_df = df_mean_metrics.copy()
+tmp_df = tmp_df.merge(df_time[['model','checkpoint','config','real_time_capable', 'bar_generation_ms']], on=['model', 'checkpoint', 'config'])
+tmp_df['config'] = tmp_df['config'].apply(lambda x: x.replace('_',':'))
+g = sns.lineplot(data=tmp_df, y='bar_generation_ms', x='config', hue="subject", err_style="bars", ci=68, markers=True, dashes=False)
 plt.title('Only Real-Time Able Configurations')
 g.set_ylabel('Generation time per bar (ms)')
 plt.savefig(figure_output('lineplot_selected_configurations'))
@@ -995,7 +1006,7 @@ if 'heatmap_metrics_per_model_config' in plots_to_make or True:
 
     # Make Heatmaps
     plt.figure()
-    fig, axs = plt.subplots(2, figsize=(28,8), sharex='col', sharey='row', dpi=150)
+    fig, axs = plt.subplots(2, figsize=(36,8), sharex='col', sharey='row', dpi=150)
     fig.suptitle('Impact of Input/Output Length Pair over Key Metrics')
     gs = fig.add_gridspec(2, 1, hspace=0, wspace=0)
     for i, (mean_df, std_df, title) in enumerate(subplots):
@@ -1186,6 +1197,7 @@ filecols = ['source', 'dataset', 'model', 'checkpoint', 'filename']
 
 model_dataset_table = pd.read_pickle('output/df_metrics_baseline')[['model','dataset']]
 
+from analysis_scripts import cmd_convert
 
 
 # Baseline Samples: Prepare DataFrame
@@ -1241,12 +1253,13 @@ samplelist = df_qa_files[['filename', 'samplename']].values.tolist()
 samplelist
 t = tqdm(samplelist)
 for filename, samplename in t:
-    cmd = cmd_convert(filename, output('qualitative_analysis', samplename))
-    t.set_description(' '.join(cmd))
-    t.write('\n')
-    t.write(filename)
-    t.write('\n')
-    subprocess.call(cmd)
+    # cmd = cmd_convert(filename, output('qualitative_analysis', samplename))
+    cmd_convert(filename, output('qualitative_analysis', samplename))
+    # t.set_description(' '.join(cmd))
+    # t.write('\n')
+    # t.write(filename)
+    # t.write('\n')
+    # subprocess.call(cmd)
 
 
 

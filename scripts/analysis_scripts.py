@@ -23,11 +23,11 @@ desired_seconds = desired_bars * (60/script_output_bpm) # 32
 
 
 def runscript(script, cwd=os.path.curdir):
-  write(f'running: {" ".join(script)}')
+  # write(f'running: {" ".join(script)}')
   # result = subprocess.run(script, capture_output=True, text=True).stdout
   result = subprocess.run(script, capture_output=True,cwd=cwd)
-  if result.stdout: print(result.stdout.decode('utf8'))
-  if result.stderr: print(result.stderr.decode('utf8'))
+  # if result.stdout: print(result.stdout.decode('utf8'))
+  # if result.stderr: print(result.stderr.decode('utf8'))
 
 def preprocess(_in, _out, logfile=None, trim_start = -1, desired_seconds=desired_seconds,cwd=preprocess_scriptdir):
     """ Midi files are time warped to 120bpm to make time calculations more reliable """
@@ -38,6 +38,7 @@ def preprocess(_in, _out, logfile=None, trim_start = -1, desired_seconds=desired
 
     # Get basic song info
     if os.path.exists(tmpfile): os.remove(tmpfile)
+    # print(f'opening: {_in}')
     mid = mido.MidiFile(_in)
     tempo = next(msg for msg in mid if msg.type == 'set_tempo').tempo
     bpm = mido.tempo2bpm(tempo)
@@ -50,7 +51,7 @@ def preprocess(_in, _out, logfile=None, trim_start = -1, desired_seconds=desired
     # shutil.copy(_in,tmpfile)
     # runscript(prepscript(_in, tmpfile, 'stat'))
     # We could pre-trim the file here?
-    print(prepscript(_in, tmpfile, 'trim', str(0), '90'))
+    # print(prepscript(_in, tmpfile, 'trim', str(0), '90'))
     runscript(prepscript(_in, tmpfile, 'trim', str(0), '90'),cwd=cwd) # Cut 1:30 from the song
     # runscript(prepscript(tmpfile, tmpfile, 'tempo', str(120/bpm)))
     _mid = mido.MidiFile(tmpfile)
@@ -123,3 +124,8 @@ cmd_extraction = lambda dataset_1, dataset_2, output_pickle_filename: [
 def extract_metrics(folder1, folder2, metricsfile):
   runscript(cmd_extraction(folder1,folder2, metricsfile), extraction_scriptdir)
 
+def cmd_convert(_input, _output, t=None):
+  cmd_ = ['bash', '-c', f'timidity {_input} -Ow -o - | ffmpeg -y -f wav -i - "{_output}.mp3"']
+  if t: t.set_description(' '.join(cmd_))
+  runscript(cmd_)
+  
