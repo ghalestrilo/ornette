@@ -911,6 +911,10 @@ import seaborn as sns
 
 # %%
 
+titles = ['Todas as Configurações', 'Apenas Configurações Dinamicamente Viáveis']
+labels = ['Tempo de Geração (ms/Compasso)', 'Configuração (Entrada:Saída)']
+# labels = ['Generation Time (ms/Bar)', 'Configuração (Entrada:Saída)']
+
 recalc = True
 filter_bpm = False
 
@@ -937,7 +941,7 @@ samples_per_request = iterations * max_primers
 print(samples_per_request)
 
 # Calculate time values
-df_time['time'] /= samples_per_request
+# df_time['time'] /= samples_per_request
 df_time['bar_duration_ms'] = 4 * (60000 / df_time['mean_bpm'])
 df_time['bar_generation_ms'] = 1000 * df_time['time'] / (sample_length + extra_bars)
 # 60000 / BPM = one beat in milliseconds
@@ -959,8 +963,9 @@ fig = plt.figure(figsize=(18,8), dpi=120)
 sns.set_theme(style='darkgrid')
 tmp_df['config'] = tmp_df['config'].apply(lambda x: x.replace('_',':'))
 g = sns.lineplot(data=tmp_df, y='bar_generation_ms', x='config', hue='subject', err_style="bars", ci=68, markers=True, dashes=False, style="real_time_capable")
-plt.title('All Configurations')
-g.set_ylabel('Generation time per bar (ms)')
+plt.title(titles[0])
+g.set_ylabel(labels[0])
+g.set_xlabel(labels[1])
 plt.savefig(figure_output('lineplot_all_configurations'))
 
 # Filter configuration - select those those that can be used in real time
@@ -969,14 +974,15 @@ if 'real_time_capable' not in df_mean_metrics.columns and filter_bpm:
     df_mean_metrics = tmp_df.loc[tmp_df['real_time_capable'] == 'True']
 
 # Lineplot: Selected Configurations
-fig = plt.figure(figsize=(16,8), dpi=120)
+fig = plt.figure(figsize=(18,8), dpi=120)
 df_mean_metrics['subject'] = df_mean_metrics['model'].astype(str) + ':' + df_mean_metrics['checkpoint'].astype(str) + ':' + df_mean_metrics['checkpoint'].astype(str)
 tmp_df = df_mean_metrics.copy()
 tmp_df = tmp_df.merge(df_time[['model','checkpoint','config','real_time_capable', 'bar_generation_ms']], on=['model', 'checkpoint', 'config'])
 tmp_df['config'] = tmp_df['config'].apply(lambda x: x.replace('_',':'))
 g = sns.lineplot(data=tmp_df, y='bar_generation_ms', x='config', hue="subject", err_style="bars", ci=68, markers=True, dashes=False)
-plt.title('Only Real-Time Able Configurations')
-g.set_ylabel('Generation time per bar (ms)')
+plt.title(titles[1])
+g.set_ylabel(labels[0])
+g.set_xlabel(labels[1])
 plt.savefig(figure_output('lineplot_selected_configurations'))
 
 tmp_df = df_time[['subject', 'time', 'in_len', 'out_len', 'bar_duration_ms', 'bar_generation_ms', 'mean_bpm']]
