@@ -20,20 +20,16 @@ class OrnetteModule():
         self.host.set('input_length', 3)
         self.host.set('output_unit', 'seconds')
         self.host.set('output_length', 16)
-
+        self.host.set('force_120_bpm_generation', True)
         self.host.set('is_velocity_sensitive', True)
         self.host.set('steps_per_quarter', config.steps_per_quarter)
         self.host.set('output_tracks', [1])
 
-        # self.host.set('scaling_factor', 2)
-
         # TODO: Move to yaml
         self.host.include_filters('magenta')
         self.host.add_filter('input', 'mido_no_0_velocity')
-        # self.host.add_filter('input', 'print_midotracks')
         self.host.add_filter('input', 'midotrack2noteseq')
-        # self.host.add_filter('input', 'print_noteseqs')
-        self.host.add_filter('input', 'debug_generation_request')
+
         # Here, the sequence already starts at ~1.0 to ~1.5
         self.host.add_filter('output', 'noteseq_trim_start')
         self.host.add_filter('output', 'noteseq_trim_end')
@@ -52,7 +48,6 @@ class OrnetteModule():
             num_velocity_bins=config.num_velocity_bins,
             control_signals=config.control_signals,
             optional_conditioning=config.optional_conditioning,
-            # checkpoint=os.path.normpath(f'/ckpt/{checkpoint}'),
             bundle=bundle_file,
             note_performance=config.note_performance)
 
@@ -67,23 +62,22 @@ class OrnetteModule():
 
     def generate(self, tracks=None, length_seconds=4, output_tracks=[0]):
 
-        # last_end_time is always 0!
-        last_end_time = self.host.get('last_end_time')
-        print(f'let: {last_end_time} | ength_seconds: {length_seconds}')
+        # generation_start is always 0!
+        generation_start = self.host.get('generation_start')
+        print(f'let: {generation_start} | ength_seconds: {length_seconds}')
 
         track_idx = output_tracks[0]
         track = tracks[track_idx]
 
         # Define Generation Range
-        start_time = last_end_time
-        end_time = last_end_time + length_seconds + self.offset
+        start_time = generation_start
+        end_time = generation_start + length_seconds + self.offset
 
         generator_options = generator_pb2.GeneratorOptions()
         generator_options.generate_sections.add(start_time=start_time, end_time=end_time)
 
         seq = self.sample(track, generator_options)
 
-        while len(seq.notes) < 2: seq = self.sample(track, generator_options)
 
         return [seq]
 

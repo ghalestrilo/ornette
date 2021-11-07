@@ -161,7 +161,7 @@ class TestTrimFilters(unittest.TestCase):
       self.host = Host(args)
       self.host.set('is_velocity_sensitive', True)
       self.host.set('input_length', 4)
-      self.host.set('last_end_time', 4)
+      self.host.set('generation_start', 4)
       self.host.set('input_unit', 'beats')
       self.host.set('generation_requested_beats', 4)
 

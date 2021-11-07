@@ -4,8 +4,27 @@ import os
 import mido
 import pathlib
 import shutil
+import subprocess
 
-datasets = os.listdir('dataset')
+min_len = 0
+# min_len = 4
+
+prefix = 'clean_'
+datasets = [path for path in os.listdir('dataset') if not path.startswith(prefix)]
+# datasets = [path for path in os.listdir('dataset') if not path.startswith(prefix) and path.endswith('b-chorales')]
+print(datasets)
+
+
+
+cmd_preprocess = lambda _in, _out: 
+
+def cmd_preprocess(_in, _out):
+  mid = mido.MidiFile(_in)
+  tempo = next(msg for msg in mid if msg.type == 'set_tempo')
+  factor = tempo / 500000 # Fix everybody to 120bpm
+  return [ 'python', preprocess_script, os.path.abspath(_in), os.path.abspath(_out), 'tempo', factor]
+
+
 files = [(dataset, filename)
   for dataset in datasets
   for filename in os.listdir(f'dataset/{dataset}')
@@ -14,13 +33,14 @@ files = [(dataset, filename)
 for dataset, filename in files:
   try:
     mid = mido.MidiFile(f'dataset/{dataset}/{filename}')
-    # print((dataset, filename))
     ts = next(msg for msg in mid if msg.type == 'time_signature')
-    # print(ts.numerator)
-    # if ts.numerator not in [2, 4]: continue
     if ts.numerator not in [4]: continue
-    pathlib.Path(f'dataset/clean_{dataset}').mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(f'dataset/{dataset}/{filename}', f'dataset/clean_{dataset}/{filename}')
+    if mid.length()< min_len: continue
+    pathlib.Path(f'dataset/{prefix}{dataset}').mkdir(parents=True, exist_ok=True)
+    cmd = cmd_preprocess(f'dataset/{dataset}/{filename}', f'dataset/{prefix}{dataset}/{filename}')
+    subprocess.call(cmd)
+    # shutil.copyfile(f'dataset/{dataset}/{filename}', f'dataset/{prefix}{dataset}/{filename}')
+
 
   except Exception as e:
     print(e)

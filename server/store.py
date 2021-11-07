@@ -24,12 +24,13 @@ state = {
     'history': [[]],        # Deprecate
     'playhead': 0,          # Deprecate
     'missing_beats': 4,     # Deprecate
-    'last_end_time': 0,     # Deprecate
+    'generation_start': 0,     # Deprecate
     'input_unit': 'beats',  # read from .ornette.yml
     'input_length': 4,      # read from .ornette.yml
     'output_unit': 'beats', # read from .ornette.yml
     'output_length': 4,     # read from .ornette.yml
     'time_coeff': 1,
+    'guarantee_two_notes': True, # Guarantee that every generated sequence has at least two notes
 
     # TODO: move to channel
     'output_tracks': [1], # Deprecate
@@ -47,6 +48,8 @@ state = {
     'ticks_per_beat': 960,
     'pulses_per_quarter': 24,
     'steps_per_quarter': 4,
+    'preserve_conductor': True, # This prepares the system for Type 1 files. Set to False when working with Type 0
+    'force_120_bpm_generation': False,
 
     # Batch execution control
     'batch_mode': False,
@@ -88,7 +91,7 @@ class Store():
             self.host.io.log(f'output_data: {self.get("output_data")}')
           
         self.state[field] = value
-        if silent or field == 'last_end_time': return
+        if silent or field == 'generation_start': return
         self.host.io.log("[{0}] ~ {1}".format(field, value))
       except KeyError:
           if not silent: self.host.io.log(f'no such key ~ {field}')

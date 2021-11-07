@@ -47,11 +47,15 @@ class OrnetteModule():
       self.host = host
       self.host.set('output_unit', 'seconds')
       self.host.set('input_unit', 'seconds')
-      self.host.set('input_length', 1)
-      self.last_end_time = 0
+      self.host.set('input_length', 2)
+      self.host.set('input_length', 2)
+      self.generation_start = 0
       self.host.set('output_tracks', [1])
       self.host.set('steps_per_quarter', 4)
       self.host.set('trigger_generate', 0.1)
+
+      # self.host.set('gen_offset', 1)
+      
       
       # TODO: Move to yaml
       self.host.include_filters('magenta')
@@ -66,7 +70,7 @@ class OrnetteModule():
 
   def generate(self, tracks=None, length_bars=4, output_tracks=[0]):
       output = []
-      last_end_time = self.host.get('last_end_time')
+      generation_start = self.host.get('generation_start')
       buffer_length = self.host.song.get_buffer_length()
 
       generator_options = generator_pb2.GeneratorOptions()
@@ -80,8 +84,8 @@ class OrnetteModule():
       generator_options.args['inject_primer_during_generation'].bool_value = True
 
       generator_options.generate_sections.add(
-        start_time=last_end_time,
-        end_time=last_end_time + length_bars + buffer_length)
+        start_time=generation_start,
+        end_time=generation_start + length_bars + buffer_length)
 
       output = [self.model.generate(tracks[index], generator_options) for index in [0]]
       return output
