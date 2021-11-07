@@ -144,6 +144,7 @@ if skip_dataset_prior_extraction == False:
   # Rename spaces to underscores
   df_datasets.loc[df_datasets['dataset'] == 'clean_lakh', 'file'] = df_datasets.loc[df_datasets['dataset'] == 'clean_lakh']['file'].apply(lambda name: '_'.join(name.split(' ')))
   df_datasets.loc[df_datasets['dataset'] != 'clean_lakh', 'file']
+  df_datasets['bar_duration_ms'] = 4 * (60000 / df_datasets['bpm'])
   df_datasets.to_pickle('output/df_dataset_features')
 
 # %% [markdown]
@@ -607,9 +608,9 @@ from scripts.analysis_scripts import extract_metrics, preprocess
 
 # Prepare outputs
 skip_preprocessing = [ None
-    # , 'dataset'
-    # , 'baseline'
-    # , 'generation'
+    , 'dataset'
+    , 'baseline'
+    , 'generation'
     ][1:]
 if not any(skip_preprocessing): cleardir(preprocessed_dir)
 
@@ -831,6 +832,19 @@ logfile.close()
 # %%
 df.groupby('model').mean()
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 # %% [markdown]
 # # Step 3: Feature Analysis + Plotting
 # ---
@@ -912,7 +926,7 @@ import seaborn as sns
 # %%
 
 titles = ['Todas as Configurações', 'Apenas Configurações Dinamicamente Viáveis']
-labels = ['Tempo de Geração (ms/Compasso)', 'Configuração (Entrada:Saída)']
+labels = ['Tempo de Geração (ms/Compasso)', 'Configuração (Entrada sobre Saída)']
 # labels = ['Generation Time (ms/Bar)', 'Configuração (Entrada:Saída)']
 
 recalc = True
@@ -956,14 +970,20 @@ df_time['real_time_capable'] = df_time['real_time_capable'].astype(str)
 # Plot generation time
 df_time['config'] = df_time["in_len"].astype(str) + '_' + df_time["out_len"].astype(str)
 df_time['subject'] = df_time["model"].astype(str) + '_' + df_time["checkpoint"].astype(str)
+# df_time[['dataset', 'bar_duration_ms', 'mean_bpm']].drop_duplicates().to_pickle(output('df_dataset_times'))
+# df_time.to_pickle(output('df_dataset_times'))
 
 # Lineplot: All configurations
 tmp_df = df_mean_metrics.merge(df_time[['model','checkpoint','config','real_time_capable', 'subject', 'bar_generation_ms']], on=['model', 'checkpoint', 'config'])
-fig = plt.figure(figsize=(18,8), dpi=120)
-sns.set_theme(style='darkgrid')
-tmp_df['config'] = tmp_df['config'].apply(lambda x: x.replace('_',':'))
-g = sns.lineplot(data=tmp_df, y='bar_generation_ms', x='config', hue='subject', err_style="bars", ci=68, markers=True, dashes=False, style="real_time_capable")
-plt.title(titles[0])
+fig = plt.figure(figsize=(10,5), dpi=120)
+# sns.set_theme(style='darkgrid')
+sns.set_style("whitegrid")
+tmp_df['config'] = tmp_df['config'].apply(lambda x: x.replace('_','\n'))
+tmp_df['Dinamicamente Viável'] = tmp_df['real_time_capable'].apply( lambda x: 'Sim' if x else 'Não')
+tmp_df['Modelo'] = tmp_df['subject']
+g = sns.lineplot(data=tmp_df, y='bar_generation_ms', x='config', hue='Modelo', err_style="bars", ci=68, markers=True, dashes=False)
+fig.get_axes()[0].legend(loc='center left',fontsize='small', frameon=False, title="Modelo")
+# plt.title(titles[0])
 g.set_ylabel(labels[0])
 g.set_xlabel(labels[1])
 plt.savefig(figure_output('lineplot_all_configurations'))
@@ -973,14 +993,23 @@ if 'real_time_capable' not in df_mean_metrics.columns and filter_bpm:
     # print(tmp_df.groupby('real_time_capable').head())
     df_mean_metrics = tmp_df.loc[tmp_df['real_time_capable'] == 'True']
 
+modelnames = {
+  'melody_rnn:attention_rnn:attention_rnn': 'MelodyRNN',
+  'performance_rnn:performance_with_dynamics:performance_with_dynamics': 'PerformanceRNN',
+  'pianoroll_rnn_nade:rnn-nade_attn:rnn-nade_attn': 'PianorollRNN-NADE',
+  'polyphony_rnn:polyphony_rnn:polyphony_rnn': 'PolyphonyRNN'
+}
+
 # Lineplot: Selected Configurations
-fig = plt.figure(figsize=(18,8), dpi=120)
+fig = plt.figure(figsize=(10,6), dpi=200)
 df_mean_metrics['subject'] = df_mean_metrics['model'].astype(str) + ':' + df_mean_metrics['checkpoint'].astype(str) + ':' + df_mean_metrics['checkpoint'].astype(str)
 tmp_df = df_mean_metrics.copy()
 tmp_df = tmp_df.merge(df_time[['model','checkpoint','config','real_time_capable', 'bar_generation_ms']], on=['model', 'checkpoint', 'config'])
-tmp_df['config'] = tmp_df['config'].apply(lambda x: x.replace('_',':'))
-g = sns.lineplot(data=tmp_df, y='bar_generation_ms', x='config', hue="subject", err_style="bars", ci=68, markers=True, dashes=False)
-plt.title(titles[1])
+tmp_df['config'] = tmp_df['config'].apply(lambda x: x.replace('_','\n'))
+tmp_df['Modelo'] = tmp_df['subject'].apply(lambda x: modelnames[x])
+g = sns.lineplot(data=tmp_df, y='bar_generation_ms', x='config', hue="Modelo", err_style="bars", ci=68, markers=True, dashes=False)
+fig.get_axes()[0].legend(loc='center left',frameon=False,title="Modelo")
+# plt.title(titles[1])
 g.set_ylabel(labels[0])
 g.set_xlabel(labels[1])
 plt.savefig(figure_output('lineplot_selected_configurations'))
@@ -1021,7 +1050,7 @@ if 'heatmap_metrics_per_model_config' in plots_to_make or True:
     #     )
     #     for (column_mean, column_std, title)
     #     in subplots]
-    fig, axs = plt.subplots(1,2, figsize=(12,25), dpi=150, sharex='col', sharey='row')
+    fig, axs = plt.subplots(1,2, figsize=(9.6,20), dpi=150, sharex='col', sharey='row')
     subplots = [(pd.pivot_table(tmp_df, values=column_mean, index=['config'], columns=['subject'])
         , pd.pivot_table(tmp_df, values=column_std, index=['config'], columns=['subject'])
         , title
@@ -1029,8 +1058,8 @@ if 'heatmap_metrics_per_model_config' in plots_to_make or True:
         for (column_mean, column_std, title)
         in subplots]
 
-    
-    fig.suptitle(title)
+    # sns.set_style("whitegrid")
+    # fig.suptitle(title)
     # gs = fig.add_gridspec(1, 2, hspace=0, wspace=0)
     for i, (mean_df, std_df, title) in enumerate(subplots):
         cmap = ['Greens', 'Greens_r'][i]
@@ -1105,36 +1134,52 @@ maxes['metric'] = maxes['metric'].apply(lambda x: metricnames[x])
 
 
 # Best Config of Each - Scatter Plot
-sns.set_theme(style="darkgrid")
+# sns.set_theme(style="darkgrid")
+sns.set_style(style="whitegrid")
 tmp_df = maxes.copy()
 tmp_df['metric_type'] = tmp_df['metric_type'].apply(lambda t: metric_types[t])
 # tmp_df.rename(columns=metricnames)
-g = sns.catplot(data=tmp_df, y="metric", x="score", hue="model_config", col='metric_type',  kind="swarm", height=6, aspect=1,
+g = sns.catplot(data=tmp_df, s=7, y="metric", x="score", hue="model_config", col='metric_type',  kind="swarm", height=4.5, aspect=0.8,
 order=maxes.metric.value_counts().index)
 locs, labels_ = plt.xticks()
 g.set_xticklabels(labels_)
 g.set_titles('{col_name}')
-g.fig.suptitle('Metric Performance per Model - Best Configuration of Each')
-g.fig.subplots_adjust(top=0.88)
-g.fig.set_dpi(120)
-g.set_ylabels(labels[0])
-g.set_xlabels(labels[1])
-plt.savefig(figure_output('best-config-of-each-scatter-plot'))
+plt.xlim(0,1)
+# g.fig.suptitle('Metric Performance per Model - Best Configuration of Each')
+
+
+g.fig.subplots_adjust(top=0.88,wspace=0.2)
+g.fig.set_dpi(160)
+# g.fig.set_label('Modelo')
+# g.set_ylabels(labels[0])
+# g.set_xlabels(labels[1])
+g.set_ylabels('')
+g.set_xlabels('')
+plt.tight_layout()
+sns.move_legend(
+    g, "upper center",
+    # bbox_to_anchor=(0.5, -0.1), ncol=4, frameon=False,
+    bbox_to_anchor=(0.5, 1.3), ncol=4, frameon=False,
+    title="Modelo"
+)
+dirname = figure_output('best-config-of-each-scatter-plot')
+print(dirname)
+plt.savefig(dirname, bbox_inches='tight')
 plt.show()
 
 # %% 
 # ### Heatmap per metric
 # title = 'Metric Performance per Model - Best Configuration of Each'
 title = 'Pontuação Métrica por Modelo - Melhores Configurações'
-labels = ['Métrica', 'Pontuação']
+labels = ['Métrica', 'Modelo']
 metric_types = {
   'Overlap': 'Overlap',
   'KL-Divergence': 'KL-Divergência'
 }
 
 # Best Config of Each - Heatmaps
-fig, axs = plt.subplots(2, figsize=(18,8), sharex='col', sharey='row', dpi=120)
-fig.suptitle(title)
+fig, axs = plt.subplots(2, figsize=(10.5,4), sharex='col', sharey='row', dpi=120)
+# fig.suptitle(title)
 gs = fig.add_gridspec(2, 1, hspace=0, wspace=0)
 for i, metric_type in enumerate(reversed(maxes['metric_type'].unique())):
     ax = axs[i]
@@ -1143,9 +1188,16 @@ for i, metric_type in enumerate(reversed(maxes['metric_type'].unique())):
     tmp_df = maxes.copy()
     tmp_df['metric_type'] = tmp_df['metric_type'].apply(lambda t: metric_types[t])
     tmp_df = tmp_df.groupby('metric_type').get_group(metric_types[metric_type])
+    tmp_df['model_config'] = tmp_df['model_config'].apply(lambda x: '\n'.join(x for i, x in enumerate(x.split('\n')) if i != 1))
     tmp_df = pd.pivot_table(tmp_df, values='score', index=['model_config'], columns=['metric'])
     g = sns.heatmap(data=tmp_df, ax=axs[i], annot=True, cmap=cmap)
-    g.set_xlabel(labels[0])
+    # g.legend('Modelo')
+    # g.set_xlabel(labels[0])
+    g.set_xlabel(None)
+    # g.set_ylabel(labels[1])
+    g.set_ylabel(None)
+    ax.legend(loc='center left',fontsize='small', frameon=False)
+plt.tight_layout()
 plt.savefig(figure_output('best-config-of-each-heatmap'))
 plt.show()
 
@@ -1154,55 +1206,85 @@ plt.show()
 
 # %%
 # Initialize DF
+import re
+
+title = 'Overlap Métrico por Modelo-Configuração'
+# title = "Overall Metric Overlap per Model Configuration"
+labels = ['Pontuação', 'Configuração']
+
 tmp_df = df_mean_metrics.copy()
 tmp_df['subject'] = tmp_df[['model', 'checkpoint']].apply(lambda row: ':'.join(row.values.astype(str)), axis=1)
 
 # Define which metrics to plot and subplot arrangement
 overlaps = [m for m in metrics if m.endswith('_overlap')]
-col_count = 1
-row_count = math.ceil(len(overlaps) / col_count)
+col_count = 3
+row_count = math.ceil(len(overlaps) / col_count / 2)
 
 
 # Make Plots
 # fig, axs = plt.subplots(row_count, col_count, figsize=(16, 40), sharex='col', sharey='row', dpi=120)
 # fig, axs = plt.subplots(row_count, col_count, figsize=(40,16), sharex='col', sharey='row', dpi=120)
-fig, axs = plt.subplots(row_count, col_count, figsize=(20,30), sharex='col', sharey='row', dpi=120)
-sns.set_theme(style="darkgrid")
-
-for i, plotcol in enumerate(overlaps):
-    data = tmp_df[['subject', 'config', 'time', plotcol]]
-    data = data.drop(columns='time')
-    
-    # Generate Plot
-    locs, labels = plt.xticks()
-
-    sns.set_theme(style="darkgrid")
-    ax = axs[i]
-    
-    # Heatmap version
-    cmap = ['Greens', 'Greens_r'][0]
-    data = pd.pivot_table(data, values=[plotcol], index=['subject'], columns=['config'])
-    g = sns.heatmap(data, annot=data, linewidths=0.5, ax=ax, cmap=cmap,
-        # cbar_ax=None if i else cbar_ax,
-        # cbar= i % col_count == col_count - 1,
-        cbar=False,
-        vmin=0, vmax=1)
-
-    ax.set_title(plotcol)
-    ax.set_ylabel('Score')
-    if i + 1 == len(overlaps):
-        ax.set_xlabel('Configuration')
-    else:
-        ax.set(xlabel=None)
 
 
-handles, labels = ax.get_legend_handles_labels()
-plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-plt.suptitle("Overall Metric Overlap per Model Configuration")
-plt.tight_layout()
-# plt.savefig(figure_output('best-config-mean-metrics-lineplot'))
-plt.savefig(figure_output('best-config-mean-metrics-heatmap'))
-plt.show()
+def plotheatmaps(list_of_overlaps, figname):
+  fig, axs = plt.subplots(row_count, col_count, figsize=(11, 20), sharex='col', sharey='row', dpi=120)
+  sns.set_theme(style="darkgrid")
+  for i, plotcol in enumerate(list_of_overlaps):
+      data = tmp_df[['subject', 'config', 'time', plotcol]]
+      # data['subject'] = data['subject'].apply(lambda x: x.replace(':', '\n'))
+      data['subject'] = data['subject'].apply(lambda x: x.split(':')[0])
+      data['config'] = data['config'].apply(lambda x: x.replace('_', ':'))
+      data = data.drop(columns='time')
+      
+      # Generate Plot
+      locs, labels_ = plt.xticks()
+
+      sns.set_theme(style="darkgrid")
+      # ax = axs[i]
+      ax = axs[math.floor(i/col_count), i%col_count]
+      
+      # Heatmap version
+      cmap = ['Greens', 'Greens_r'][0]
+      # data = pd.pivot_table(data, values=[plotcol], index=['subject'], columns=['config'])
+      labels_ = data['subject'].unique()
+      data = pd.pivot_table(data, values=[plotcol], index=['config'], columns=['subject'])
+      g = sns.heatmap(data, annot=data, linewidths=0.5, ax=ax, cmap=cmap,
+          # cbar_ax=None if i else cbar_ax,
+          # cbar= i % col_count == col_count - 1,
+          cbar=False,
+          vmin=0, vmax=1)
+
+      # labels_ = [':'.join(re.split('_|-', l.get_text())[-2:]) for l in labels_]
+
+      subtitle = '_'.join(re.split('_',plotcol)[:-1])
+      subtitle = metricnames[filter_metric_names([subtitle])[0]]
+      ax.set_title(subtitle)
+      # ax.set_ylabel(labels[0])
+      ax.set_ylabel(None)
+      ax.set_xlabel(None)
+      # ax.set_xlabel(labels[0])
+      # if i + 1 == len(overlaps):
+          # for l in labels_:
+            # l.set_text()
+          # labels_ = [':'.join(l.split('_')[-2]) for l in labels_]
+      g.set_xticklabels(labels_, rotation=90)
+          # ax.set_xlabel(labels[1])
+      # else:
+          # ax.set(xlabel=None)
+
+  handles, labels_ = ax.get_legend_handles_labels()
+  plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+  # plt.title(None)
+  # plt.suptitle(title)
+  # plt.tight_layout()
+  # fig.tight_layout(rect=[0.03, 0, 1, 0.97])
+  fig.tight_layout()
+  # plt.savefig(figure_output('best-config-mean-metrics-lineplot'))
+  plt.savefig(figure_output(figname))
+  plt.show()
+
+plotheatmaps(overlaps[:6], 'best-config-mean-metrics-heatmap-1-2')
+plotheatmaps(overlaps[6:], 'best-config-mean-metrics-heatmap-2-2')
 
 # %% [markdown]
 # ### Point Plot: Best Config vs Baseline per Model
@@ -1214,8 +1296,9 @@ df_baseline = pd.read_pickle('output/df_metrics_baseline')
 
 # Prepare "best configs" dataframe to receive baselines
 df_comp = maxes.copy()
-df_comp['config'] = df_comp['model_config'].apply(lambda config: config.split(':')[-1])
-df_comp['subject'] = df_comp['model_config'].apply(lambda config: ':'.join(config.split(':')[:-1]))
+df_comp['model_config'] = df_comp['model_config'].apply(lambda x: x.replace('\n', ':'))
+df_comp['config'] = df_comp['model_config'].apply(lambda config: config.split(':')[-2])
+df_comp['subject'] = df_comp['model_config'].apply(lambda config: ':'.join(config.split(':')[:-2]))
 df_comp = df_comp.drop(columns=['model_config'])
 
 df_baseline['subject'] = df_baseline['model'] + ':' + df_baseline['checkpoint']
@@ -1224,7 +1307,7 @@ df_baseline = df_baseline.drop(columns=['model','checkpoint','dataset'])
 df_baseline = df_baseline.melt(id_vars=["subject"], var_name="metric", value_name="score").dropna()
 df_baseline['metric_type'] = df_baseline['metric'].astype(str).str.contains('_overlap').apply(lambda x: 'Overlap' if x == True else 'KL-Divergence')
 df_baseline['metric'] = filter_metric_names(df_baseline['metric'])
-
+df_baseline['metric'] = df_baseline['metric'].apply(lambda x: metricnames[x])
 
 df_comp_bk = df_comp.copy()
 df_comp = df_comp.merge(df_baseline, how='inner', on=['subject', 'metric', 'metric_type'], suffixes=("_gen", "_baseline"))
@@ -1235,6 +1318,7 @@ df_comp = df_comp.melt(id_vars=["subject", "metric", "metric_type", "config"], v
 # Split metric scores by type (KL-Divergence / Overlap)
 df_comp = df_comp.pivot_table(index=['subject','metric', 'source', 'config'], columns='metric_type')
 df_comp.columns = df_comp.columns.droplevel().rename(None)
+# df_comp.columns = df_comp.columns.droplevel()
 df_comp['KL-Divergence'] = df_comp['KL-Divergence'].astype(float)
 df_comp['Overlap'] = df_comp['Overlap'].astype(float)
 df_comp = df_comp.reset_index()
@@ -1243,18 +1327,37 @@ df_comp = df_comp.reset_index()
 # %%
 # Plot comparison
 
-from plotnine import ggplot, geom_point, aes,geom_line, theme, facet_wrap, ggsave, theme_classic
+from plotnine import ggplot, geom_point, aes,geom_line, theme, facet_wrap
+from plotnine import ggsave, theme_classic, theme_bw, ggtitle, element_rect
+from plotnine import guides, guide_legend, element_text
 from math import ceil
 
+title = 'Comparação entre Geração Dinâmica e Estática'
+source_colname = 'Geração'
+renamer = { 'score_baseline': 'Estática', 'score_gen': 'Dinâmica' }
+
+
 # df_comp = df_comp[['subject', 'metric', 'source', 'KL-Divergence', 'Overlap']]
+data = df_comp.copy()
+data['source'] = data['source'].apply(lambda x: renamer[x])
+data['subject'] = data['subject'].apply(lambda x: x.split(':')[0])
+data = data.rename(columns={ 'source': source_colname, 'metric': 'Métrica', 'KL-Divergence': "KL-Divergência" })
+
+
+# data['source'] = data['source'].apply(lambda x: )
+# data[source_colname] = data[source_colname].apply(lambda x: )
 subjects = len(df_comp['subject'].unique())
+subjects
 p = (
-    ggplot(df_comp)
+    ggplot(data)
     + facet_wrap(['subject'])
-    + geom_point(aes(shape='source', color='metric', x='KL-Divergence', y='Overlap'), size=4)
-    + geom_line(aes(group='metric', x='KL-Divergence', y='Overlap', color='metric'), size=0.5)
-    + theme_classic()
-    + theme(figure_size=(16, 12))
+    + geom_line(aes(group='Métrica', x="KL-Divergência", y='Overlap', color='Métrica'), size=0.5)
+    + geom_point(aes(shape=source_colname, color='Métrica', x="KL-Divergência", y='Overlap'), size=4)
+    + theme_bw()
+    + guides(color=guide_legend(ncol=6))
+    # + theme(panel_background=element_rect(fill='#ececec'))
+    + theme(figure_size=(10, 8), legend_box='horizontal', legend_position="top", legend_direction="row", strip_text=element_text(size=14), text=element_text(size=14))
+    # + ggtitle(title)
 )
 
 ggsave(plot = p, filename = 'scatterplot_comparison_against_baseline', path=output('images'))
@@ -1389,8 +1492,11 @@ df_gen.head()
 
 
 # %%
-# Restore #2
+# Make the Comparison Table (CSV)
 # pd.DataFrame(output_rows, columns=cols_gen).to_pickle(output('df_gen'))
 # pd.DataFrame(output_rows, columns=cols_gen)
-
-
+df = df_comp.copy()
+df['source'] = df['source'].apply(lambda x: {'score_baseline': 'Estática', 'score_gen': 'Dinâmica'}[x])
+df = df.pivot_table(index=['metric'], columns=['subject','source']).round(3)
+df.to_pickle(output('df_final_comparison'))
+df.to_csv(output('df_final_comparison.csv'))
