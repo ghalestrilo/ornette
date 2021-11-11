@@ -1,6 +1,7 @@
 import docker
 from requests.exceptions import HTTPError
 from docker.errors import NotFound
+from threading import Thread
 import os
 client = docker.from_env()
 
@@ -43,7 +44,7 @@ def assert_image(module):
         build_image(module)
 
 
-def run_client(options, paths):
+def run_client(options):
   try:
     instance = client.containers.run(
         IMAGE_CLIENT,
@@ -77,17 +78,24 @@ def run_client(options, paths):
       instance.kill()
   exit()
 
-def run_image(options, paths):
+def print_logs(stream):
+  for line in stream:
+      print(line.strip().decode('utf-8'))
+
+def build_run_image_command(options):
+  return f'bash -c "python /ornette \
+    --module={options.modelname} \
+    --checkpoint={options.checkpoint} \
+    --exec={options.exec or str("")} \
+    {"--no-server=True" if options.no_server else ""}  \
+    {"--no-module=True" if options.no_module else ""}" \
+    '
+
+def run_image(options, paths, append):
   try:
     instance = client.containers.run(
         f'ornette/{options.modelname}',
-        f'bash -c "python /ornette \
-      --module={options.modelname} \
-      --checkpoint={options.checkpoint} \
-      --exec={options.exec or str("")} \
-      {"--no-server=True" if options.no_server else ""}  \
-      {"--no-module=True" if options.no_module else ""}" \
-      ',
+        build_run_image_command(options),
         network_mode='host',
         stream=True,
         auto_remove=True,
@@ -104,7 +112,7 @@ def run_image(options, paths):
     )
 
     for line in instance.logs(stream=True):
-        print(line.strip().decode('utf-8'))
+      append(line.strip().decode('utf-8'))
 
   except KeyboardInterrupt:
     try:

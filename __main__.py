@@ -1,13 +1,11 @@
 import os
 from argparse import ArgumentParser
+from multiprocessing import Process, Manager
 
-from front.ui import dropdown
+from front.ui import dropdown, display
 from front.container_manager import build_image, assert_image, run_client, run_image
 
 configdir = os.path.join(os.path.expanduser('~'), '.ornette')
-
-
-
 
 # Command-Line options
 args = ArgumentParser()
@@ -23,16 +21,15 @@ args.add_argument("--no-module",     type=bool, default=False,        help="Run 
 options = args.parse_args()
 
 # Procedures
-
 def get_paths():
   paths = {}
-  paths["curdir"]: os.path.abspath(os.curdir)
-  paths["datadir"]: os.path.join(os.path.expanduser('~'), '.ornette')
-  paths["ckptdir"]: os.path.join(paths["datadir"], 'checkpoints', options.modelname)
-  paths["hostdir"]: os.path.join(paths["curdir"], 'server')
-  paths["outdir"]: os.path.join(paths["curdir"], 'output')
-  paths["datasetdir"]: os.path.join(paths["curdir"], 'dataset')
-  paths["moduledir"]: os.path.join(paths["curdir"], 'modules', options.modelname)
+  paths["curdir"] = os.path.abspath(os.curdir)
+  paths["datadir"] = os.path.join(os.path.expanduser('~'), '.ornette')
+  paths["ckptdir"] = os.path.join(paths["datadir"], 'checkpoints', options.modelname)
+  paths["hostdir"] = os.path.join(paths["curdir"], 'server')
+  paths["outdir"] = os.path.join(paths["curdir"], 'output')
+  paths["datasetdir"] = os.path.join(paths["curdir"], 'dataset')
+  paths["moduledir"] = os.path.join(paths["curdir"], 'modules', options.modelname)
   return paths
 
 # Main
@@ -53,7 +50,7 @@ if __name__ == '__main__':
 
     # Run Client
     if options.modelname == 'client':
-        run_client()
+        run_client(options)
 
     # Choose checkpoint
     if options.checkpoint is None:
@@ -67,4 +64,16 @@ if __name__ == '__main__':
 
     # Run Module
     print(f'\n Starting {options.modelname}:{options.checkpoint}')
-    run_image(options, paths)
+
+    with Manager() as manager:
+      engine_output = manager.list()
+      # display = DisplayManager(engine_output)
+
+      engine = Process(target=run_image, args=[options, paths, engine_output.append])
+      engine.start()
+
+      display_process = Process(target=display, args=[engine_output])
+      display_process.start()
+
+      engine.join()
+      display_process.join()
