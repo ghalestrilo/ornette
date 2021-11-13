@@ -138,7 +138,8 @@ def init_default_pitch(noteseqs, host):
 def debug_generation_request(noteseqs, host):
   # buflen = host.song.convert(host.get('output_length'), 'bars', host.get('output_unit'))
   outlen = host.get('generation_requested_beats')
-  primer_length = host.song.from_ticks(host.get('primer_ticks'), host.get('input_unit'))
+  primer_length = host.get('primer_ticks') or 0
+  primer_length = host.song.from_ticks(primer_length, host.get('input_unit'))
   generation_start = host.get('generation_start') - primer_length
   host.io.log(f'generating interval: [{generation_start}:{generation_start + outlen}] (+ {primer_length})')
   return noteseqs
