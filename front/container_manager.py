@@ -1,7 +1,7 @@
 import docker
 from requests.exceptions import HTTPError
 from docker.errors import NotFound
-from threading import Thread
+
 import os
 client = docker.from_env()
 
@@ -78,10 +78,6 @@ def run_client(options):
       instance.kill()
   exit()
 
-def print_logs(stream):
-  for line in stream:
-      print(line.strip().decode('utf-8'))
-
 def build_run_image_command(options):
   return f'bash -c "python /ornette \
     --module={options.modelname} \
@@ -91,8 +87,22 @@ def build_run_image_command(options):
     {"--no-module=True" if options.no_module else ""}" \
     '
 
-def run_image(options, paths, append):
-  try:
+
+
+# Procedures
+def get_paths(options):
+  paths = {}
+  paths["curdir"] = os.path.abspath(os.curdir)
+  paths["datadir"] = os.path.join(os.path.expanduser('~'), '.ornette')
+  paths["ckptdir"] = os.path.join(paths["datadir"], 'checkpoints', options.modelname)
+  paths["hostdir"] = os.path.join(paths["curdir"], 'server')
+  paths["outdir"] = os.path.join(paths["curdir"], 'output')
+  paths["datasetdir"] = os.path.join(paths["curdir"], 'dataset')
+  paths["moduledir"] = os.path.join(paths["curdir"], 'modules', options.modelname)
+  return paths
+
+def run_image(queue, options, stop):
+    paths = get_paths(options)
     instance = client.containers.run(
         f'ornette/{options.modelname}',
         build_run_image_command(options),
@@ -112,13 +122,98 @@ def run_image(options, paths, append):
     )
 
     for line in instance.logs(stream=True):
-      append(line.strip().decode('utf-8'))
+      queue.put(line.strip().decode('utf-8'))
+      if stop.is_set():
+        instance.kill()
+        break
+    instance.kill()
 
-  except KeyboardInterrupt:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class ContainerManager():
+  def __init__(self, queue, options):
+    self.instance = None
+    self.engine = None
+    self.options = options
+    self.queue = queue
+
+    # Define directories
+    self.paths = get_paths(options)
+
+
+  def start(self):
+    self.engine = Process(target=self.run_image, args=[])
+    self.engine.start()
+
+  def run_image(self):
+    paths = self.paths
+    options = self.options
+    self.instance = client.containers.run(
+        f'ornette/{options.modelname}',
+        build_run_image_command(options),
+        network_mode='host',
+        stream=True,
+        auto_remove=True,
+        detach=True,
+        hostname='server',
+        volumes={
+            paths.get("hostdir"):    {'mode': 'ro', 'bind': '/ornette'},
+            paths.get("outdir"):     {'mode': 'rw', 'bind': '/output'},
+            paths.get("datasetdir"): {'mode': 'ro', 'bind': '/dataset'},
+            paths.get("moduledir"):  {'mode': 'ro', 'bind': '/model'},
+            paths.get("ckptdir"):    {'mode': 'rw', 'bind': '/ckpt'},
+            paths.get("datadir"):    {'mode': 'ro', 'bind': '/data'}
+        }
+    )
+
+    for line in self.instance.logs(stream=True):
+      self.queue.put(line.strip().decode('utf-8'))
+
+  def stop(self):
     try:
-      instance.kill()
+      # if self.instance == None: self.engine.join()
 
-      if instance and instance.status == 'running':
-          instance.kill()
+      if self.instance and self.instance.status == 'running':
+          self.instance.kill()
     except (HTTPError, NotFound):
       pass
+    self.engine.join()

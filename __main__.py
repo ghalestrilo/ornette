@@ -1,9 +1,9 @@
 import os
 from argparse import ArgumentParser
-from multiprocessing import Process, Manager
+from front.front import Front
+from front.ui import dropdown
+from front.container_manager import build_image, run_client
 
-from front.ui import dropdown, display
-from front.container_manager import build_image, assert_image, run_client, run_image
 
 configdir = os.path.join(os.path.expanduser('~'), '.ornette')
 
@@ -20,21 +20,7 @@ args.add_argument("--no-server",     type=bool, default=False,        help="Run 
 args.add_argument("--no-module",     type=bool, default=False,        help="Run ornette without a model")
 options = args.parse_args()
 
-# Procedures
-def get_paths():
-  paths = {}
-  paths["curdir"] = os.path.abspath(os.curdir)
-  paths["datadir"] = os.path.join(os.path.expanduser('~'), '.ornette')
-  paths["ckptdir"] = os.path.join(paths["datadir"], 'checkpoints', options.modelname)
-  paths["hostdir"] = os.path.join(paths["curdir"], 'server')
-  paths["outdir"] = os.path.join(paths["curdir"], 'output')
-  paths["datasetdir"] = os.path.join(paths["curdir"], 'dataset')
-  paths["moduledir"] = os.path.join(paths["curdir"], 'modules', options.modelname)
-  return paths
-
-# Main
-if __name__ == '__main__':
-
+def main():
     # Choose model
     if options.modelname is None:
         message = "\n Which model do you want to run?"
@@ -59,21 +45,15 @@ if __name__ == '__main__':
         choices = os.listdir(directory)
         options.checkpoint = dropdown(message, choices)
 
-    # Define directories
-    paths = get_paths()
-
     # Run Module
-    print(f'\n Starting {options.modelname}:{options.checkpoint}')
+    front = Front(options)
+    try:
+      front.start()
+    except KeyboardInterrupt:
+      front.stop()
+      print('haha')
+    
 
-    with Manager() as manager:
-      engine_output = manager.list()
-      # display = DisplayManager(engine_output)
-
-      engine = Process(target=run_image, args=[options, paths, engine_output.append])
-      engine.start()
-
-      display_process = Process(target=display, args=[engine_output])
-      display_process.start()
-
-      engine.join()
-      display_process.join()
+# Main
+if __name__ == '__main__':
+  main()
