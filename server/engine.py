@@ -183,7 +183,7 @@ class Engine():
     max_retries = 50
     def generate_to(self, length, unit='bars'):
       i = 0
-      primer_length = self.host.get('primer_ticks')
+      primer_length = self.host.get('primer_ticks') or 0
       primer_length = self.host.song.from_ticks(primer_length, unit)
       while self.host.song.total_length(unit) < length + primer_length:
         self.generate()
