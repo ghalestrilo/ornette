@@ -21,6 +21,8 @@ args.add_argument("--no-module",     type=bool, default=False,        help="Run 
 options = args.parse_args()
 
 def main():
+
+    # TODO: Move to Front.on_mount
     # Choose model
     if options.modelname is None:
         message = "\n Which model do you want to run?"
@@ -45,15 +47,8 @@ def main():
         choices = os.listdir(directory)
         options.checkpoint = dropdown(message, choices)
 
-    # Run Module
-    # front = Front(options)
-    # try:
-    #   front.start()
-    # except (KeyboardInterrupt, SystemExit):
-    #   front.stop()
-    #   print('haha')
-
     front = Front(options)
+    front.set_options(options)
     front.run()
 
 # Main

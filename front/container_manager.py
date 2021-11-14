@@ -1,6 +1,14 @@
 import docker
+import threading
+from queue import Queue
 from requests.exceptions import HTTPError
 from docker.errors import NotFound
+from textual.app import App
+from rich.text import Text
+from rich.panel import Panel
+from rich.align import Align
+from textual.reactive import Reactive
+from textual.widget import Widget
 
 import os
 client = docker.from_env()
@@ -87,8 +95,6 @@ def build_run_image_command(options):
     {"--no-module=True" if options.no_module else ""}" \
     '
 
-
-
 # Procedures
 def get_paths(options):
   paths = {}
@@ -103,6 +109,7 @@ def get_paths(options):
 
 def run_image(queue, options, stop):
     paths = get_paths(options)
+    queue.put("haha")
     instance = client.containers.run(
         f'ornette/{options.modelname}',
         build_run_image_command(options),
@@ -123,6 +130,7 @@ def run_image(queue, options, stop):
 
     for line in instance.logs(stream=True):
       queue.put(line.strip().decode('utf-8'))
+      print(line.strip().decode('utf-8'))
       if stop.is_set():
         break
 
@@ -133,3 +141,24 @@ def run_image(queue, options, stop):
           instance.kill()
     except (HTTPError, NotFound):
       pass
+
+class ContainerEngine(Widget):
+    """ Class that runs the MDGS and renders its output """
+    docker_thread = None
+    queue = Reactive(Queue())
+    stop_flag = threading.Event()
+    logs = []
+
+    async def run_image(self, options):
+        run_image(self.queue, options, self.stop_flag)
+
+    def render(self):
+        if not self.queue.empty():
+          self.logs.append(self.queue.get())
+        time = 'text: ' + '\n'.join(self.logs)
+        
+        return Panel(Align.center(time, vertical="middle"), title="output", title_align="left")
+
+    async def on_shutdown_request(self) -> None:
+        self.stop_flag.set()
+        await self.docker_thread.join()
