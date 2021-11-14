@@ -46,13 +46,15 @@ def main():
         options.checkpoint = dropdown(message, choices)
 
     # Run Module
+    # front = Front(options)
+    # try:
+    #   front.start()
+    # except (KeyboardInterrupt, SystemExit):
+    #   front.stop()
+    #   print('haha')
+
     front = Front(options)
-    try:
-      front.start()
-    except KeyboardInterrupt:
-      front.stop()
-      print('haha')
-    
+    front.run()
 
 # Main
 if __name__ == '__main__':

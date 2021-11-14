@@ -108,7 +108,7 @@ def run_image(queue, options, stop):
         build_run_image_command(options),
         network_mode='host',
         stream=True,
-        auto_remove=True,
+        # auto_remove=True,
         detach=True,
         hostname='server',
         volumes={
@@ -124,96 +124,12 @@ def run_image(queue, options, stop):
     for line in instance.logs(stream=True):
       queue.put(line.strip().decode('utf-8'))
       if stop.is_set():
-        instance.kill()
         break
-    instance.kill()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class ContainerManager():
-  def __init__(self, queue, options):
-    self.instance = None
-    self.engine = None
-    self.options = options
-    self.queue = queue
-
-    # Define directories
-    self.paths = get_paths(options)
-
-
-  def start(self):
-    self.engine = Process(target=self.run_image, args=[])
-    self.engine.start()
-
-  def run_image(self):
-    paths = self.paths
-    options = self.options
-    self.instance = client.containers.run(
-        f'ornette/{options.modelname}',
-        build_run_image_command(options),
-        network_mode='host',
-        stream=True,
-        auto_remove=True,
-        detach=True,
-        hostname='server',
-        volumes={
-            paths.get("hostdir"):    {'mode': 'ro', 'bind': '/ornette'},
-            paths.get("outdir"):     {'mode': 'rw', 'bind': '/output'},
-            paths.get("datasetdir"): {'mode': 'ro', 'bind': '/dataset'},
-            paths.get("moduledir"):  {'mode': 'ro', 'bind': '/model'},
-            paths.get("ckptdir"):    {'mode': 'rw', 'bind': '/ckpt'},
-            paths.get("datadir"):    {'mode': 'ro', 'bind': '/data'}
-        }
-    )
-
-    for line in self.instance.logs(stream=True):
-      self.queue.put(line.strip().decode('utf-8'))
-
-  def stop(self):
     try:
-      # if self.instance == None: self.engine.join()
+      instance.kill()
 
-      if self.instance and self.instance.status == 'running':
-          self.instance.kill()
+      if instance and instance.status == 'running':
+          instance.kill()
     except (HTTPError, NotFound):
       pass
-    self.engine.join()
