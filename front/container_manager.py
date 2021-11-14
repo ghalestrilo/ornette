@@ -70,12 +70,7 @@ def run_client(options):
         }
     )
 
-    # for line in instance.logs(stream=True):
-      # print(line.strip().decode('utf-8'))
-
-    for line in instance.attach(
-            # stdin=True,
-            stream=True):
+    for line in instance.attach(stream=True):
         print(line.strip().decode('utf-8'))
 
   except KeyboardInterrupt:
@@ -107,9 +102,11 @@ def get_paths(options):
   paths["moduledir"] = os.path.join(paths["curdir"], 'modules', options.modelname)
   return paths
 
-def run_image(queue, options, stop):
+def run_image(logs, options, stop):
+    print('haha')
     paths = get_paths(options)
-    queue.put("haha")
+    logs.append('hahaa')
+
     instance = client.containers.run(
         f'ornette/{options.modelname}',
         build_run_image_command(options),
@@ -129,8 +126,9 @@ def run_image(queue, options, stop):
     )
 
     for line in instance.logs(stream=True):
-      queue.put(line.strip().decode('utf-8'))
-      print(line.strip().decode('utf-8'))
+      # queue.put(line.strip().decode('utf-8'))
+      logs.append(line.strip().decode('utf-8'))
+      # print(line.strip().decode('utf-8'))
       if stop.is_set():
         break
 
@@ -145,19 +143,19 @@ def run_image(queue, options, stop):
 class ContainerEngine(Widget):
     """ Class that runs the MDGS and renders its output """
     docker_thread = None
-    queue = Reactive(Queue())
+    # queue = Reactive(Queue())
     stop_flag = threading.Event()
     logs = []
 
     async def run_image(self, options):
-        run_image(self.queue, options, self.stop_flag)
+        self.docker_thread = threading.Thread(target=run_image, args=[self.logs, options, self.stop_flag])
+        # self.docker_thread.daemon = True
+        self.docker_thread.start()
+        # run_image(self.logs, options, self.stop_flag)
 
     def render(self):
-        if not self.queue.empty():
-          self.logs.append(self.queue.get())
-        time = 'text: ' + '\n'.join(self.logs)
-        
-        return Panel(Align.center(time, vertical="middle"), title="output", title_align="left")
+        text_to_render = 'text: ' + '\n'.join(self.logs)
+        return Panel(Text(text_to_render), title="output", title_align="left")
 
     async def on_shutdown_request(self) -> None:
         self.stop_flag.set()

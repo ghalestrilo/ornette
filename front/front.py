@@ -5,10 +5,29 @@ from rich.align import Align
 
 from textual.app import App
 from datetime import datetime
-
+import os
 import threading
+from argparse import ArgumentParser
+
 from front.container_manager import ContainerEngine
 from front.ui import CommandInput
+from front.ui import dropdown
+from front.container_manager import build_image, run_client
+
+configdir = os.path.join(os.path.expanduser('~'), '.ornette')
+
+# Command-Line options
+args = ArgumentParser()
+args.add_argument('--modelname', type=str,
+                  help="The improvisation model you want to run")
+args.add_argument('--checkpoint', type=str, help="The checkpoint to be loaded")
+args.add_argument('--rebuild', type=bool, default=False,
+                  help="Force docker images to be rebuilt")
+args.add_argument('--exec', type=str, default=None,
+                  help="Startup command to run on the server")
+args.add_argument("--no-server",     type=bool, default=False,        help="Run the model without starting an OSC server")
+args.add_argument("--no-module",     type=bool, default=False,        help="Run ornette without a model")
+options = args.parse_args()
 
 class Front(App):
   input_widget = None
@@ -21,10 +40,35 @@ class Front(App):
     self.input_widget.on_key(event)
     
   async def on_mount(self) -> None:
+
+    # TODO: Move to Front.on_mount
+    # Choose model
+    if options.modelname is None:
+        message = "\n Which model do you want to run?"
+        directory = 'modules'
+        choices = [file for file in os.listdir(
+            directory) if os.path.isdir(os.path.join(directory, file))]
+        options.modelname = dropdown(message, choices)
+
+    # Check rebuild
+    if options.rebuild:
+        build_image('base')
+        build_image(options.modelname)
+
+    # Run Client
+    if options.modelname == 'client':
+        run_client(options)
+
+    # Choose checkpoint
+    if options.checkpoint is None:
+        message = f"\n Which {options.modelname} bundle to load?"
+        directory = os.path.join(configdir, 'checkpoints', options.modelname)
+        choices = os.listdir(directory)
+        options.checkpoint = dropdown(message, choices)
+
     self.input_widget = CommandInput()
     container_engine = ContainerEngine()
-    container_engine.run_image(self.options)
-    print(self.options)
+    await container_engine.run_image(options)
     await self.view.dock(
       container_engine
       , self.input_widget)
