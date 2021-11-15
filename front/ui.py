@@ -5,6 +5,8 @@ from rich.align import Align
 from textual.reactive import Reactive
 from textual.widget import Widget
 
+from front.client import FrontClient
+
 # TODO: Use Textual
 from bullet import Bullet
 from bullet import colors
@@ -23,9 +25,15 @@ def dropdown(prompt, choices):
     )
     return cli.launch()
 
+default_options = {
+  "sc_ip": '127.0.0.1',
+  "sc_port": 5005
+}
+
 class CommandInput(Widget):
     """ Widget that receives commands and sends them to Ornette """
     command = Reactive("")
+    client = FrontClient(default_options)
 
     def reset_command(self):
       self.command = ""
@@ -33,14 +41,17 @@ class CommandInput(Widget):
     def on_key(self, event):
       key = event.key
       if key == 'enter':
+        self.client.send(self.command.split(' '))
         self.reset_command()
       elif key.startswith('ctrl'):
         if key == 'ctrl+h':
           self.command = self.command[:-1]
-
       else:
         self.command += key
         self.render()
         
     def render(self) -> Text:
-      return Panel(Text(self.command), title="command", title_align="left", height=4)
+      return Panel(Text(self.command), title="command", title_align="left", height=3)
+
+    def on_shutdown_request(self):
+      self.client.send_message(['/end'])

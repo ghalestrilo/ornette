@@ -1,6 +1,6 @@
+import sys
 import docker
 import threading
-from queue import Queue
 from requests.exceptions import HTTPError
 from docker.errors import NotFound
 from textual.app import App
@@ -9,6 +9,8 @@ from rich.panel import Panel
 from rich.align import Align
 from textual.reactive import Reactive
 from textual.widget import Widget
+from textual.widgets import ScrollView
+
 
 import os
 client = docker.from_env()
@@ -82,7 +84,6 @@ def run_client(options):
         instance.kill()
     exit()
 
-
 def build_run_image_command(options):
     return f'bash -c "python /ornette \
     --module={options.modelname} \
@@ -93,8 +94,6 @@ def build_run_image_command(options):
     '
 
 # Procedures
-
-
 def get_paths(options):
     paths = {}
     paths["curdir"] = os.path.abspath(os.curdir)
@@ -108,12 +107,13 @@ def get_paths(options):
         paths["curdir"], 'modules', options.modelname)
     return paths
 
-# async def run_image(queue, options, stop):
-
+def log_append_loop(instance, append, stop):
+    for line in instance.logs(stream=True):
+          if stop.is_set(): break
+          append(line.strip().decode('utf-8'))
 
 def run_image(append, options, stop):
     paths = get_paths(options)
-
     instance = client.containers.run(
         f'ornette/{options.modelname}',
         build_run_image_command(options),
@@ -132,43 +132,41 @@ def run_image(append, options, stop):
         }
     )
 
-    for line in instance.logs(stream=True):
-        append(line.strip().decode('utf-8'))
-        if stop.is_set():
-            break
-
     try:
-        instance.kill()
-
+        for line in instance.logs(stream=True):
+            if stop.is_set():
+                break
+            append(line.strip().decode('utf-8'))
+        if instance and instance.status == 'running':
+          instance.kill()
+    except (HTTPError, NotFound):
         if instance and instance.status == 'running':
             instance.kill()
-    except (HTTPError, NotFound):
         pass
 
 
-class ContainerEngine(Widget):
+
+class ScrollingTextDisplay(Widget):
     """ Class that runs the MDGS and renders its output """
     docker_thread = None
-    queue = Reactive(Queue())
     stop_flag = threading.Event()
     logs = Reactive([])
 
-    def on_mount(self):
-        self.set_interval(1, self.refresh)
-
     def append(self, msg):
         self.logs.append(msg)
+        self.refresh()
 
     def run_image(self, options):
         self.docker_thread = threading.Thread(
-            target=run_image, args=[self.logs.append, options, self.stop_flag])
-        # self.docker_thread.daemon = True
+            target=run_image, args=[self.append, options, self.stop_flag])
         self.docker_thread.start()
 
     def render(self):
         text_to_render = '\n'.join(self.logs[-8:])
         return Panel(Text(text_to_render), title="output", title_align="left")
 
-    async def on_shutdown_request(self) -> None:
+    def stop(self):
         self.stop_flag.set()
-        await self.docker_thread.join()
+
+    async def on_shutdown_request(self) -> None:
+        self.stop()

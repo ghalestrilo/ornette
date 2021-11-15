@@ -9,7 +9,7 @@ import os
 import threading
 from argparse import ArgumentParser
 
-from front.container_manager import ContainerEngine
+from front.container_manager import ScrollingTextDisplay
 from front.ui import CommandInput
 from front.ui import dropdown
 from front.container_manager import build_image, run_client
@@ -34,6 +34,7 @@ options = args.parse_args()
 
 class Front(App):
     input_widget = None
+    container_engine = None
     options = None
 
     def set_options(self, options):
@@ -42,10 +43,10 @@ class Front(App):
     def on_key(self, event):
         self.input_widget.on_key(event)
 
-    async def on_mount(self) -> None:
+    async def on_shutdown_request(self):
+      self.container_engine.stop()
 
-        # TODO: Move to Front.on_mount
-        # Choose model
+    async def on_mount(self) -> None:
         if options.modelname is None:
             message = "\n Which model do you want to run?"
             directory = 'modules'
@@ -71,8 +72,7 @@ class Front(App):
             options.checkpoint = dropdown(message, choices)
 
         self.input_widget = CommandInput()
-        container_engine = ContainerEngine()
-        # container_engine.run_image(options)
-        container_engine.run_image(options)
+        self.container_engine = ScrollingTextDisplay()
+        self.container_engine.run_image(options)
         await self.view.dock(
-            container_engine, self.input_widget)
+            self.container_engine, self.input_widget)
