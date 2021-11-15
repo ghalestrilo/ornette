@@ -29,6 +29,7 @@ dockerfile = f"{modeldir}/Dockerfile"
 imagename = "ornette_$modelname"
 ornette_base_command = "python /ornette"
 
+
 def build_image(module):
     tag = f'ornette/{module}'
     client.images.remove(tag, force=True)
@@ -53,36 +54,37 @@ def assert_image(module):
 
 
 def run_client(options):
-  try:
-    instance = client.containers.run(
-        IMAGE_CLIENT,
-        network_mode='host',
-        detach=True,
-        stream=True,
-        # stdin_open=True,
-        stdout=True,
-        stderr=True,
-        tty=True,
-        volumes={
-            os.path.abspath(os.curdir): {
-                'bind': '/ornette', 'mode': 'rw'
+    try:
+        instance = client.containers.run(
+            IMAGE_CLIENT,
+            network_mode='host',
+            detach=True,
+            stream=True,
+            # stdin_open=True,
+            stdout=True,
+            stderr=True,
+            tty=True,
+            volumes={
+                os.path.abspath(os.curdir): {
+                    'bind': '/ornette', 'mode': 'rw'
+                }
             }
-        }
-    )
+        )
 
-    for line in instance.attach(stream=True):
-        print(line.strip().decode('utf-8'))
+        for line in instance.attach(stream=True):
+            print(line.strip().decode('utf-8'))
 
-  except KeyboardInterrupt:
-      instance.kill()
-      pass
+    except KeyboardInterrupt:
+        instance.kill()
+        pass
 
-  if instance and instance.status == 'running':
-      instance.kill()
-  exit()
+    if instance and instance.status == 'running':
+        instance.kill()
+    exit()
+
 
 def build_run_image_command(options):
-  return f'bash -c "python /ornette \
+    return f'bash -c "python /ornette \
     --module={options.modelname} \
     --checkpoint={options.checkpoint} \
     --exec={options.exec or str("")} \
@@ -91,21 +93,26 @@ def build_run_image_command(options):
     '
 
 # Procedures
-def get_paths(options):
-  paths = {}
-  paths["curdir"] = os.path.abspath(os.curdir)
-  paths["datadir"] = os.path.join(os.path.expanduser('~'), '.ornette')
-  paths["ckptdir"] = os.path.join(paths["datadir"], 'checkpoints', options.modelname)
-  paths["hostdir"] = os.path.join(paths["curdir"], 'server')
-  paths["outdir"] = os.path.join(paths["curdir"], 'output')
-  paths["datasetdir"] = os.path.join(paths["curdir"], 'dataset')
-  paths["moduledir"] = os.path.join(paths["curdir"], 'modules', options.modelname)
-  return paths
 
-def run_image(logs, options, stop):
-    print('haha')
+
+def get_paths(options):
+    paths = {}
+    paths["curdir"] = os.path.abspath(os.curdir)
+    paths["datadir"] = os.path.join(os.path.expanduser('~'), '.ornette')
+    paths["ckptdir"] = os.path.join(
+        paths["datadir"], 'checkpoints', options.modelname)
+    paths["hostdir"] = os.path.join(paths["curdir"], 'server')
+    paths["outdir"] = os.path.join(paths["curdir"], 'output')
+    paths["datasetdir"] = os.path.join(paths["curdir"], 'dataset')
+    paths["moduledir"] = os.path.join(
+        paths["curdir"], 'modules', options.modelname)
+    return paths
+
+# async def run_image(queue, options, stop):
+
+
+def run_image(append, options, stop):
     paths = get_paths(options)
-    logs.append('hahaa')
 
     instance = client.containers.run(
         f'ornette/{options.modelname}',
@@ -126,35 +133,40 @@ def run_image(logs, options, stop):
     )
 
     for line in instance.logs(stream=True):
-      # queue.put(line.strip().decode('utf-8'))
-      logs.append(line.strip().decode('utf-8'))
-      # print(line.strip().decode('utf-8'))
-      if stop.is_set():
-        break
+        append(line.strip().decode('utf-8'))
+        if stop.is_set():
+            break
 
     try:
-      instance.kill()
+        instance.kill()
 
-      if instance and instance.status == 'running':
-          instance.kill()
+        if instance and instance.status == 'running':
+            instance.kill()
     except (HTTPError, NotFound):
-      pass
+        pass
+
 
 class ContainerEngine(Widget):
     """ Class that runs the MDGS and renders its output """
     docker_thread = None
-    # queue = Reactive(Queue())
+    queue = Reactive(Queue())
     stop_flag = threading.Event()
-    logs = []
+    logs = Reactive([])
 
-    async def run_image(self, options):
-        self.docker_thread = threading.Thread(target=run_image, args=[self.logs, options, self.stop_flag])
+    def on_mount(self):
+        self.set_interval(1, self.refresh)
+
+    def append(self, msg):
+        self.logs.append(msg)
+
+    def run_image(self, options):
+        self.docker_thread = threading.Thread(
+            target=run_image, args=[self.logs.append, options, self.stop_flag])
         # self.docker_thread.daemon = True
         self.docker_thread.start()
-        # run_image(self.logs, options, self.stop_flag)
 
     def render(self):
-        text_to_render = 'text: ' + '\n'.join(self.logs)
+        text_to_render = '\n'.join(self.logs[-8:])
         return Panel(Text(text_to_render), title="output", title_align="left")
 
     async def on_shutdown_request(self) -> None:

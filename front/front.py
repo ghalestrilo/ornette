@@ -25,50 +25,54 @@ args.add_argument('--rebuild', type=bool, default=False,
                   help="Force docker images to be rebuilt")
 args.add_argument('--exec', type=str, default=None,
                   help="Startup command to run on the server")
-args.add_argument("--no-server",     type=bool, default=False,        help="Run the model without starting an OSC server")
-args.add_argument("--no-module",     type=bool, default=False,        help="Run ornette without a model")
+args.add_argument("--no-server",     type=bool, default=False,
+                  help="Run the model without starting an OSC server")
+args.add_argument("--no-module",     type=bool, default=False,
+                  help="Run ornette without a model")
 options = args.parse_args()
 
+
 class Front(App):
-  input_widget = None
-  options = None
+    input_widget = None
+    options = None
 
-  def set_options(self, options):
-    self.options = options
-  
-  def on_key(self, event):
-    self.input_widget.on_key(event)
-    
-  async def on_mount(self) -> None:
+    def set_options(self, options):
+        self.options = options
 
-    # TODO: Move to Front.on_mount
-    # Choose model
-    if options.modelname is None:
-        message = "\n Which model do you want to run?"
-        directory = 'modules'
-        choices = [file for file in os.listdir(
-            directory) if os.path.isdir(os.path.join(directory, file))]
-        options.modelname = dropdown(message, choices)
+    def on_key(self, event):
+        self.input_widget.on_key(event)
 
-    # Check rebuild
-    if options.rebuild:
-        build_image('base')
-        build_image(options.modelname)
+    async def on_mount(self) -> None:
 
-    # Run Client
-    if options.modelname == 'client':
-        run_client(options)
+        # TODO: Move to Front.on_mount
+        # Choose model
+        if options.modelname is None:
+            message = "\n Which model do you want to run?"
+            directory = 'modules'
+            choices = [file for file in os.listdir(
+                directory) if os.path.isdir(os.path.join(directory, file))]
+            options.modelname = dropdown(message, choices)
 
-    # Choose checkpoint
-    if options.checkpoint is None:
-        message = f"\n Which {options.modelname} bundle to load?"
-        directory = os.path.join(configdir, 'checkpoints', options.modelname)
-        choices = os.listdir(directory)
-        options.checkpoint = dropdown(message, choices)
+        # Check rebuild
+        if options.rebuild:
+            build_image('base')
+            build_image(options.modelname)
 
-    self.input_widget = CommandInput()
-    container_engine = ContainerEngine()
-    await container_engine.run_image(options)
-    await self.view.dock(
-      container_engine
-      , self.input_widget)
+        # Run Client
+        if options.modelname == 'client':
+            run_client(options)
+
+        # Choose checkpoint
+        if options.checkpoint is None:
+            message = f"\n Which {options.modelname} bundle to load?"
+            directory = os.path.join(
+                configdir, 'checkpoints', options.modelname)
+            choices = os.listdir(directory)
+            options.checkpoint = dropdown(message, choices)
+
+        self.input_widget = CommandInput()
+        container_engine = ContainerEngine()
+        # container_engine.run_image(options)
+        container_engine.run_image(options)
+        await self.view.dock(
+            container_engine, self.input_widget)
