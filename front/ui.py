@@ -35,6 +35,9 @@ class CommandInput(Widget):
     command = Reactive("")
     client = FrontClient(default_options)
 
+    def set_logger(self, logger):
+      self.client.set_logger(logger)
+
     def reset_command(self):
       self.command = ""
 

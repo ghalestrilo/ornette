@@ -73,6 +73,7 @@ class Front(App):
 
         self.input_widget = CommandInput()
         self.container_engine = ScrollingTextDisplay()
+        self.input_widget.set_logger(self.container_engine.append)
         self.container_engine.run_image(options)
         await self.view.dock(
             self.container_engine, self.input_widget)
