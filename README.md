@@ -53,25 +53,24 @@ Currently, you can serve specific modules with the following syntax:
 ./start.sh <module_name> <checkpoint_name>
 ```
 
-Modules are listed on the `modules` folder, and their checkpoints can be found on the `.ornette.yml` file. Most of the models were developed by [Magenta Research](https://github.com/magenta/magenta/tree/master/magenta/models). These are the currently implemented modules, with their checkpoint options listed as subitems:
+Modules are listed on the `modules` folder, and their bundles can be found on the `.ornette.yml` file. Most of the models were developed by [Magenta Research](https://github.com/magenta/magenta/tree/master/magenta/models). These are the currently implemented modules:
 
-- melody_rnn
-  - basic_rnn
-  - mono_rnn
-  - lookback_rnn
-  - attention_rnn
-- performance_rnn
-  - polyphony_rnn
-  - performance
-  - performance_with_dynamics
-  - performance_with_dynamics_and_modulo_encoding
-  - density_conditioned_performance_with_dynamics
-  - pitch_conditioned_performance_with_dynamics
-  - multiconditioned_performance_with_dynamics
-- pianoroll_rnn_nade
-  - rnn-nade_attn
-- polyphony_rnn
-  - polyphony_rnn
+
+| model              | bundle                                        |
+| ------------------ | --------------------------------------------- |
+| melody_rnn         | basic_rnn                                     |
+| melody_rnn         | mono_rnn                                      |
+| melody_rnn         | lookback_rnn                                  |
+| melody_rnn         | attention_rnn                                 |
+| performance_rnn    | polyphony_rnn                                 |
+| performance_rnn    | performance                                   |
+| performance_rnn    | performance_with_dynamics                     |
+| performance_rnn    | performance_with_dynamics_and_modulo_encoding |
+| performance_rnn    | pitch_conditioned_performance_with_dynamics   |
+| performance_rnn    | multiconditioned_performance_with_dynamics    |
+| pianoroll_rnn_nade | rnn-nade_attn                                 |
+| polyphony_rnn      | polyphony_rnn                                 |
+
 
 ## Future Work
 
