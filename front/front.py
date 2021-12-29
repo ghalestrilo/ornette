@@ -60,16 +60,15 @@ class Front(App):
             build_image(options.modelname)
 
         # Run Client
-        if options.modelname == 'client':
-            run_client(options)
+        # if options.modelname == 'client':
+            # run_client(options)
 
         # Choose checkpoint
+        options.checkpoint = select_bundle(options)
+
         if options.checkpoint is None:
-            message = f"\n Which {options.modelname} bundle to load?"
-            directory = os.path.join(
-                configdir, 'checkpoints', options.modelname)
-            choices = os.listdir(directory)
-            options.checkpoint = dropdown(message, choices)
+          await self.shutdown()
+          exit()
 
         self.input_widget = CommandInput()
         self.container_engine = ScrollingTextDisplay()
@@ -77,3 +76,24 @@ class Front(App):
         self.container_engine.run_image(options)
         await self.view.dock(
             self.container_engine, self.input_widget)
+
+
+
+# TODO: move to data module
+from pathlib import Path
+
+def select_bundle(options):
+  bundledir = Path(os.path.join(configdir, 'checkpoints', options.modelname))
+  if not bundledir.exists(): bundledir.mkdir(parents=True)
+
+  if options.checkpoint is not None: return options.checkpoint
+  message = f"\n Which {options.modelname} bundle to load?"
+
+  # TODO: this should come from the yml file
+  choices = list(bundledir.glob('*'))
+
+  print(choices)
+  if choices == []:
+    print(f'Model {options.modelname} has no bundles to choose from')
+    return None
+  return dropdown(message, choices)
