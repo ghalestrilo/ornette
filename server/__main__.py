@@ -3,7 +3,6 @@ import sys
 
 from args import get_args
 from host import Host
-from data import prep_module
 
 import pretty_errors
 
@@ -30,8 +29,6 @@ if __name__ == "__main__":
 
     if not args.batch_mode:
       pretty_errors.replace_stderr()
-
-    prep_module()
 
     # Prep Model
     host = Host(args)

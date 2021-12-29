@@ -13,8 +13,7 @@ from front.container_manager import ScrollingTextDisplay
 from front.ui import CommandInput
 from front.ui import dropdown
 from front.container_manager import build_image, run_client
-
-configdir = os.path.join(os.path.expanduser('~'), '.ornette')
+from server.data import process_options
 
 # Command-Line options
 args = ArgumentParser()
@@ -29,7 +28,7 @@ args.add_argument("--no-server",     type=bool, default=False,
                   help="Run the model without starting an OSC server")
 args.add_argument("--no-module",     type=bool, default=False,
                   help="Run ornette without a model")
-options = args.parse_args()
+# options = args.parse_args()
 
 
 class Front(App):
@@ -47,24 +46,7 @@ class Front(App):
       self.container_engine.stop()
 
     async def on_mount(self) -> None:
-        if options.modelname is None:
-            message = "\n Which model do you want to run?"
-            directory = 'modules'
-            choices = [file for file in os.listdir(
-                directory) if os.path.isdir(os.path.join(directory, file))]
-            options.modelname = dropdown(message, choices)
-
-        # Check rebuild
-        if options.rebuild:
-            build_image('base')
-            build_image(options.modelname)
-
-        # Run Client
-        # if options.modelname == 'client':
-            # run_client(options)
-
-        # Choose checkpoint
-        options.checkpoint = select_bundle(options)
+        options = process_options(args.parse_args(), dropdown)
 
         if options.checkpoint is None:
           await self.shutdown()
@@ -79,21 +61,3 @@ class Front(App):
 
 
 
-# TODO: move to data module
-from pathlib import Path
-
-def select_bundle(options):
-  bundledir = Path(os.path.join(configdir, 'checkpoints', options.modelname))
-  if not bundledir.exists(): bundledir.mkdir(parents=True)
-
-  if options.checkpoint is not None: return options.checkpoint
-  message = f"\n Which {options.modelname} bundle to load?"
-
-  # TODO: this should come from the yml file
-  choices = list(bundledir.glob('*'))
-
-  print(choices)
-  if choices == []:
-    print(f'Model {options.modelname} has no bundles to choose from')
-    return None
-  return dropdown(message, choices)
