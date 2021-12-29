@@ -44,7 +44,9 @@ class CommandInput(Widget):
     def on_key(self, event):
       key = event.key
       if key == 'enter':
-        self.client.send(self.command.split(' '))
+        cmd = self.command.split(' ')
+        self.client.send(cmd)
+        # if cmd > [] and cmd[0] in ['end', 'exit', 'quit']: self.shutdown()
         self.reset_command()
       elif key.startswith('ctrl'):
         if key == 'ctrl+h':
@@ -56,5 +58,5 @@ class CommandInput(Widget):
     def render(self) -> Text:
       return Panel(Text(self.command), title="command", title_align="left", height=3)
 
-    def on_shutdown_request(self):
+    async def on_shutdown_request(self):
       self.client.send_message(['/end'])

@@ -30,7 +30,6 @@ args.add_argument("--no-module",     type=bool, default=False,
                   help="Run ornette without a model")
 # options = args.parse_args()
 
-
 class Front(App):
     input_widget = None
     container_engine = None
@@ -58,6 +57,3 @@ class Front(App):
         self.container_engine.run_image(options)
         await self.view.dock(
             self.container_engine, self.input_widget)
-
-
-

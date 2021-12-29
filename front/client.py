@@ -15,6 +15,7 @@ class FrontClient():
 
     def send(self, message):
       try:
-        self.client.send_message(message[0], message[1:])
+        self.logger('message: ' + ' '.join(message))
+        self.client.send_message('/' + message[0], message[1:])
       except Exception as e:
         self.logger(str(e))
