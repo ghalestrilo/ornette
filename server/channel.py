@@ -26,7 +26,7 @@ class Channel():
     # TODO: 
     def play(self, message):
       msg = ([ 'note', message.note - NOTE_OFFSET
-        # , 'cut', message.note
+        , 'cut', message.note
         , 'sustain', 8
         , 'release', 1
         # , 'gain', 0 if message.type == 'note_off' else message.velocity / 127

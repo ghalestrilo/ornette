@@ -30,7 +30,7 @@ commands = (
     , "drop_primer":lambda host: host.song.drop_primer()
 
     # General Control
-    , "play":       lambda host, pitch: host.bridge.play(pitch)
+    , "play":       lambda host, pitch: host.bridge.play([pitch] + host.get('instrument'))
     , "quit":       lambda host: host.close()
     , "exit":       lambda host: host.close()
     , "kill":       lambda host: host.close()
