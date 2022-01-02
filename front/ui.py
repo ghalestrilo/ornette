@@ -75,7 +75,5 @@ class CommandInput(Widget):
       print(f'AsyncApplication._cancel_all_tasks: cancelling {len(to_cancel)} tasks ...')
 
       if not to_cancel: return
-
       for task in to_cancel: task.cancel()
-
       asyncio.tasks.gather(*to_cancel, loop=loop, return_exceptions=True)

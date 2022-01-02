@@ -36,6 +36,7 @@ class OrnetteModule():
         self.host.add_filter('output', 'noteseq2midotrack')
         self.host.add_filter('output', 'mido_track_sort_by_time')
         self.host.add_filter('output', 'mido_track_subtract_previous_time')
+        self.host.add_filter('output', 'print_midotracks')
 
         # This offset helps ensure the output of the model will fulfill the desired region. Excess is cropped
         self.offset = 1.1
