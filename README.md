@@ -1,6 +1,17 @@
 # Ornette
 
-An OSC-ready cli app to use music-generating ML models in real time. This is **very** work-in-progress at the moment and will probably break.
+An OSC-based command-line application to use ML models for music generation in real time.
+You can control (manually or programatically) ML-based music generation and playback via text commands, OSC messaging or with command-line arguments. You can also try out different models through the same interface.
+
+Ornette delegates audio synthesis to **SuperCollider** and uses **Docker** for environment management.
+
+Ornette allows you to:
+- Load MIDI files as prompts, 
+
+
+⚠ This is **very** work-in-progress at the moment and will quite possibly break ⚠
+
+
 
 ## Concept
 
@@ -17,9 +28,8 @@ An OSC-ready cli app to use music-generating ML models in real time. This is **v
 
 1. Clone the repo
 2. Run `pip install -e requirements.txt`
-3. Run the host with `python .`. You'll be prompted to choose the RNN model and checkpoint
-  - Optionally. pass `--modelname=<desired model> --checkpoint=<desired checkpoint>` to bypass all prompts
-4. Run a client with `./start.sh client`
+3. Run the host with `python .`. You'll be prompted to choose an RNN model and bundle
+  - Optionally. pass `--modelname=<desired model> --checkpoint=<desired checkpoint>` to dismiss these prompts
 5. To hear playback, make sure SuperCollider is running SuperDirt (either `sclang` or `scide` is fine)
 
 ### Example
@@ -42,7 +52,7 @@ Issue commands to the server through the client application. For instance:
 - `/pause` to stop playing
 - `/reset` to clear current track
 - `/save <filename>` to save current track to a midi file on the `output` folder
-- `/generate 1 bars` to generate a single bar. "1" can be replaced by any integer value
+- `/generate 1 bars` to generate a single bar. "1" can be replaced by any positive integer
 
 
 ### Full Guide
