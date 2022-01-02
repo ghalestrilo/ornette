@@ -67,6 +67,15 @@ class CommandInput(Widget):
 
     async def on_shutdown_request(self):
       self.client.send_message(['/end'])
+      self.shutdown()
 
     def shutdown(self):
       loop = asyncio.get_event_loop()
+      to_cancel = asyncio.tasks.all_tasks(loop)
+      print(f'AsyncApplication._cancel_all_tasks: cancelling {len(to_cancel)} tasks ...')
+
+      if not to_cancel: return
+
+      for task in to_cancel: task.cancel()
+
+      asyncio.tasks.gather(*to_cancel, loop=loop, return_exceptions=True)
