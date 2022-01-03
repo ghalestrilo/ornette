@@ -53,6 +53,10 @@ class Engine():
         with self.host.lock:
           msg = self.host.song.getmsg(self.curmsg)
 
+        # DEBUG
+        self.host.song.show()
+        print(f'self.curmsg ({self.curmsg}): {msg}')
+
         # Play it
         if msg is not None:
           
@@ -141,6 +145,8 @@ class Engine():
         for _filter in host.filters.output: output = _filter(output, host)
         if not self.host.get('guarantee_two_notes'): break
 
+      # print(output)
+
       # Before updating generation_start: pad all sequences (so new messages line up)
       self.host.song.pad(generation_start, unit)
 
@@ -157,16 +163,21 @@ class Engine():
         for track_messages, track_index in zip(output, tracks):
             ticks = 0
             for msg in track_messages:
+                if msg.type == 'note_on': print(f'appending {msg}')
                 if hasattr(msg, 'time'): ticks += msg.time
                 if ticks > requested_ticks: msg.time -= (ticks - requested_ticks)
                 host.song.append(msg, track_index)
                 if ticks > requested_ticks: break
 
+      self.host.song.show()
       self.host.song.pad(requested_beats, unit)
+      print('after padding')
+
 
       self.fresh_buffer.set()
       # self.host.song.show()
       host.song.check_end_of_tracks()
+      self.host.song.show()
       with self.host.lock: host.set('is_generating', False)
 
 

@@ -145,6 +145,7 @@ def run_image(append, options, stop):
         pass
 
 
+import os
 
 class ScrollingTextDisplay(Widget):
     """ Class that runs the MDGS and renders its output """
@@ -166,8 +167,9 @@ class ScrollingTextDisplay(Widget):
         self.docker_thread.start()
 
     def render(self):
-        text_to_render = '\n'.join(self.logs[-self.logheight:])
-        return Panel(Text(text_to_render), title="output", title_align="left")
+        height = os.get_terminal_size().lines - 3
+        text_to_render = '\n'.join(self.logs[-(height - 1):])
+        return Panel(Text(text_to_render), title="output", title_align="left",height=height)
 
     def stop(self):
         self.stop_flag.set()

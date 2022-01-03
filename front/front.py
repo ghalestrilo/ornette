@@ -55,5 +55,5 @@ class Front(App):
         self.container_engine = ScrollingTextDisplay()
         self.input_widget.set_logger(self.container_engine.append)
         self.container_engine.run_image(options)
-        await self.view.dock(
-            self.container_engine, self.input_widget)
+        await self.view.dock(self.container_engine, edge="top")
+        await self.view.dock(self.input_widget, size=3, edge="bottom",z=1)
