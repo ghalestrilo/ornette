@@ -51,6 +51,7 @@ class Song():
       return self.data.play()
 
     def getmsg(self,index):
+      print(f'len(messages): {len(self.messages)}')
       return self.messages[index] if index < len(self.messages) else None
 
     def reset(self, initialize_output_tracks=True):
@@ -97,6 +98,9 @@ class Song():
         # TODO: throw an event instead of callling host
         host = self.host
         if host is not None: host.bridge.notify_task_complete()
+
+    def update_messages(self):
+      self.messages = list(msg for msg in self.data)
 
     def append(self, message, track_number):
         """ Adds a message to a track """

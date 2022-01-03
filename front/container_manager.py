@@ -152,14 +152,10 @@ class ScrollingTextDisplay(Widget):
     docker_thread = None
     stop_flag = threading.Event()
     logs = Reactive([])
-    logheight = 13
 
     def append(self, msg):
         self.logs.append(msg)
         self.refresh()
-
-    async def set_height(self, height):
-      self.logheight = max(height - 2, 3)
 
     def run_image(self, options):
         self.docker_thread = threading.Thread(

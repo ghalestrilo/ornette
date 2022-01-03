@@ -53,10 +53,6 @@ class Engine():
         with self.host.lock:
           msg = self.host.song.getmsg(self.curmsg)
 
-        # DEBUG
-        self.host.song.show()
-        print(f'self.curmsg ({self.curmsg}): {msg}')
-
         # Play it
         if msg is not None:
           
@@ -168,6 +164,7 @@ class Engine():
                 if ticks > requested_ticks: msg.time -= (ticks - requested_ticks)
                 host.song.append(msg, track_index)
                 if ticks > requested_ticks: break
+        host.song.update_messages()
 
       self.host.song.show()
       self.host.song.pad(requested_beats, unit)
