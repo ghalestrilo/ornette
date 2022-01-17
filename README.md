@@ -1,7 +1,7 @@
 # Ornette
 ### Let AI Make Music
 
-**Ornette** an OSC-based command-line application to use ML models for music generation in real time.
+**Ornette** an OSC-based command-line application to use ML models for continuous music generation.
 You can control (manually or programatically) ML-based music generation and playback via text commands, OSC messaging or with command-line arguments. You can also try out different models through the same interface.
 
 ![Ornette Demo](./media/ornette-demo.gif)
