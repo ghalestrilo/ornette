@@ -6,7 +6,7 @@ You can control (manually or programatically) ML-based music generation and play
 
 ![Ornette Demo](./media/ornette-demo.gif)
 
-The preview above shows **Ornette** running the [*PerformanceRNN*][url-performance-rnn] model in the left panel and sending data to the [**SuperCollider**][url-sc] instance to the right, which then generates sound (except when recorded as an SVG file)
+The preview above shows **Ornette** running the [*PerformanceRNN*][url-performance-rnn] model in the left panel and sending data to the [**SuperCollider**][url-sc] instance to the right, which then generates sound (except when you record your screen as an SVG file 🤷🏻‍♂)
 
 ## Concept
 
