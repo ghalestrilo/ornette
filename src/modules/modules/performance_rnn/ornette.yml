@@ -1,0 +1,31 @@
+checkpoints:
+  polyphony_rnn: http://download.magenta.tensorflow.org/models/polyphony_rnn.mag
+  performance: http://download.magenta.tensorflow.org/models/performance.mag
+  performance_with_dynamics: http://download.magenta.tensorflow.org/models/performance_with_dynamics.mag
+  performance_with_dynamics_and_modulo_encoding: http://download.magenta.tensorflow.org/models/performance_with_dynamics_and_modulo_encoding.mag
+  density_conditioned_performance_with_dynamics: http://download.magenta.tensorflow.org/models/density_conditioned_performance_with_dynamics.mag
+  pitch_conditioned_performance_with_dynamics: http://download.magenta.tensorflow.org/models/pitch_conditioned_performance_with_dynamics.mag
+  multiconditioned_performance_with_dynamics: http://download.magenta.tensorflow.org/models/multiconditioned_performance_with_dynamics.mag
+
+config:
+    output_unit: seconds
+    output_tracks:
+      - 1
+    input_unit: 'seconds'
+    input_length: 3
+    output_unit: 'seconds'
+    output_length: 16
+    force_120_bpm_generation: True
+    is_velocity_sensitive: True
+    steps_per_quarter: config.steps_per_quarter
+
+filters:
+  input:
+    - 'mido_no_0_velocity'
+    - 'midotrack2noteseq'
+  outputs:
+    - 'noteseq_trim_start'
+    - 'noteseq_trim_end'
+    - 'noteseq2midotrack'
+    - 'mido_track_sort_by_time'
+    - 'mido_track_subtract_previous_time'

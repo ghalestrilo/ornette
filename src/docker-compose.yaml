@@ -1,0 +1,26 @@
+version: "3.3"  # optional since v1.27.0
+services:
+  engine:
+    build: ./engine
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+  # model:
+    # build: ./model
+  supercollider:
+    build: ./supercollider
+  # volumes:
+    # engine:/engine
+  # web:
+  #   build: .
+  #   ports:
+  #     - "5000:5000"
+  #   volumes:
+  #     - .:/code
+  #     - logvolume01:/var/log
+  #   links:
+  #     - redis
+  # redis:
+  #   image: redis
+
+# volumes:
+  # logvolume01: {}

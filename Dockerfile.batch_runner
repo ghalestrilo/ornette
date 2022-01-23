@@ -1,4 +1,0 @@
-FROM ornette/base
-
-ENV BATCH_RUNNER=1
-RUN pip install mido pandas numpy PyYAML
